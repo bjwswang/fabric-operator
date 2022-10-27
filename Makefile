@@ -16,14 +16,14 @@
 # limitations under the License.
 #
 
-IMAGE ?= ghcr.io/hyperledger-labs/fabric-operator
+IMAGE ?= hyperledgerk8s/fabric-operator
 TAG ?= $(shell git rev-parse --short HEAD)
 ARCH ?= $(shell go env GOARCH)
 OSS_GO_VER ?= 1.17.7
 BUILD_DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 OS = $(shell go env GOOS)
 
-DOCKER_IMAGE_REPO ?= ghcr.io
+DOCKER_IMAGE_REPO ?= ""
 
 BUILD_ARGS=--build-arg ARCH=$(ARCH)
 BUILD_ARGS+=--build-arg BUILD_ID=$(TAG)

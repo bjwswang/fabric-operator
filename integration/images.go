@@ -18,28 +18,30 @@
 
 package integration
 
+import "github.com/IBM-Blockchain/fabric-operator/pkg/util"
+
 const (
 	FabricCAVersion    = "1.5.3"
 	FabricVersion      = "2.2.5"
-	FabricVersion24    = "2.4.3"
-	InitImage          = "registry.access.redhat.com/ubi8/ubi-minimal"
+	FabricVersion24    = "2.4.7"
+	InitImage          = util.GetRegistyServer() + "ubi-minimal"
 	InitTag            = "latest"
-	CaImage            = "hyperledger/fabric-ca"
+	CaImage            = util.GetRegistyServer() + "fabric-ca"
 	CaTag              = FabricCAVersion
-	PeerImage          = "hyperledger/fabric-peer"
+	PeerImage          = util.GetRegistyServer() + "fabric-peer"
 	PeerTag            = FabricVersion24
-	OrdererImage       = "hyperledger/fabric-orderer"
+	OrdererImage       = util.GetRegistyServer() + "fabric-orderer"
 	OrdererTag         = FabricVersion24
 	Orderer14Tag       = "1.4.12"
 	Orderer24Tag       = FabricVersion24
-	ConfigtxlatorImage = "hyperledger/fabric-tools"
+	ConfigtxlatorImage = util.GetRegistyServer() + "fabric-tools"
 	ConfigtxlatorTag   = FabricVersion24
-	CouchdbImage       = "couchdb"
+	CouchdbImage       = util.GetRegistyServer() + "couchdb"
 	CouchdbTag         = "3.2.2"
-	GrpcwebImage       = "ghcr.io/hyperledger-labs/grpc-web"
+	GrpcwebImage       = util.GetRegistyServer() + "grpc-web"
 	GrpcwebTag         = "latest"
-	ConsoleImage       = "ghcr.io/hyperledger-labs/fabric-console"
+	ConsoleImage       = util.GetRegistyServer() + "fabric-console"
 	ConsoleTag         = "latest"
-	DeployerImage      = "ghcr.io/ibm-blockchain/fabric-deployer"
+	DeployerImage      = util.GetRegistyServer() + "fabric-deployer"
 	DeployerTag        = "latest-amd64"
 )

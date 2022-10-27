@@ -18,19 +18,22 @@
 
 package console
 
-import "github.com/IBM-Blockchain/fabric-operator/pkg/apis/deployer"
+import (
+	"github.com/IBM-Blockchain/fabric-operator/pkg/apis/deployer"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
+)
 
 func GetImages() *deployer.ConsoleImages {
 	return &deployer.ConsoleImages{
-		ConsoleImage:       "ghcr.io/hyperledger-labs/fabric-console",
+		ConsoleImage:       util.GetRegistyServer() + "fabric-console",
 		ConsoleTag:         "latest",
-		ConsoleInitImage:   "registry.access.redhat.com/ubi8/ubi-minimal",
+		ConsoleInitImage:   util.GetRegistyServer() + "ubi-minimal",
 		ConsoleInitTag:     "latest",
-		ConfigtxlatorImage: "hyperledger/fabric-tools",
+		ConfigtxlatorImage: util.GetRegistyServer() + "fabric-tools",
 		ConfigtxlatorTag:   "2.2.5",
-		DeployerImage:      "ghcr.io/ibm-blockchain/fabric-deployer",
+		DeployerImage:      util.GetRegistyServer() + "fabric-deployer",
 		DeployerTag:        "latest",
-		CouchDBImage:       "couchdb",
+		CouchDBImage:       util.GetRegistyServer() + "couchdb",
 		CouchDBTag:         "3.2.2",
 	}
 }

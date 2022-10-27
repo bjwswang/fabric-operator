@@ -39,6 +39,9 @@ function network_up() {
   apply_network_peers
   apply_network_orderers
 
+  # wait for resource to be appeared
+  sleep 10
+
   wait_for ibppeer org1-peer1
   wait_for ibppeer org1-peer2
   wait_for ibppeer org2-peer1
@@ -56,7 +59,7 @@ function init_namespace() {
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: test-network
+  name: "$NS"
 EOF
 
   pop_fn
@@ -75,7 +78,10 @@ function wait_for() {
   local name=$2
 
   # wait for the operator to reconcile the CRD with a Deployment
-  kubectl -n $NS wait $type $name --for jsonpath='{.status.type}'=Deployed --timeout=60s
+  # this only works for k8s v1.23 or later, update to a more general approach
+  # kubectl -n $NS wait $type $name --for jsonpath='{.status.type}'=Deployed --timeout=60s
+  deployed=""
+  while [ "$deployed" != "Deployed" ]; do deployed=$(kubectl -n $NS get ibpca org0-ca -o=jsonpath='{.status.type}');sleep 2;done
 
   # wait for the deployment to reach Ready
   kubectl -n $NS rollout status deploy $name

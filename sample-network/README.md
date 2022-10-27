@@ -1,3 +1,10 @@
+参考该文档进行快速部署 [通过 operator 快速部署 fabric](./installer/how-to-deploy-fabirc-using-operator.md)
+
+
+以下为官方文档供参考
+
+---------------------------
+
 # Sample Network
 
 Create a sample network with CRDs, fabric-operator, and the Kube API server:

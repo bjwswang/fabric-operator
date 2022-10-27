@@ -1,0 +1,37 @@
+{{- if .Values.ingressNginx.enableV044 -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    ingress-lb: {{ .Values.ingressNginx.name }}
+  name: tcp-services-{{ .Values.ingressNginx.name }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    ingress-lb: {{ .Values.ingressNginx.name }}
+  name: udp-services-{{ .Values.ingressNginx.name }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+data:
+  enable-vts-status: "true"
+  large-client-header-buffers: 4 1m
+  max-worker-connections: "65535"
+  use-gzip: "{{ .Values.ingressNginx.useGzip }}"
+  vts-default-filter-key: $server_name
+  worker-processes: "4"
+  http-snippet: |
+    proxy_cache_path /tmp/bff-cache levels=1:2 keys_zone=static-cache:2m max_size=100m inactive=7d use_temp_path=off;
+    proxy_cache_key $scheme$proxy_host$request_uri;
+    proxy_cache_lock on;
+    proxy_cache_use_stale updating;
+kind: ConfigMap
+metadata:
+  labels:
+    ingress-lb: {{ .Values.ingressNginx.name }}
+  name: nginx-configuration-{{ .Values.ingressNginx.name }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}

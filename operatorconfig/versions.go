@@ -18,16 +18,19 @@
 
 package operatorconfig
 
-import "github.com/IBM-Blockchain/fabric-operator/pkg/apis/deployer"
+import (
+	"github.com/IBM-Blockchain/fabric-operator/pkg/apis/deployer"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
+)
 
 const (
-	InitImage       = "registry.access.redhat.com/ubi8/ubi-minimal"
 	LatestTag       = "latest"
 	FabricCAVersion = "1.5.3"
-	FabricVersion   = "2.4.3"
+	FabricVersion   = "2.4.7"
 )
 
 func getDefaultVersions() *deployer.Versions {
+	InitImage := util.GetRegistyServer() + "ubi-minimal"
 	return &deployer.Versions{
 		CA: map[string]deployer.VersionCA{
 			"1.5.3-1": {
@@ -36,37 +39,37 @@ func getDefaultVersions() *deployer.Versions {
 				Image: deployer.CAImages{
 					CAInitImage: InitImage,
 					CAInitTag:   LatestTag,
-					CAImage:     "hyperledger/fabric-ca",
+					CAImage:     util.GetRegistyServer() + "fabric-ca",
 					CATag:       FabricCAVersion,
 				},
 			},
 		},
 		Peer: map[string]deployer.VersionPeer{
-			"2.4.3-1": {
+			"2.4.7-1": {
 				Default: true,
-				Version: "2.4.3-1",
+				Version: "2.4.7-1",
 				Image: deployer.PeerImages{
 					PeerInitImage: InitImage,
 					PeerInitTag:   LatestTag,
-					PeerImage:     "hyperledger/fabric-peer",
+					PeerImage:     util.GetRegistyServer() + "fabric-peer",
 					PeerTag:       FabricVersion,
 					CouchDBImage:  "couchdb",
 					CouchDBTag:    "3.2.2",
-					GRPCWebImage:  "ghcr.io/hyperledger-labs/grpc-web",
+					GRPCWebImage:  util.GetRegistyServer() + "grpc-web",
 					GRPCWebTag:    LatestTag,
 				},
 			},
 		},
 		Orderer: map[string]deployer.VersionOrderer{
-			"2.4.3-1": {
+			"2.4.7-1": {
 				Default: true,
-				Version: "2.4.3-1",
+				Version: "2.4.7-1",
 				Image: deployer.OrdererImages{
 					OrdererInitImage: InitImage,
 					OrdererInitTag:   LatestTag,
-					OrdererImage:     "hyperledger/fabric-orderer",
+					OrdererImage:     util.GetRegistyServer() + "fabric-orderer",
 					OrdererTag:       FabricVersion,
-					GRPCWebImage:     "ghcr.io/hyperledger-labs/grpc-web",
+					GRPCWebImage:     util.GetRegistyServer() + "grpc-web",
 					GRPCWebTag:       LatestTag,
 				},
 			},

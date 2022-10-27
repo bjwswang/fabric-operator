@@ -50,34 +50,34 @@ data:
           default: true
           version: 1.5.3-1
           image:
-            caInitImage: registry.access.redhat.com/ubi8/ubi-minimal
+            caInitImage: hyperledgerk8s/ubi-minimal
             caInitTag: latest
-            caImage: hyperledger/fabric-ca
+            caImage:  hyperledgerk8s/fabric-ca
             caTag: 1.5.3
 
       peer:
-        2.4.3-1:
+        2.4.7-1:
           default: true
-          version: 2.4.3-1
+          version: 2.4.7-1
           image:
-            peerInitImage: registry.access.redhat.com/ubi8/ubi-minimal
+            peerInitImage: hyperledgerk8s/ubi-minimal
             peerInitTag: latest
-            peerImage: hyperledger/fabric-peer
-            peerTag: 2.4.3
+            peerImage:  hyperledgerk8s/fabric-peer
+            peerTag: 2.4.7
             couchdbImage: couchdb
             couchdbTag: 3.2.2
-            grpcwebImage: ghcr.io/hyperledger-labs/grpc-web
+            grpcwebImage: hyperledgerk8s/grpc-web
             grpcwebTag: latest
       orderer:
-        2.4.3-1:
+        2.4.7-1:
           default: true
-          version: 2.4.3-1
+          version: 2.4.7-1
           image:
-            ordererInitImage: registry.access.redhat.com/ubi8/ubi-minimal
+            ordererInitImage: hyperledgerk8s/ubi-minimal
             ordererInitTag: latest
-            ordererImage: hyperledger/fabric-orderer
-            ordererTag: 2.4.3
-            grpcwebImage: ghcr.io/hyperledger-labs/grpc-web
+            ordererImage:  hyperledgerk8s/fabric-orderer
+            ordererTag: 2.4.7
+            grpcwebImage:  hyperledgerk8s/grpc-web
             grpcwebTag: latest
 
     defaults:

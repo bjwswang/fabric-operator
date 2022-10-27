@@ -1,0 +1,136 @@
+{{- if and .Values.ingressNginx.enableV044 -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    ingress-lb: {{ .Values.ingressNginx.name }}
+  name: default-http-backend-{{ .Values.ingressNginx.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    allocatedIP: {{ .Values.ingressNginx.deployedIp }}
+    className: {{ .Values.ingressNginx.name }}
+    description: ""
+    displayName: {{ .Values.ingressNginx.name }}
+    enable-platmap: "true"
+    httpPort: "80"
+    httpsPort: "443"
+    nodes-info: '[{"host":"{{ .Values.ingressNginx.deployedHost }}","address":"{{ .Values.ingressNginx.deployedIp }}"}]'
+    proxyIP: {{ .Values.ingressNginx.deployedIp }}
+    system/healthz-port: "8265"
+    system/targetPort: "7892"
+    usegzip: ""
+  labels:
+    agentType: outside
+    app: {{ .Values.ingressNginx.name }}
+    ingress-global: "true"
+    ingress-lb: {{ .Values.ingressNginx.name }}
+    system/nginx-ingress: "true"
+  name: {{ .Values.ingressNginx.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      ingress-lb: {{ .Values.ingressNginx.name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        prometheus.io/port: "8265"
+        prometheus.io/scrape: "true"
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: {{ .Values.ingressNginx.name }}
+        {{ .Values.ingressNginx.name }}: default-http-backend
+        ingress-lb: {{ .Values.ingressNginx.name }}
+        name: {{ .Values.ingressNginx.name }}
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - {{ .Values.ingressNginx.deployedHost }}
+      containers:
+      - args:
+        - /nginx-ingress-controller
+        - --default-backend-service=$(POD_NAMESPACE)/default-http-backend-{{ .Values.ingressNginx.name }}
+        - --configmap=$(POD_NAMESPACE)/nginx-configuration-{{ .Values.ingressNginx.name }}
+        - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services-{{ .Values.ingressNginx.name }}
+        - --udp-services-configmap=$(POD_NAMESPACE)/udp-services-{{ .Values.ingressNginx.name }}
+        - --annotations-prefix=nginx.ingress.kubernetes.io
+        - --ingress-class={{ .Values.ingressNginx.name }}
+        - --election-id={{ .Values.ingressNginx.name }}
+        - --update-status
+        - --report-node-internal-ip-address
+        - --http-port=8080
+        - --https-port=6443
+        - --status-port=7892
+        - --healthz-port=8265
+        - --publish-status-address={{ .Values.ingressNginx.deployedIp }}
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        image: {{ .Values.ingressNginx.image }}:{{ .Values.ingressNginx.tag }}
+        livenessProbe:
+          failureThreshold: 2
+          httpGet:
+            path: /healthz
+            port: healthz-port
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: {{ .Values.ingressNginx.name }}
+        ports:
+        - containerPort: 7892
+          name: status-port
+          protocol: TCP
+        - containerPort: 8265
+          name: healthz-port
+          protocol: TCP
+        - containerPort: 8080
+          hostPort: 80
+          name: http-port
+          protocol: TCP
+        - containerPort: 6443
+          hostPort: 443
+          name: https-port
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 100m
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi
+        securityContext:
+          runAsUser: 0
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: false
+      serviceAccount: {{ .Values.ingressNginx.name }}
+{{- end }}

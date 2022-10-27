@@ -31,7 +31,7 @@ function context() {
   export ${name}="${!override_name:-${default_value}}"
 }
 
-context FABRIC_VERSION            2.4.4
+context FABRIC_VERSION            2.4.7
 context FABRIC_CA_VERSION         1.5.5
 
 context CLUSTER_RUNTIME           kind                  # or k3s for Rancher
@@ -40,7 +40,7 @@ context CONTAINER_NAMESPACE       ""                    # or "--namespace k8s.io
 context STORAGE_CLASS             standard
 context KUSTOMIZE_BUILD           "kubectl kustomize"
 context STAGE_DOCKER_IMAGES       true
-context FABRIC_CONTAINER_REGISTRY hyperledger
+context FABRIC_CONTAINER_REGISTRY hyperledgerk8s
 
 context NAME                      test-network
 context NS                        $NAME
@@ -66,7 +66,7 @@ context CONSOLE_PASSWORD          password
 context CHANNEL_NAME              mychannel
 context ORDERER_TIMEOUT           15s
 context CHAINCODE_NAME            asset-transfer-basic
-context CHAINCODE_IMAGE           ghcr.io/hyperledgendary/fabric-ccaas-asset-transfer-basic:latest
+context CHAINCODE_IMAGE           ${FABRIC_CONTAINER_REGISTRY}/fabric-ccaas-asset-transfer-basic:latest
 context CHAINCODE_LABEL           basic_1.0
 
 context CA_IMAGE                  ${FABRIC_CONTAINER_REGISTRY}/fabric-ca
@@ -77,17 +77,17 @@ context ORDERER_IMAGE             ${FABRIC_CONTAINER_REGISTRY}/fabric-orderer
 context ORDERER_IMAGE_LABEL       ${FABRIC_VERSION}
 context TOOLS_IMAGE               ${FABRIC_CONTAINER_REGISTRY}/fabric-tools
 context TOOLS_IMAGE_LABEL         ${FABRIC_VERSION}
-context OPERATOR_IMAGE            ghcr.io/hyperledger-labs/fabric-operator
+context OPERATOR_IMAGE            ${FABRIC_CONTAINER_REGISTRY}/fabric-operator
 context OPERATOR_IMAGE_LABEL      latest-amd64
-context INIT_IMAGE                registry.access.redhat.com/ubi8/ubi-minimal
+context INIT_IMAGE                ${FABRIC_CONTAINER_REGISTRY}/ubi-minimal
 context INIT_IMAGE_LABEL          latest
-context GRPCWEB_IMAGE             ghcr.io/hyperledger-labs/grpc-web
+context GRPCWEB_IMAGE             ${FABRIC_CONTAINER_REGISTRY}/grpc-web
 context GRPCWEB_IMAGE_LABEL       latest
-context COUCHDB_IMAGE             couchdb
+context COUCHDB_IMAGE             ${FABRIC_CONTAINER_REGISTRY}/couchdb
 context COUCHDB_IMAGE_LABEL       3.2.2
-context CONSOLE_IMAGE             ghcr.io/hyperledger-labs/fabric-console
+context CONSOLE_IMAGE             ${FABRIC_CONTAINER_REGISTRY}/fabric-console
 context CONSOLE_IMAGE_LABEL       latest
-context DEPLOYER_IMAGE            ghcr.io/ibm-blockchain/fabric-deployer
+context DEPLOYER_IMAGE            ${FABRIC_CONTAINER_REGISTRY}/fabric-deployer
 context DEPLOYER_IMAGE_LABEL      latest-amd64
 
 export FABRIC_OPERATOR_IMAGE=${OPERATOR_IMAGE}:${OPERATOR_IMAGE_LABEL}

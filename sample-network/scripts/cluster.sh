@@ -89,9 +89,10 @@ function kind_load_images() {
 
 function cluster_init() {
   apply_fabric_crds
-  apply_nginx_ingress
 
-  wait_for_nginx_ingress
+  # apply_nginx_ingress
+
+  # wait_for_nginx_ingress
 
   if [ "${COREDNS_DOMAIN_OVERRIDE}" == true ]; then
     apply_coredns_domain_override
@@ -160,7 +161,7 @@ function wait_for_nginx_ingress() {
 # dummy DNS wildcard entry, routing to the kube internal IP address for the ingress controller.
 function apply_coredns_domain_override() {
 
-  CLUSTER_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o json | jq -r .spec.clusterIP)
+  CLUSTER_IP=$(kubectl -n $NS get svc ingress-nginx-controller -o json | jq -r .spec.clusterIP)
   push_fn "Applying CoreDNS overrides for ingress domain $INGRESS_DOMAIN at CLUSTER-IP $CLUSTER_IP"
 
   cat <<EOF | kubectl apply -f -
@@ -208,9 +209,3 @@ function cluster_clean() {
   delete_fabric_crds
   delete_nginx_ingress
 }
-
-
-
-
-
-

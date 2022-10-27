@@ -1,0 +1,127 @@
+# Default values for cluster-component.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+ingressNginx:
+  # Enable the expected ingress nginx version
+  # Set enableV130 or enableV044 to true, at most one can be true, or both false
+  enableV130: &enableV130
+    true
+  enableV044: false
+  image: &image
+    hyperledgerk8s/ingress-nginx-controller
+  # Use v1.3.0 tag for v5.6.0, v5.3.0-0.44.0-fp3 for pre v5.6.0
+  tag: &tag
+    v1.3.0
+    #v5.3.0-0.44.0-fp3
+  # Host binding for this ingress controller
+  deployedHost: &deployedHost
+    21v-tc-kubedata-1
+  useGzip: "true"
+  # Used for old ingress nginx only before v5.6.0, for OSS ingress nginx, don't need to use them
+  deployedIp: ""
+  name: &name
+    fabric-ingress
+  # No use for now
+  useLoadBalancer: false
+  defaultSSLCert:
+    # oidc certificate info
+    # if using kube-odic-proxy, should add both oidc and proxy IP address here
+    certificate:
+      dnsNames:
+      - ingress-nginx-controller-admission
+      - ingress-nginx-controller-admission.test-network.svc
+    spec:
+    # Use selfSigned or specified CA(such as CA from kubernetes)
+      selfSigned: {}
+
+cert-manager:
+  enabled: false
+  # Required: Cert manager for certificate management
+  image: 172.22.96.19/addon_system/cert-manager-controller:v1.8.0
+  caInjectorImage: 172.22.96.19/addon_system/cert-manager-cainjector:v1.8.0
+  webhookImage: 172.22.96.19/addon_system/cert-manager-webhook:v1.8.0
+
+openebs:
+  enabled: false
+  localprovisioner:
+    image: hub.tenxcloud.com/addon_system/provisioner-localpv
+    basePath: /var/openebs/local
+    hostpathClass:
+      enabled: true
+      name: openebs-localpv
+      isDefaultClass: false
+  ndm:
+    image: hub.tenxcloud.com/addon_system/node-disk-manager
+  ndmOperator:
+    image: hub.tenxcloud.com/addon_system/node-disk-operator
+  helper:
+    image: hub.tenxcloud.com/addon_system/linux-utils
+
+metallb:
+  enabled: false
+  # Must configure the available addresses if metallb is enabled
+  ipAddresses:
+  - 192.168.1.10-192.168.90.15
+  controller:
+    image:
+      repository: hub.tenxcloud.com/addon_system/controller
+      tag: v0.13.4
+  speaker:
+    image:
+      repository: hub.tenxcloud.com/addon_system/speaker
+      tag: v0.13.4
+  # disabled by default
+  frr:
+    image:
+      repository: hub.tenxcloud.com/addon_system/frr
+      tag: v8.3.0
+
+# Overwrite ingress-nginx chart template
+ingress-nginx:
+  enabled: *enableV130
+  controller:
+    ingressClassResource:
+      name: *name
+    ingressClass: *name
+    image:
+      repository: *image
+      # Use v1.3.0 tag for v5.6.0, v5.3.0-0.44.0-fp3 for pre v5.6.0
+      tag: *tag
+    admissionWebhooks:
+      enabled: true
+      patch:
+        enabled: true
+        image:
+          registry: ""
+          image: hyperledgerk8s/kube-webhook-certgen
+          digest: ""
+    updateStrategy:
+      type: Recreate
+    extraArgs:
+      enable-ssl-passthrough:
+      update-status:
+      report-node-internal-ip-address:
+      http-port: 8080
+      https-port: 6443
+      ssl-passthrough-proxy-port: 16443
+    service:
+      enabled: true
+      type: ClusterIP
+      internal:
+        enabled: true
+    config:
+      use-gzip: "true"
+      enable-vts-status: "true"
+      large-client-header-buffers: 4 1m
+      max-worker-connections: "65535"
+      vts-default-filter-key: $server_name
+      worker-processes: "4"
+      http-snippet: |
+        proxy_cache_path /tmp/bff-cache levels=1:2 keys_zone=static-cache:2m max_size=100m inactive=7d use_temp_path=off;
+        proxy_cache_key $scheme$proxy_host$request_uri;
+        proxy_cache_lock on;
+        proxy_cache_use_stale updating;
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/hostname: *deployedHost

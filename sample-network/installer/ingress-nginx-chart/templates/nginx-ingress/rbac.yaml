@@ -1,0 +1,146 @@
+{{- if and .Values.ingressNginx.enableV044 -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    ingress-lb: {{ .Values.ingressNginx.name }}
+  name: {{ .Values.ingressNginx.name }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    ingress-lb: {{ .Values.ingressNginx.name }}
+  name: {{ .Values.ingressNginx.name }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - pods
+  - secrets
+  - namespaces
+  - nodes
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - endpoints
+  - nodes
+  - pods
+  - secrets
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - extensions
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - extensions
+  - networking.k8s.io
+  resources:
+  - ingresses/status
+  verbs:
+  - update
+- apiGroups:
+  - policy
+  resourceNames:
+  - ingress-nginx-cluster-system
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+- apiGroups:
+  - extensions
+  resourceNames:
+  - ingress-nginx-cluster-system
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    ingress-lb: {{ .Values.ingressNginx.name }}
+  name: {{ .Values.ingressNginx.name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.ingressNginx.name }}
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.ingressNginx.name }}
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ingress-nginx-cluster-system
+spec:
+  allowPrivilegeEscalation: false
+  allowedCapabilities:
+  - '*'
+  fsGroup:
+    rule: RunAsAny
+  hostNetwork: true
+  hostPorts:
+  - max: 80
+    min: 80
+  - max: 443
+    min: 443
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - secret
+  - emptyDir
+  - gitRepo
+  - hostPath
+  - configMap
+  - downwardAPI
+  - projected
+  - persistentVolumeClaim
+{{- end }}

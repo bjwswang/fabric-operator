@@ -938,3 +938,11 @@ func GetServerVersion() (*version.Info, error) {
 	}
 	return version, nil
 }
+
+func GetRegistyServer() string {
+	if os.Getenv("IMAGE_SERVER_ADDRESS_AND_REPO") != "" {
+		return os.Getenv("IMAGE_SERVER_ADDRESS_AND_REPO") + "/"
+	}
+	// By default, it'll pull the images from docker hub and using hyperledgerk8s repository
+	return "hyperledgerk8s/"
+}

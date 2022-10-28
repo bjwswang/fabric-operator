@@ -195,7 +195,9 @@ function stop_services() {
 
 function network_down() {
   stop_services
-  delete_namespace
+
+  # only stop fabric services
+  # delete_namespace
 
   rm -rf $PWD/temp
 }

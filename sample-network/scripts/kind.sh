@@ -31,9 +31,12 @@ function kind_create() {
   local ingress_http_port=${NGINX_HTTP_PORT}
   local ingress_https_port=${NGINX_HTTPS_PORT}
 
+  # set kind to k8s < 1.25 at the moment
+  KIND_CLUSTER_IMAGE=${KIND_CLUSTER_IMAGE:-kindest/node:v1.24.4}   
+
   # the 'ipvs'proxy mode permits better HA abilities
 
-  cat <<EOF | kind create cluster --name $CLUSTER_NAME --config=-
+  cat <<EOF | kind create cluster --name $CLUSTER_NAME --image $KIND_CLUSTER_IMAGE --config=-
 ---
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4

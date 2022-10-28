@@ -74,8 +74,8 @@ ingress-nginx:
         enabled: true
         image:
           # 修改: kube-webhook-certgen 的镜像地址
-          registry: ""
-          image: ingress-nginx/kube-webhook-certgen
+          registry: "hyperledgerk8s"
+          image: kube-webhook-certgen
           digest: ""
     extraArgs:
       enable-ssl-passthrough:

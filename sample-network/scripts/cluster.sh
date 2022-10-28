@@ -56,8 +56,13 @@ function cluster_command_group() {
 }
 
 function pull_docker_images() {
-  push_fn "Pulling docker images for Fabric ${FABRIC_VERSION}"
+  push_fn "Pulling docker images"
 
+  # Ingress-nginx related images
+  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $INGRESS_NGINX_CONTROLLER_IMAGE
+  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $INGRESS_NGINX_WEBHOOK_CERTGEN_IMAGE
+
+  # Fabric related images
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_OPERATOR_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_CONSOLE_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_DEPLOYER_IMAGE
@@ -84,24 +89,35 @@ function kind_load_images() {
   kind load docker-image $COUCHDB_IMAGE
   kind load docker-image $GRPCWEB_IMAGE
 
+  # Load nginx ingress 
+  kind load docker-image  $INGRESS_NGINX_CONTROLLER_IMAGE
+  kind load docker-image  $INGRESS_NGINX_WEBHOOK_CERTGEN_IMAGE
+
   pop_fn
 }
 
 function cluster_init() {
+  kubectl create ns $NS
+
   apply_fabric_crds
+  
+  if [ "${STAGE_DOCKER_IMAGES}" == true ]; then
+    pull_docker_images
+    if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
+      kind_load_images
+    fi
+  fi
 
-  # apply_nginx_ingress
 
-  # wait_for_nginx_ingress
+  if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
+    apply_nginx_ingress
+    wait_for_nginx_ingress
+  fi
 
   if [ "${COREDNS_DOMAIN_OVERRIDE}" == true ]; then
     apply_coredns_domain_override
   fi
 
-  if [ "${STAGE_DOCKER_IMAGES}" == true ]; then
-    pull_docker_images
-    kind_load_images
-  fi
 }
 
 function apply_fabric_crds() {
@@ -122,7 +138,14 @@ function delete_fabric_crds() {
 
 function apply_nginx_ingress() {
   push_fn "Applying ingress controller"
-
+  cat <<EOF >../config/ingress/${CLUSTER_RUNTIME}/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: $NS
+resources:
+  - ./ingress-nginx-controller.yaml
+EOF
+  
   $KUSTOMIZE_BUILD ../config/ingress/${CLUSTER_RUNTIME} | kubectl apply -f -
 
   sleep 5
@@ -144,7 +167,7 @@ function wait_for_nginx_ingress() {
   # Give the ingress controller a chance to get set up in the namespace
   sleep 5
 
-  kubectl wait --namespace ingress-nginx \
+  kubectl wait --namespace $NS \
     --for=condition=ready pod \
     --selector=app.kubernetes.io/component=controller \
     --timeout=2m

@@ -93,8 +93,8 @@ ingress-nginx:
       patch:
         enabled: true
         image:
-          registry: ""
-          image: hyperledgerk8s/kube-webhook-certgen
+          registry: "hyperledgerk8s"
+          image: kube-webhook-certgen
           digest: ""
     updateStrategy:
       type: Recreate

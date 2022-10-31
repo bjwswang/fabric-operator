@@ -17,6 +17,28 @@
 # limitations under the License.
 #
 
+function console_command_group() {
+
+  COMMAND=$1
+  shift
+  
+
+  if [ "${COMMAND}" == "up" ]; then
+    log "Start hlf console at $NS"
+    console_up
+    log "🏁 - Console is ready"
+
+  elif [ "${COMMAND}" == "down" ]; then
+    log "Stop hlf console at $NS"
+    console_down
+    log "🏁 - Console is down"
+
+  else
+    print_help
+    exit 1
+  fi
+}
+
 function console_up() {
 
   init_namespace
@@ -44,6 +66,18 @@ function apply_console() {
   apply_kustomization config/console
 
   sleep 5
+
+  pop_fn
+}
+
+function console_down() {
+  stop_console
+}
+
+function stop_console() {
+  push_fn "Stoping Fabric Operations Console"
+
+  undo_kustomization config/console
 
   pop_fn
 }

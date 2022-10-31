@@ -1,7 +1,7 @@
 本文档介绍如何在`kind`集群上通过fabric operator 创建一个示例的 fabirc 区块链网络。
 **准备工作参考 how-to-deploy-fabric-using-operator**
 
-## 本地`kind`集群下的部署流程
+## 本地`kind`集群下sample-network部署流程
 1. 部署`kind`  
 `./network kind`
 
@@ -56,6 +56,18 @@ org2-peer2-5c8f857677-9cw9b                2/2     Running   0          48m
 默认使用ccaas（External chaincode builder. 有关`external builder`可参考
 - [External Builders](https://hyperledger-fabric.readthedocs.io/en/latest/cc_launcher.html) 
 - [Running Chaincode as an external service](https://hyperledger-fabric.readthedocs.io/en/latest/cc_service.html)
+
+8. 关闭网络
+`./network down`
+
+## 本地`kind`集群下operations console部署流程
+**NOTE: 考虑到区块链节点冲突可能性，部署console之前最好关闭sample-network**
+1. 完成上述`本地`kind`集群下sample-network部署流程`中的 `1\2\3`步
+2. 部署`operations console`  
+`./network console up`
+3. 使用`operations console`完成区块链的使用  
+4. 关闭`operations console`
+`./network console down`
 
 
 ## 可能碰到的问题

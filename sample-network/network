@@ -105,8 +105,8 @@ export FABRIC_CA_IMAGE=${CA_IMAGE}:${CA_IMAGE_LABEL}
 export FABRIC_PEER_IMAGE=${PEER_IMAGE}:${PEER_IMAGE_LABEL}
 export FABRIC_ORDERER_IMAGE=${ORDERER_IMAGE}:${ORDERER_IMAGE_LABEL}
 export FABRIC_TOOLS_IMAGE=${TOOLS_IMAGE}:${TOOLS_IMAGE_LABEL}
-# COUCHDB_IMAGE with COUCHDB_IMAGE_LABEL
-export COUCHDB_IMAGE=${COUCHDB_IMAGE}:${COUCHDB_IMAGE_LABEL}
+# FABRIC_COUCHDB_IMAGE with COUCHDB_IMAGE_LABEL
+export FABRIC_COUCHDB_IMAGE=${COUCHDB_IMAGE}:${COUCHDB_IMAGE_LABEL}
 
 export TEMP_DIR=${PWD}/temp
 
@@ -202,10 +202,7 @@ elif [ "${MODE}" == "operator" ]; then
   log "🏁 - Operator is ready."
 
 elif [ "${MODE}" == "console" ]; then
-  log "Launching Fabric Operations Console"
-  console_up
-  log "🏁 - Console is ready"
-
+  console_command_group $@
 else
   print_help
   exit 1

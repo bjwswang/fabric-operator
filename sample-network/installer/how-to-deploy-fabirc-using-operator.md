@@ -131,7 +131,7 @@ kubectl -n test-network get all
 ```
 5. 部署管理控制台
 ```
-./network console
+./network console up
 ```
 
 按照提示，同样把 console的 ingress 地址配置到 hosts 文件中，以便可以从浏览器直接访问

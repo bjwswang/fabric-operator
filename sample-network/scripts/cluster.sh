@@ -70,7 +70,7 @@ function pull_docker_images() {
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_PEER_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_ORDERER_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $INIT_IMAGE
-  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $COUCHDB_IMAGE
+  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_COUCHDB_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $GRPCWEB_IMAGE
 
   pop_fn
@@ -86,7 +86,7 @@ function kind_load_images() {
   kind load docker-image $FABRIC_PEER_IMAGE
   kind load docker-image $FABRIC_ORDERER_IMAGE
   kind load docker-image $INIT_IMAGE
-  kind load docker-image $COUCHDB_IMAGE
+  kind load docker-image $FABRIC_COUCHDB_IMAGE
   kind load docker-image $GRPCWEB_IMAGE
 
   # Load nginx ingress 

@@ -56,8 +56,13 @@ function cluster_command_group() {
 }
 
 function pull_docker_images() {
-  push_fn "Pulling docker images for Fabric ${FABRIC_VERSION}"
+  push_fn "Pulling docker images"
 
+  # Ingress-nginx related images
+  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $INGRESS_NGINX_CONTROLLER_IMAGE
+  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $INGRESS_NGINX_WEBHOOK_CERTGEN_IMAGE
+
+  # Fabric related images
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_OPERATOR_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_CONSOLE_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_DEPLOYER_IMAGE
@@ -65,7 +70,7 @@ function pull_docker_images() {
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_PEER_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_ORDERER_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $INIT_IMAGE
-  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $COUCHDB_IMAGE
+  $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $FABRIC_COUCHDB_IMAGE
   $CONTAINER_CLI pull ${CONTAINER_NAMESPACE} $GRPCWEB_IMAGE
 
   pop_fn
@@ -81,27 +86,38 @@ function kind_load_images() {
   kind load docker-image $FABRIC_PEER_IMAGE
   kind load docker-image $FABRIC_ORDERER_IMAGE
   kind load docker-image $INIT_IMAGE
-  kind load docker-image $COUCHDB_IMAGE
+  kind load docker-image $FABRIC_COUCHDB_IMAGE
   kind load docker-image $GRPCWEB_IMAGE
+
+  # Load nginx ingress 
+  kind load docker-image  $INGRESS_NGINX_CONTROLLER_IMAGE
+  kind load docker-image  $INGRESS_NGINX_WEBHOOK_CERTGEN_IMAGE
 
   pop_fn
 }
 
 function cluster_init() {
+  kubectl create ns $NS
+
   apply_fabric_crds
+  
+  if [ "${STAGE_DOCKER_IMAGES}" == true ]; then
+    pull_docker_images
+    if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
+      kind_load_images
+    fi
+  fi
 
-  # apply_nginx_ingress
 
-  # wait_for_nginx_ingress
+  if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
+    apply_nginx_ingress
+    wait_for_nginx_ingress
+  fi
 
   if [ "${COREDNS_DOMAIN_OVERRIDE}" == true ]; then
     apply_coredns_domain_override
   fi
 
-  if [ "${STAGE_DOCKER_IMAGES}" == true ]; then
-    pull_docker_images
-    kind_load_images
-  fi
 }
 
 function apply_fabric_crds() {
@@ -122,8 +138,8 @@ function delete_fabric_crds() {
 
 function apply_nginx_ingress() {
   push_fn "Applying ingress controller"
-
-  $KUSTOMIZE_BUILD ../config/ingress/${CLUSTER_RUNTIME} | kubectl apply -f -
+  
+  $KUSTOMIZE_BUILD installer/ingress-nginx-kind | kubectl apply -f -
 
   sleep 5
 
@@ -133,7 +149,7 @@ function apply_nginx_ingress() {
 function delete_nginx_ingress() {
   push_fn "Deleting ${CLUSTER_RUNTIME} ingress controller"
 
-  $KUSTOMIZE_BUILD ../config/ingress/${CLUSTER_RUNTIME} | kubectl delete -f -
+  $KUSTOMIZE_BUILD installer/ingress-nginx-kind | kubectl delete -f -
 
   pop_fn
 }
@@ -160,8 +176,11 @@ function wait_for_nginx_ingress() {
 # resolving *.localho.st on the kube DNS (e.g., pods running in the cluster) will resolve the
 # dummy DNS wildcard entry, routing to the kube internal IP address for the ingress controller.
 function apply_coredns_domain_override() {
-
-  CLUSTER_IP=$(kubectl -n $NS get svc ingress-nginx-controller -o json | jq -r .spec.clusterIP)
+  INGRESS_NS=$NS
+  if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
+    INGRESS_NS=ingress-nginx
+  fi
+  CLUSTER_IP=$(kubectl -n $INGRESS_NS get svc ingress-nginx-controller -o json | jq -r .spec.clusterIP)
   push_fn "Applying CoreDNS overrides for ingress domain $INGRESS_DOMAIN at CLUSTER-IP $CLUSTER_IP"
 
   cat <<EOF | kubectl apply -f -

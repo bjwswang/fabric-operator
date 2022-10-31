@@ -172,7 +172,7 @@ function apply_network_orderers() {
 function stop_services() {
   push_fn "Stopping Fabric Services"
 
-  undo_kustomization config/consoles
+  # undo_kustomization config/consoles
   undo_kustomization config/cas
   undo_kustomization config/peers
   undo_kustomization config/orderers
@@ -180,22 +180,24 @@ function stop_services() {
   # give the operator a chance to reconcile the deletion and then shut down the operator.
   sleep 10
 
-  undo_kustomization config/manager
+  # undo_kustomization config/manager
 
   # scrub any residual bits
-  kubectl -n $NS delete deployment --all
-  kubectl -n $NS delete pod --all
-  kubectl -n $NS delete service --all
-  kubectl -n $NS delete configmap --all
-  kubectl -n $NS delete ingress --all
-  kubectl -n $NS delete secret --all
+  # kubectl -n $NS delete deployment --all
+  # kubectl -n $NS delete pod --all
+  # kubectl -n $NS delete service --all
+  # kubectl -n $NS delete configmap --all
+  # kubectl -n $NS delete ingress --all
+  # kubectl -n $NS delete secret --all
 
   pop_fn
 }
 
+# only stop fabric services
 function network_down() {
   stop_services
-  delete_namespace
+
+  # delete_namespace
 
   rm -rf $PWD/temp
 }

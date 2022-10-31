@@ -138,15 +138,8 @@ function delete_fabric_crds() {
 
 function apply_nginx_ingress() {
   push_fn "Applying ingress controller"
-  cat <<EOF >../config/ingress/${CLUSTER_RUNTIME}/kustomization.yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-namespace: $NS
-resources:
-  - ./ingress-nginx-controller.yaml
-EOF
   
-  $KUSTOMIZE_BUILD ../config/ingress/${CLUSTER_RUNTIME} | kubectl apply -f -
+  $KUSTOMIZE_BUILD installer/ingress-nginx-kind | kubectl apply -f -
 
   sleep 5
 
@@ -156,7 +149,7 @@ EOF
 function delete_nginx_ingress() {
   push_fn "Deleting ${CLUSTER_RUNTIME} ingress controller"
 
-  $KUSTOMIZE_BUILD ../config/ingress/${CLUSTER_RUNTIME} | kubectl delete -f -
+  $KUSTOMIZE_BUILD installer/ingress-nginx-kind | kubectl delete -f -
 
   pop_fn
 }
@@ -167,7 +160,7 @@ function wait_for_nginx_ingress() {
   # Give the ingress controller a chance to get set up in the namespace
   sleep 5
 
-  kubectl wait --namespace $NS \
+  kubectl wait --namespace ingress-nginx \
     --for=condition=ready pod \
     --selector=app.kubernetes.io/component=controller \
     --timeout=2m
@@ -183,8 +176,11 @@ function wait_for_nginx_ingress() {
 # resolving *.localho.st on the kube DNS (e.g., pods running in the cluster) will resolve the
 # dummy DNS wildcard entry, routing to the kube internal IP address for the ingress controller.
 function apply_coredns_domain_override() {
-
-  CLUSTER_IP=$(kubectl -n $NS get svc ingress-nginx-controller -o json | jq -r .spec.clusterIP)
+  INGRESS_NS=$NS
+  if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
+    INGRESS_NS=ingress-nginx
+  fi
+  CLUSTER_IP=$(kubectl -n $INGRESS_NS get svc ingress-nginx-controller -o json | jq -r .spec.clusterIP)
   push_fn "Applying CoreDNS overrides for ingress domain $INGRESS_DOMAIN at CLUSTER-IP $CLUSTER_IP"
 
   cat <<EOF | kubectl apply -f -

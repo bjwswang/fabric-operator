@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,6 +26,7 @@ spec:
     spec:
       containers:
       - name: controller
+        image: hyperledgerk8s/ingress-nginx-controller:v1.4.0
         args:
           - /nginx-ingress-controller
           - --election-id=ingress-controller-leader
@@ -37,3 +39,27 @@ spec:
           - --watch-ingress-without-class=true
           - --publish-status-address=localhost
           - --enable-ssl-passthrough
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingress-nginx-admission-create
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      containers:
+      - name: create
+        image: hyperledgerk8s/kube-webhook-certgen:v1.4.0
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingress-nginx-admission-patch
+  namespace: ingress-nginx
+spec:
+  template:
+    spec:
+      containers:
+      - name: patch
+        image: hyperledgerk8s/kube-webhook-certgen:v1.4.0

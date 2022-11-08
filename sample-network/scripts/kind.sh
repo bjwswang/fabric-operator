@@ -32,7 +32,7 @@ function kind_create() {
   local ingress_https_port=${NGINX_HTTPS_PORT}
 
   # set kind to k8s < 1.25 at the moment
-  KIND_CLUSTER_IMAGE=${KIND_CLUSTER_IMAGE:-kindest/node:v1.24.4}   
+  KIND_CLUSTER_IMAGE=${KIND_CLUSTER_IMAGE:-kindest/node:v1.24.4}
 
   # the 'ipvs'proxy mode permits better HA abilities
 

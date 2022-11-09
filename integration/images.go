@@ -20,7 +20,7 @@ package integration
 
 import "github.com/IBM-Blockchain/fabric-operator/pkg/util"
 
-const (
+var (
 	FabricCAVersion    = "1.5.3"
 	FabricVersion      = "2.2.5"
 	FabricVersion24    = "2.4.7"

@@ -66,17 +66,17 @@ func FabricVersionHelper(instance Instance, versions *deployer.Versions, update 
 	return FabricVersion(instance, update, image, fv)
 }
 
-// Image defines the contract with the image checks
-//
 //go:generate counterfeiter -o mocks/image.go -fake-name Image . Image
+
+// Image defines the contract with the image checks
 type Image interface {
 	UpdateRequired(images.Update) bool
 	SetDefaults(images.Instance) error
 }
 
-// Version defines the contract with the version checks
-//
 //go:generate counterfeiter -o mocks/version.go -fake-name Version . Version
+
+// Version defines the contract with the version checks
 type Version interface {
 	Normalize(images.FabricVersionInstance) string
 	Validate(images.FabricVersionInstance) error

@@ -82,7 +82,7 @@ var _ = Describe("generating TLS crypto", func() {
 			Expect(cert.Subject.OrganizationalUnit).To(Equal([]string{"Blockchain"}))
 
 			Expect(cert.DNSNames[0]).To(Equal("localhost"))
-			Expect(string(cert.IPAddresses[0])).To(Equal("127.0.0.1"))
+			Expect(cert.IPAddresses[0].String()).To(Equal("127.0.0.1"))
 
 			Expect(cert.Subject).To(Equal(cert.Issuer))
 		})

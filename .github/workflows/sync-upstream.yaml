@@ -8,7 +8,7 @@ on:
 jobs:
   sync:
     if: github.repository == 'bestchains/fabric-operator'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: tgymnich/fork-sync@v1.6.3
         with:

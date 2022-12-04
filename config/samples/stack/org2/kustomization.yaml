@@ -3,7 +3,7 @@ namespace: org2
 namePrefix:
 
 bases:
-  - ./base
+  - ../base
 
 patches:
 - target:

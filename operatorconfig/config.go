@@ -33,6 +33,8 @@ type Config struct {
 	PeerInitConfig         *peerinit.Config
 	OrdererInitConfig      *ordererinit.Config
 	ConsoleInitConfig      *ConsoleConfig
+	ProposalConfig         *ProposalConfig
+	VoteConfig             *VoteConfig
 	OrganizationInitConfig *orginit.Config
 	FederationInitConfig   *fedinit.Config
 	Offering               offering.Type
@@ -56,4 +58,16 @@ type ConsoleConfig struct {
 	IngressFile              string
 	Ingressv1beta1File       string
 	RouteFile                string
+}
+
+type ProposalConfig struct {
+	ClusterRoleFile        string
+	ClusterRoleBindingFile string
+	ServiceAccountFile     string
+}
+
+type VoteConfig struct {
+	RoleFile           string
+	RoleBindingFile    string
+	ServiceAccountFile string
 }

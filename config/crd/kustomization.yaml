@@ -8,6 +8,8 @@ resources:
 - bases/ibp.com_ibpconsoles.yaml
 - bases/ibp.com_organizations.yaml
 - bases/ibp.com_federations.yaml
+- bases/ibp.com_proposals.yaml
+- bases/ibp.com_votes.yaml
 - bases/ibp.com_networks.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 

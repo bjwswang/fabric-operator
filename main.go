@@ -50,6 +50,7 @@ const (
 	defaultOrdererDef    = "./definitions/orderer"
 	defaultConsoleDef    = "./definitions/console"
 	defaultFederationDef = "./definitions/federation"
+	defaultVoteDef       = "./definitions/vote"
 	defaultNetworkDef    = "./definitions/network"
 )
 
@@ -76,6 +77,7 @@ func main() {
 	setDefaultConsoleDefinitions(operatorCfg)
 	setDefaultOrganizationDefinitions(operatorCfg)
 	setDefaultFederationDefinitions(operatorCfg)
+	setDefaultVoteDefinitions(operatorCfg)
 	setDefaultNetworkDefinitions(operatorCfg)
 
 	operatorCfg.Operator.SetDefaults()
@@ -215,6 +217,14 @@ func setDefaultFederationDefinitions(cfg *config.Config) {
 	cfg.FederationInitConfig = &fedinit.Config{
 		ClusterRoleFile:        filepath.Join(defaultFederationDef, "clusterrole.yaml"),
 		ClusterRoleBindingFile: filepath.Join(defaultFederationDef, "clusterrolebinding.yaml"),
+	}
+}
+
+func setDefaultVoteDefinitions(cfg *config.Config) {
+	cfg.VoteConfig = &config.VoteConfig{
+		RoleFile:           filepath.Join(defaultVoteDef, "role.yaml"),
+		ServiceAccountFile: filepath.Join(defaultVoteDef, "serviceaccount.yaml"),
+		RoleBindingFile:    filepath.Join(defaultVoteDef, "rolebinding.yaml"),
 	}
 }
 

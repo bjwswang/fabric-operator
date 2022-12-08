@@ -24,10 +24,13 @@ import (
 	"reflect"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/go-test/deep"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -39,6 +42,11 @@ func (r *ReconcileFederation) CreateFunc(e event.CreateEvent) bool {
 		federation := e.Object.(*current.Federation)
 		log.Info(fmt.Sprintf("Create event detected for federation '%s'", federation.GetNamespacedName()))
 		reconcile = r.PredictFederationCreate(federation)
+
+	case *current.Network:
+		network := e.Object.(*current.Network)
+		log.Info(fmt.Sprintf("Create event detected for network '%s'", network.GetNamespacedName()))
+		reconcile = r.PredictNetworkCreate(network)
 	}
 
 	return reconcile
@@ -91,6 +99,48 @@ func (r *ReconcileFederation) PredictFederationCreate(federation *current.Federa
 	r.PushUpdate(federation.GetNamespacedName(), update)
 
 	return true
+}
+
+func (r *ReconcileFederation) PredictNetworkCreate(network *current.Network) bool {
+	err := r.AddNetwork(network.Spec.Federation, network.NamespacedName())
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Network %s in Federation %s", network.GetNamespacedName(), network.Spec.Federation.String()))
+	}
+	return false
+}
+
+func (r *ReconcileFederation) AddNetwork(fedns current.NamespacedName, netns current.NamespacedName) error {
+	var err error
+	federation := &current.Federation{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      fedns.Name,
+		Namespace: fedns.Namespace,
+	}, federation)
+	if err != nil {
+		return err
+	}
+
+	conflict := federation.Status.AddNetwork(current.NamespacedName{
+		Name:      netns.Name,
+		Namespace: netns.Namespace,
+	})
+	// conflict detected,do not need to PatchStatus
+	if conflict {
+		return errors.Errorf("network %s already exist in federation %s", netns.String(), fedns.String())
+	}
+
+	err = r.client.PatchStatus(context.TODO(), federation, nil, k8sclient.PatchOption{
+		Resilient: &k8sclient.ResilientPatch{
+			Retry:    2,
+			Into:     &current.Federation{},
+			Strategy: client.MergeFrom,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Watch Federation & Proposal
@@ -221,4 +271,60 @@ func (r *ReconcileFederation) PredicProposalUpdate(oldProposal *current.Proposal
 	r.PushUpdate(newProposal.Spec.Federation.String(), update)
 	log.Info(fmt.Sprintf("Proposal Status update triggering reconcile on Federation custom resource %s: update [ %+v ]", newProposal.Spec.Federation.String(), update.GetUpdateStackWithTrues()))
 	return true
+}
+
+func (r *ReconcileFederation) DeleteFunc(e event.DeleteEvent) bool {
+	var reconcile bool
+	switch e.Object.(type) {
+	case *current.Network:
+		network := e.Object.(*current.Network)
+		log.Info(fmt.Sprintf("Delete event detected for network '%s'", network.GetNamespacedName()))
+		reconcile = r.PredictNetworkDelete(network)
+	}
+	return reconcile
+}
+
+func (r *ReconcileFederation) PredictNetworkDelete(network *current.Network) bool {
+	fedns := network.Spec.Federation
+	netns := network.NamespacedName()
+	err := r.DeleteNetwork(fedns, netns)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Network %s in Federation %s", netns.String(), fedns.String()))
+	}
+	return false
+}
+
+func (r *ReconcileFederation) DeleteNetwork(fedns current.NamespacedName, netns current.NamespacedName) error {
+	var err error
+	federation := &current.Federation{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Name:      fedns.Name,
+		Namespace: fedns.Namespace,
+	}, federation)
+	if err != nil {
+		return err
+	}
+
+	exist := federation.Status.DeleteNetwork(current.NamespacedName{
+		Name:      netns.Name,
+		Namespace: netns.Namespace,
+	})
+
+	// network do not exist in this federation ,do not need to PatchStatus
+	if !exist {
+		return errors.Errorf("network %s not exist in federation %s", netns.String(), fedns.String())
+	}
+
+	err = r.client.PatchStatus(context.TODO(), federation, nil, k8sclient.PatchOption{
+		Resilient: &k8sclient.ResilientPatch{
+			Retry:    2,
+			Into:     &current.Federation{},
+			Strategy: client.MergeFrom,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/command"
 	cainit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
 	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
+	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
 	ordererinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer"
 	orginit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/organization"
 	peerinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/peer"
@@ -50,6 +51,7 @@ const (
 	defaultConsoleDef    = "./definitions/console"
 	defaultFederationDef = "./definitions/federation"
 	defaultVoteDef       = "./definitions/vote"
+	defaultNetworkDef    = "./definitions/network"
 )
 
 var log = logf.Log.WithName("cmd")
@@ -76,6 +78,7 @@ func main() {
 	setDefaultOrganizationDefinitions(operatorCfg)
 	setDefaultFederationDefinitions(operatorCfg)
 	setDefaultVoteDefinitions(operatorCfg)
+	setDefaultNetworkDefinitions(operatorCfg)
 
 	operatorCfg.Operator.SetDefaults()
 
@@ -222,5 +225,12 @@ func setDefaultVoteDefinitions(cfg *config.Config) {
 		RoleFile:           filepath.Join(defaultVoteDef, "role.yaml"),
 		ServiceAccountFile: filepath.Join(defaultVoteDef, "serviceaccount.yaml"),
 		RoleBindingFile:    filepath.Join(defaultVoteDef, "rolebinding.yaml"),
+	}
+}
+
+func setDefaultNetworkDefinitions(cfg *config.Config) {
+	cfg.NetworkInitConfig = &netinit.Config{
+		ClusterRoleFile:        filepath.Join(defaultFederationDef, "clusterrole.yaml"),
+		ClusterRoleBindingFile: filepath.Join(defaultFederationDef, "clusterrolebinding.yaml"),
 	}
 }

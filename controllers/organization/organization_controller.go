@@ -114,12 +114,26 @@ func add(mgr manager.Manager, r *ReconcileOrganization) error {
 	}
 
 	// Watch for changes to secrets
-	err = c.Watch(&source.Kind{Type: &current.Federation{}}, &handler.EnqueueRequestForObject{}, predicateFuncs)
+	err = c.Watch(&source.Kind{Type: &current.Federation{}}, handler.EnqueueRequestsFromMapFunc(federation2organizationMap), predicateFuncs)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func federation2organizationMap(object client.Object) []reconcile.Request {
+	federation := object.(*current.Federation)
+	res := make([]reconcile.Request, len(federation.Spec.Members))
+	for i, mem := range federation.Spec.Members {
+		res[i] = reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: mem.Namespace,
+				Name:      mem.Name,
+			},
+		}
+	}
+	return res
 }
 
 var _ reconcile.Reconciler = &ReconcileOrganization{}

@@ -12,6 +12,8 @@ spec:
     kind: Organization
     listKind: OrganizationList
     plural: organizations
+    shortNames:
+    - org
     singular: organization
   scope: Namespaced
   versions:

@@ -56,7 +56,6 @@ type OrganizationStatus struct {
 	Federations []NamespacedName `json:"federations,omitempty"`
 }
 
-
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:scope=Cluster,shortName=org;orgs

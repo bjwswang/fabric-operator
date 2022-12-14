@@ -113,8 +113,12 @@ func add(mgr manager.Manager, r *ReconcileOrganization) error {
 		return err
 	}
 
-
 	err = c.Watch(&source.Kind{Type: &current.Federation{}}, handler.EnqueueRequestsFromMapFunc(federation2organizationMap), predicateFuncs)
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &current.IBPCA{}}, &handler.EnqueueRequestForObject{}, predicateFuncs)
 	if err != nil {
 		return err
 	}

@@ -89,6 +89,7 @@ func newReconciler(mgr manager.Manager, cfg *config.Config) (*ReconcileVote, err
 func add(mgr manager.Manager, r *ReconcileVote) error {
 	predicateFuncs := predicate.Funcs{
 		UpdateFunc: r.UpdateFunc,
+		DeleteFunc: r.DeleteFunc,
 	}
 
 	c, err := controller.New("vote-controller", mgr, controller.Options{Reconciler: r})
@@ -102,6 +103,7 @@ func add(mgr manager.Manager, r *ReconcileVote) error {
 
 	proposalPredicateFuncs := predicate.Funcs{
 		UpdateFunc: r.ProposalUpdateFunc,
+		DeleteFunc: r.ProposalDeleteFunc,
 	}
 	// Watch for changes to secondary resource proposal
 	if err = c.Watch(&source.Kind{Type: &current.Proposal{}}, &handler.EnqueueRequestForObject{}, proposalPredicateFuncs); err != nil {
@@ -225,6 +227,17 @@ func (r *ReconcileVote) UpdateVoted(voteName string) {
 	r.voted[voteName] = true
 }
 
+func (r *ReconcileVote) DeleteVoted(voteName string) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	delete(r.voted, voteName)
+}
+
+func (r *ReconcileVote) DeleteFinished(proposalName string) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	delete(r.finished, proposalName)
+}
 func (r *ReconcileVote) UpdateFunc(e event.UpdateEvent) bool {
 	oldVote := e.ObjectOld.(*current.Vote)
 	newVote := e.ObjectNew.(*current.Vote)
@@ -250,5 +263,19 @@ func (r *ReconcileVote) ProposalUpdateFunc(e event.UpdateEvent) bool {
 		log.Info(fmt.Sprintf("proposal:%s status update to finished\n", newProposal.GetName()))
 		return true
 	}
+	return false
+}
+
+func (r *ReconcileVote) DeleteFunc(e event.DeleteEvent) bool {
+	vote := e.Object.(*current.Vote)
+	r.DeleteVoted(vote.GetName())
+	log.Info(fmt.Sprintf("vote:%s deleted\n", vote.GetName()))
+	return false
+}
+
+func (r *ReconcileVote) ProposalDeleteFunc(e event.DeleteEvent) bool {
+	proposal := e.Object.(*current.Proposal)
+	r.DeleteFinished(proposal.GetName())
+	log.Info(fmt.Sprintf("proposal:%s deleted", proposal.GetName()))
 	return false
 }

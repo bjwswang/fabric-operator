@@ -1,0 +1,14 @@
+apiVersion: ibp.com/v1beta1
+kind: Network
+metadata:
+  name: network-sample
+spec:
+  license:
+    accept: true
+  federation: federation-sample
+  consensus:
+    name: org0-consensus
+  members:
+    - name: org1
+      initiator: true # set by webhook
+    - name: org2

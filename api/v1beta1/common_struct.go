@@ -120,6 +120,34 @@ const (
 	// Initializing is the status when a component is initializing
 	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
 	Initializing IBPCRStatusType = "Initializing"
+
+	// Created is the status when component is created successfully without **any deployments**
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	Created IBPCRStatusType = "Created"
+
+	// FederationPending means `Proposal-Vote` not passed yet
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	FederationPending IBPCRStatusType = "FederationPending"
+
+	// FederationActivated means `Proposal-Vote`passed
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	FederationActivated IBPCRStatusType = "FederationActivated"
+
+	// FederationFailed means `Proposal-Vote` failed
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	FederationFailed IBPCRStatusType = "FederationFailed"
+
+	// FederationDissolved means `Federation` no longer active
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	FederationDissolved IBPCRStatusType = "FederationDissolved"
+
+	// NetworkCreated means network created by a federation member
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	NetworkCreated IBPCRStatusType = "NetworkCreated"
+
+	// NetworkDissoleved means network been dissolved by `Proposal-Vote`
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	NetworkDissoleved IBPCRStatusType = "NetworkDissolved"
 )
 
 // +k8s:deepcopy-gen=true
@@ -320,4 +348,65 @@ type MSP struct {
 	// AdminCerts is base64 encoded admincerts array
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	AdminCerts []string `json:"admincerts,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+// CAReference contains the reference to a CA server
+// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+type CAReference struct {
+	// Name is the CA server name
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+	Name string `json:"name,omitempty"`
+
+	// CA indicates which `ca` (ca/tlsca) is being used
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+	CA string `json:"ca,omitempty"`
+}
+
+type NamespacedName struct {
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+}
+
+// +k8s:deepcopy-gen=true
+// Policy defines the Proposal-Vote policy  to indicate when a proposal is successful
+// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=tru
+type Policy string
+
+const (
+	// +k8s:deepcopy-gen=true
+	// CAReference contains the reference to a CA server
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=tru
+	OneVoteVeto Policy = "OneVoteVeto"
+	Majority    Policy = "Majority"
+	ALL         Policy = "All"
+)
+
+const BlockchainAnnotationKey = "bestchains"
+
+type BlockchainAnnotation struct {
+	// Organization info
+	Organization string `json:"organization,omitempty"`
+	Namespace    string `json:"namespace,omitempty"`
+
+	// Managed Peers & Orderers
+	Peers    map[string]string `json:"peers,omitempty"`
+	Orderers map[string]string `json:"orderers,omitempty"`
+
+	// Enrollment
+	EnrollmentID           string `json:"hf.EnrollmentID,omitempty"`
+	Type                   string `json:"hf.Type,omitempty"`
+	Affiliation            string `json:"hf.Affiliation,omitempty"`
+	RegistrarRoles         string `json:"hf.Registrar.Roles,omitempty"`
+	RegistrarDelegateRoles string `json:"hf.Registrar.DelegateRoles,omitempty"`
+	Revoker                string `json:"hf.Revoker,omitempty"`
+	IntermediateCA         string `json:"hf.IntermediateCA,omitempty"`
+	GenCRL                 string `json:"hf.GenCRL,omitempty"`
+	RegistrarAttributes    string `json:"hf.Registrar.Attributes,omitempty"`
+}
+
+type BlockchainAnnotationList struct {
+	List            map[string]BlockchainAnnotation `json:"list,omitempty"`
+	LastAppliedTime string                          `json:"lastAppliedTime,omitempty"`
+	LastDeleteTime  string                          `json:"lastDeleteTime,omitempty"`
 }

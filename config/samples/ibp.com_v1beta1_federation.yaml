@@ -1,0 +1,16 @@
+---
+apiVersion: ibp.com/v1beta1
+kind: Federation
+metadata:
+  name: federation-sample
+spec:
+  license:
+    accept: true
+  description: "federation with org0 & org1"
+  policy: "ALL"
+  members:
+    - name: org1
+      initiator: true
+      namespace: org1
+    - name: org2
+      namespace: org2

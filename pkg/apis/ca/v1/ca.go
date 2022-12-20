@@ -63,6 +63,12 @@ type LDAP struct {
 	TLS         ClientTLSConfig `json:"tls,omitempty"`
 }
 
+type IAM struct {
+	Enabled *bool  `json:"enabled,omitempty"`
+	URL     string `json:"url,omitempty"`
+	// TODO: Define tls sections
+}
+
 // AttrConfig is attribute configuration information
 type AttrConfig struct {
 	Names      []string             `json:"names,omitempty"`
@@ -76,6 +82,7 @@ type NameVal struct {
 }
 
 type CAConfig struct {
+	Organization string                 `json:"organization,omitempty"`
 	Version      string                 `json:"version,omitempty"`
 	Cfg          CfgOptions             `json:"cfg,omitempty"`
 	CA           CAInfo                 `json:"ca,omitempty"`
@@ -84,6 +91,7 @@ type CAConfig struct {
 	Registry     CAConfigRegistry       `json:"registry,omitempty"`
 	Affiliations map[string]interface{} `json:"affiliations,omitempty"`
 	LDAP         LDAP                   `json:"ldap,omitempty"`
+	IAM          IAM                    `json:"iam,omitempty"`
 	DB           *CAConfigDB            `json:"db,omitempty"`
 	CSP          *BCCSP                 `json:"bccsp,omitempty"`
 	Intermediate IntermediateCA         `json:"intermediate,omitempty"`

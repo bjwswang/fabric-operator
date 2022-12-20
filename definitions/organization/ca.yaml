@@ -1,0 +1,58 @@
+apiVersion: ibp.com/v1beta1
+kind: IBPCA
+metadata:
+  name: org0-ca
+  namespace: test-network
+spec:
+  license:
+    accept: true
+  configoverride:
+    ca:
+      organization: org0
+      iam:
+        enabled: false
+        url: "http://localhost:333" # To be replaced
+      debug: true
+      signing:
+        default:
+          expiry: 87600h0m0s
+    tlsca:
+      organization: org0
+      iam:
+        enabled: false
+        url: "http://localhost:333" # To be replaced
+      debug: true
+      signing:
+        default:
+          expiry: 87600h0m0s
+  images:
+    caImage: "hyperledgerk8s/fabric-ca"
+    caTag: "1.5.5"
+    caInitImage: "hyperledgerk8s/ubi-minimal"
+    caInitTag: latest
+  license:
+    accept: true
+  replicas: 1
+  resources:
+    ca:
+      limits:
+        cpu: 100m
+        memory: 200M
+      requests:
+        cpu: 10m
+        memory: 10M
+    init:
+      limits:
+        cpu: 100m
+        memory: 200M
+      requests:
+        cpu: 10m
+        memory: 10M
+  service:
+    type: ClusterIP
+  storage:
+    ca:
+      class: "standard"
+      size: 100M
+  version: 1.5.5
+

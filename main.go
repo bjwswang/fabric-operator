@@ -19,13 +19,17 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/command"
 	cainit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
+	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
+	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
 	ordererinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer"
+	orginit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/organization"
 	peerinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/peer"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -36,16 +40,21 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	iamv1alpha1 "github.com/IBM-Blockchain/fabric-operator/api/iam/v1alpha1"
 	ibpv1beta1 "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	// +kubebuilder:scaffold:imports
 )
 
 const (
-	defaultConfigs    = "./defaultconfig"
-	defaultPeerDef    = "./definitions/peer"
-	defaultCADef      = "./definitions/ca"
-	defaultOrdererDef = "./definitions/orderer"
-	defaultConsoleDef = "./definitions/console"
+	defaultConfigs         = "./defaultconfig"
+	defaultPeerDef         = "./definitions/peer"
+	defaultCADef           = "./definitions/ca"
+	defaultOrdererDef      = "./definitions/orderer"
+	defaultConsoleDef      = "./definitions/console"
+	defaultOrganizationDef = "./definitions/organization"
+	defaultFederationDef   = "./definitions/federation"
+	defaultVoteDef         = "./definitions/vote"
+	defaultNetworkDef      = "./definitions/network"
 )
 
 var log = logf.Log.WithName("cmd")
@@ -58,6 +67,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(ibpv1beta1.AddToScheme(scheme))
+	utilruntime.Must(iamv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -69,8 +79,14 @@ func main() {
 	setDefaultPeerDefinitions(operatorCfg)
 	setDefaultOrdererDefinitions(operatorCfg)
 	setDefaultConsoleDefinitions(operatorCfg)
+	setDefaultOrganizationDefinitions(operatorCfg)
+	setDefaultFederationDefinitions(operatorCfg)
+	setDefaultVoteDefinitions(operatorCfg)
+	setDefaultNetworkDefinitions(operatorCfg)
 
 	operatorCfg.Operator.SetDefaults()
+
+	setOperatorConfigFromEnvironment(operatorCfg)
 
 	if err := command.Operator(operatorCfg); err != nil {
 		log.Error(err, "failed to start operator")
@@ -194,5 +210,49 @@ func setDefaultConsoleDefinitions(cfg *config.Config) {
 		RouteFile:                filepath.Join(defaultConsoleDef, "route.yaml"),
 		NetworkPolicyIngressFile: filepath.Join(defaultConsoleDef, "networkpolicy-ingress.yaml"),
 		NetworkPolicyDenyAllFile: filepath.Join(defaultConsoleDef, "networkpolicy-denyall.yaml"),
+	}
+}
+
+func setDefaultOrganizationDefinitions(cfg *config.Config) {
+	cfg.OrganizationInitConfig = &orginit.Config{
+		IAMEnabled:                  os.Getenv("OPERATOR_USER_TYPE") != "sa",
+		AdminRoleFile:               filepath.Join(defaultOrganizationDef, "admin_role.yaml"),
+		AdminRoleBindingFile:        filepath.Join(defaultOrganizationDef, "admin_role_binding.yaml"),
+		AdminClusterRoleBindingFile: filepath.Join(defaultOrganizationDef, "admin_clusterrole_binding.yaml"),
+		ClientRoleFile:              filepath.Join(defaultOrganizationDef, "client_role.yaml"),
+		CAFile:                      filepath.Join(defaultOrganizationDef, "ca.yaml"),
+		StoragePath:                 "/tmp/orginit",
+	}
+}
+
+func setDefaultFederationDefinitions(cfg *config.Config) {
+	cfg.FederationInitConfig = &fedinit.Config{
+		ClusterRoleFile:        filepath.Join(defaultFederationDef, "clusterrole.yaml"),
+		ClusterRoleBindingFile: filepath.Join(defaultFederationDef, "clusterrolebinding.yaml"),
+	}
+}
+
+func setDefaultVoteDefinitions(cfg *config.Config) {
+	cfg.VoteConfig = &config.VoteConfig{
+		RoleFile:           filepath.Join(defaultVoteDef, "role.yaml"),
+		ServiceAccountFile: filepath.Join(defaultVoteDef, "serviceaccount.yaml"),
+		RoleBindingFile:    filepath.Join(defaultVoteDef, "rolebinding.yaml"),
+	}
+}
+
+func setDefaultNetworkDefinitions(cfg *config.Config) {
+	cfg.NetworkInitConfig = &netinit.Config{
+		ClusterRoleFile:        filepath.Join(defaultFederationDef, "clusterrole.yaml"),
+		ClusterRoleBindingFile: filepath.Join(defaultFederationDef, "clusterrolebinding.yaml"),
+	}
+}
+
+func setOperatorConfigFromEnvironment(cfg *config.Config) {
+	if domain := os.Getenv("OPERATOR_INGRESS_DOMAIN"); domain != "" {
+		cfg.Operator.IngressDomain = domain
+	}
+	if iamServer := os.Getenv("OPERATOR_IAM_SERVER"); iamServer != "" {
+		cfg.Operator.IAM.Enabled = true
+		cfg.Operator.IAM.Server = iamServer
 	}
 }

@@ -20,20 +20,28 @@ package operatorconfig
 
 import (
 	cainit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
+	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
+	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
 	ordererinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer"
+	orginit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/organization"
 	peerinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/peer"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering"
 	"github.com/go-logr/logr"
 )
 
 type Config struct {
-	CAInitConfig      *cainit.Config
-	PeerInitConfig    *peerinit.Config
-	OrdererInitConfig *ordererinit.Config
-	ConsoleInitConfig *ConsoleConfig
-	Offering          offering.Type
-	Operator          Operator
-	Logger            *logr.Logger
+	CAInitConfig           *cainit.Config
+	PeerInitConfig         *peerinit.Config
+	OrdererInitConfig      *ordererinit.Config
+	ConsoleInitConfig      *ConsoleConfig
+	ProposalConfig         *ProposalConfig
+	VoteConfig             *VoteConfig
+	OrganizationInitConfig *orginit.Config
+	FederationInitConfig   *fedinit.Config
+	NetworkInitConfig      *netinit.Config
+	Offering               offering.Type
+	Operator               Operator
+	Logger                 *logr.Logger
 }
 
 type ConsoleConfig struct {
@@ -52,4 +60,16 @@ type ConsoleConfig struct {
 	IngressFile              string
 	Ingressv1beta1File       string
 	RouteFile                string
+}
+
+type ProposalConfig struct {
+	ClusterRoleFile        string
+	ClusterRoleBindingFile string
+	ServiceAccountFile     string
+}
+
+type VoteConfig struct {
+	RoleFile           string
+	RoleBindingFile    string
+	ServiceAccountFile string
 }

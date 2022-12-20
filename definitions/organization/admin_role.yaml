@@ -1,0 +1,97 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: blockchain:admin-role
+rules:
+- apiGroups:
+    - ""
+  resources:
+    - pods
+    - pods/log
+    - secret
+    - configmap
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+    - "rbac.authorization.k8s.io"
+  resources:
+    - roles
+    - rolebindings
+  verbs:
+    - get
+    - list
+    - create
+    - update
+    - patch
+    - watch
+    - delete
+    - deletecollection
+    - bind
+# CRD IBPPeer
+- apiGroups:
+    - ibp.com
+  resources:
+    - ibppeers
+  verbs:
+    - create
+    - delete
+    - get
+    - list
+    - patch
+    - update
+    - watch
+- apiGroups:
+    - ibp.com
+  resources:
+    - ibppeers/status
+  verbs:
+    - get
+# CRD IBPOrderer
+- apiGroups:
+    - ibp.com
+  resources:
+    - ibporderers
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+    - ibp.com
+  resources:
+    - ibporderers/status
+  verbs:
+    - get
+# CRD IBPCA
+- apiGroups:
+    - ibp.com
+  resources:
+    - ibpcas
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+    - ibp.com
+  resources:
+    - ibpcas/status
+  verbs:
+    - get
+# CRD Vote
+- apiGroups:
+    - ibp.com
+  resources:
+    - votes
+  verbs:
+    - get
+    - list
+    - watch
+    - update
+    - patch
+- apiGroups:
+    - ibp.com
+  resources:
+    - votes/status
+  verbs:
+    - get

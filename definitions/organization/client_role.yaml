@@ -1,0 +1,76 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: client-role
+rules:
+- apiGroups:
+    - ""
+  resources:
+    - secret
+    - configmap
+    - pods
+    - pods/log
+  verbs:
+    - get
+    - list
+    - watch
+# CRD IBPPeer
+- apiGroups:
+  - ibp.com
+  resources:
+  - ibppeers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ibp.com
+  resources:
+  - ibppeers/status
+  verbs:
+  - get
+# CRD IBPOrderer
+- apiGroups:
+  - ibp.com
+  resources:
+  - ibporderers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ibp.com
+  resources:
+  - ibporderers/status
+  verbs:
+  - get
+# CRD IBPCA
+- apiGroups:
+  - ibp.com
+  resources:
+  - ibpcas
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ibp.com
+  resources:
+  - ibpcas/status
+  verbs:
+  - get
+# CRD Vote
+- apiGroups:
+    - ibp.com
+  resources:
+    - votes
+  verbs:
+    - get
+    - list
+    - watch
+- apiGroups:
+    - ibp.com
+  resources:
+    - votes/status
+  verbs:
+    - get

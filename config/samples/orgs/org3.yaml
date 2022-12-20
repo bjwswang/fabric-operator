@@ -1,0 +1,38 @@
+apiVersion: ibp.com/v1beta1
+kind: Organization
+metadata:
+  name: org3
+spec:
+  license:
+    accept: true
+  displayName: "test organization"
+  admin: org3admin
+  description: "test org3"
+  caSpec:
+    license:
+      accept: true
+    images:
+      caImage: hyperledgerk8s/fabric-ca
+      caTag: "1.5.5"
+      caInitImage: hyperledgerk8s/ubi-minimal
+      caInitTag: latest
+    resources:
+      ca:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+      init:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+    storage:
+      ca:
+        class: "standard"
+        size: 100M
+    version: 1.5.5

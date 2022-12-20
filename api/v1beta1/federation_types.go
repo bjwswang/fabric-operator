@@ -41,7 +41,7 @@ type FederationSpec struct {
 
 	// Policy indicates the rules that this Federation make dicisions
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Policy Policy `json:"policy,omitempty"`
+	Policy Policy `json:"policy"`
 }
 
 // Member in a Fedeartion

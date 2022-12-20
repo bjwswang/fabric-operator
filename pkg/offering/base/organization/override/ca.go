@@ -6,6 +6,9 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+
+	cav1 "github.com/IBM-Blockchain/fabric-operator/pkg/apis/ca/v1"
 )
 
 func (o *Override) CertificateAuthority(object v1.Object, ca *current.IBPCA, action resources.Action) error {
@@ -24,45 +27,20 @@ func (o *Override) CreateOrUpdateCA(instance *current.Organization, ca *current.
 	ca.Namespace = namespaced.Namespace
 	ca.Name = namespaced.Name
 
+	// merge with override
+	ca.Spec = instance.Spec.CASpec
+
 	ca.Spec.Domain = o.IngressDomain
 
 	if o.IAMEnabled {
-		// CA Image
-		ca.Spec.Images.CATag = "iam"
-
-		// CA Override
-		var caOverride *config.Config
-		caOverride, err = GetCAConfigOverride(ca)
-		if err != nil {
-			caOverride = &config.Config{}
-		}
-		caOverride.ServerConfig.CAConfig.IAM.Enabled = &o.IAMEnabled
-		caOverride.ServerConfig.CAConfig.IAM.URL = o.IAMServer
-
-		caOverride.ServerConfig.CAConfig.Organization = instance.GetName()
-
-		raw, err := util.ConvertToJsonMessage(caOverride.ServerConfig)
+		err = o.OverrideCAConfig(instance, ca)
 		if err != nil {
 			return err
 		}
-		ca.Spec.ConfigOverride.CA.Raw = *raw
-
-		// TLSCA Override
-		var tlscaOverride *config.Config
-		tlscaOverride, err = GetTLSCAConfigOverride(ca)
-		if err != nil {
-			tlscaOverride = &config.Config{}
-		}
-		tlscaOverride.ServerConfig.CAConfig.IAM.Enabled = &o.IAMEnabled
-		tlscaOverride.ServerConfig.CAConfig.IAM.URL = o.IAMServer
-
-		tlscaOverride.ServerConfig.CAConfig.Organization = instance.GetName()
-
-		raw, err = util.ConvertToJsonMessage(tlscaOverride.ServerConfig)
+		err = o.OverrideTLSCAConfig(instance, ca)
 		if err != nil {
 			return err
 		}
-		ca.Spec.ConfigOverride.TLSCA.Raw = *raw
 	}
 
 	ca.OwnerReferences = []v1.OwnerReference{
@@ -77,26 +55,64 @@ func (o *Override) CreateOrUpdateCA(instance *current.Organization, ca *current.
 	return nil
 }
 
-func GetCAConfigOverride(ca *current.IBPCA) (*config.Config, error) {
-	if ca.Spec.ConfigOverride == nil || ca.Spec.ConfigOverride.CA == nil {
-		return &config.Config{}, nil
+func (o *Override) OverrideCAConfig(instance *current.Organization, ca *current.IBPCA) error {
+	if ca.Spec.ConfigOverride == nil {
+		ca.Spec.ConfigOverride = &current.ConfigOverride{}
+	}
+
+	if ca.Spec.ConfigOverride.CA == nil {
+		ca.Spec.ConfigOverride.CA = &runtime.RawExtension{}
 	}
 
 	configOverride, err := config.ReadFrom(&ca.Spec.ConfigOverride.CA.Raw)
 	if err != nil {
-		return nil, err
+		configOverride = &config.Config{
+			ServerConfig: &cav1.ServerConfig{},
+		}
 	}
-	return configOverride, nil
+
+	configOverride.ServerConfig.CAConfig.IAM.Enabled = &o.IAMEnabled
+	configOverride.ServerConfig.CAConfig.IAM.URL = o.IAMServer
+
+	configOverride.ServerConfig.CAConfig.Organization = instance.GetName()
+
+	raw, err := util.ConvertToJsonMessage(configOverride.ServerConfig)
+	if err != nil {
+		return err
+	}
+
+	ca.Spec.ConfigOverride.CA.Raw = *raw
+
+	return nil
 }
 
-func GetTLSCAConfigOverride(ca *current.IBPCA) (*config.Config, error) {
-	if ca.Spec.ConfigOverride == nil || ca.Spec.ConfigOverride.TLSCA == nil {
-		return &config.Config{}, nil
+func (o *Override) OverrideTLSCAConfig(instance *current.Organization, ca *current.IBPCA) error {
+	if ca.Spec.ConfigOverride == nil {
+		ca.Spec.ConfigOverride = &current.ConfigOverride{}
+	}
+
+	if ca.Spec.ConfigOverride.TLSCA == nil {
+		ca.Spec.ConfigOverride.TLSCA = &runtime.RawExtension{}
 	}
 
 	configOverride, err := config.ReadFrom(&ca.Spec.ConfigOverride.TLSCA.Raw)
 	if err != nil {
-		return nil, err
+		configOverride = &config.Config{
+			ServerConfig: &cav1.ServerConfig{},
+		}
 	}
-	return configOverride, nil
+
+	configOverride.ServerConfig.CAConfig.IAM.Enabled = &o.IAMEnabled
+	configOverride.ServerConfig.CAConfig.IAM.URL = o.IAMServer
+
+	configOverride.ServerConfig.CAConfig.Organization = instance.GetName()
+
+	raw, err := util.ConvertToJsonMessage(configOverride.ServerConfig)
+	if err != nil {
+		return err
+	}
+
+	ca.Spec.ConfigOverride.TLSCA.Raw = *raw
+
+	return nil
 }

@@ -54,43 +54,261 @@ org3                 Active   16m
 
 </details>
 
-同时对应一个 Namespaced 纬度的 CRD：Organization ：
+同时对应一个 Namespaced 纬度的 CRD：Organization:
 
 <details>
 
 <summary>status 中会显示当前状态，如下:</summary>
 
 ```yaml
-apiVersion: ibp.com/v1beta1
-kind: Organization
+apiVersion: v1
+items:
+- apiVersion: ibp.com/v1beta1
+  kind: Organization
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"ibp.com/v1beta1","kind":"Organization","metadata":{"annotations":{},"name":"org1"},"spec":{"admin":"org1admin","caSpec":{"images":{"caImage":"hyperledgerk8s/fabric-ca","caInitImage":"hyperledgerk8s/ubi-minimal","caInitTag":"latest","caTag":"1.5.5-iam"},"license":{"accept":true},"resources":{"ca":{"limits":{"cpu":"100m","memory":"200M"},"requests":{"cpu":"10m","memory":"10M"}},"init":{"limits":{"cpu":"100m","memory":"200M"},"requests":{"cpu":"10m","memory":"10M"}}},"storage":{"ca":{"class":"standard","size":"100M"}},"version":"1.5.5"},"description":"test org1","displayName":"test organization","license":{"accept":true}}}
+    creationTimestamp: "2022-12-20T07:01:32Z"
+    generation: 1
+    name: org1
+    resourceVersion: "988707"
+    uid: 4fe5089a-a03e-4133-a997-f9078fdcde5b
+  spec:
+    admin: org1admin
+    caSpec:
+      images:
+        caImage: hyperledgerk8s/fabric-ca
+        caInitImage: hyperledgerk8s/ubi-minimal
+        caInitTag: latest
+        caTag: 1.5.5-iam
+      license:
+        accept: true
+      resources:
+        ca:
+          limits:
+            cpu: 100m
+            memory: 200M
+          requests:
+            cpu: 10m
+            memory: 10M
+        init:
+          limits:
+            cpu: 100m
+            memory: 200M
+          requests:
+            cpu: 10m
+            memory: 10M
+      storage:
+        ca:
+          class: standard
+          size: 100M
+      version: 1.5.5
+    description: test org1
+    displayName: test organization
+    license:
+      accept: true
+  status:
+    lastHeartbeatTime: 2022-12-20 15:02:13.497795 +0800 CST m=+455.849288746
+    reason: allPodsDeployed
+    status: "True"
+    type: Deployed
+kind: List
+metadata:
+  resourceVersion: ""
+```
+
+</details>
+
+<details>
+<summary>Organization对应IBPCA如下:</summary>
+
+```yaml
+apiVersion: v1
+items:
+- apiVersion: ibp.com/v1beta1
+  kind: IBPCA
+  metadata:
+    creationTimestamp: "2022-12-20T07:01:32Z"
+    generation: 2
+    labels:
+      app: org1
+      app.kubernetes.io/instance: fabricorganization
+      app.kubernetes.io/managed-by: fabric-operator
+      app.kubernetes.io/name: fabric
+      creator: fabric
+      helm.sh/chart: ibm-fabric
+      release: operator
+    name: org1
+    namespace: org1
+    ownerReferences:
+    - apiVersion: ibp.com/v1beta1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Organization
+      name: org1
+      uid: 4fe5089a-a03e-4133-a997-f9078fdcde5b
+    resourceVersion: "988705"
+    uid: 0f2969e5-9734-4b36-b229-7d5a32fd8bb3
+  spec:
+    action:
+      renew: {}
+    configoverride:
+      ca:
+        ca: {}
+        cfg:
+          affiliations: {}
+          identities: {}
+        cors:
+          enabled: null
+          origins: null
+        crl:
+          expiry: 0s
+        csr:
+          cn: ""
+        iam:
+          enabled: true
+          url: oidc.localho.st
+        intermediate:
+          enrollment:
+            Type: ""
+            name: ""
+          parentserver: {}
+          tls:
+            client: {}
+        ldap:
+          attribute: {}
+          tls:
+            client: {}
+        metrics: {}
+        operations:
+          metrics: {}
+          tls: {}
+        organization: org1
+        registry: {}
+        signing:
+          default: null
+          profiles: null
+        tls:
+          clientauth: {}
+      tlsca:
+        ca: {}
+        cfg:
+          affiliations: {}
+          identities: {}
+        cors:
+          enabled: null
+          origins: null
+        crl:
+          expiry: 0s
+        csr:
+          cn: ""
+        iam:
+          enabled: true
+          url: oidc.localho.st
+        intermediate:
+          enrollment:
+            Type: ""
+            name: ""
+          parentserver: {}
+          tls:
+            client: {}
+        ldap:
+          attribute: {}
+          tls:
+            client: {}
+        metrics: {}
+        operations:
+          metrics: {}
+          tls: {}
+        organization: org1
+        registry: {}
+        signing:
+          default: null
+          profiles: null
+        tls:
+          clientauth: {}
+    customNames:
+      pvc: {}
+    domain: localho.st
+    images:
+      caImage: hyperledgerk8s/fabric-ca
+      caInitImage: hyperledgerk8s/ubi-minimal
+      caInitTag: latest
+      caTag: 1.5.5-iam
+    ingress: {}
+    license:
+      accept: true
+    replicas: 1
+    resources:
+      ca:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+      init:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+    storage:
+      ca:
+        class: standard
+        size: 100M
+    version: 1.5.5
+  status:
+    lastHeartbeatTime: 2022-12-20 15:02:13.453243 +0800 CST m=+455.804737690
+    reason: allPodsDeployed
+    status: "True"
+    type: Deployed
+    version: 1.0.0
+    versions:
+      reconciled: 1.5.5
+kind: List
+metadata:
+  resourceVersion: ""
+```
+
+</details>
+
+<details>
+<summary>对应User更新如下(annotations增加bestchain相关项):</summary>
+
+
+```yaml
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
 metadata:
   annotations:
+    bestchains: '{"list":{"org1":{"organization":"org1","namespace":"org1","hf.EnrollmentID":"org1admin","hf.Type":"admin","hf.Registrar.Roles":"*","hf.Registrar.DelegateRoles":"*","hf.Revoker":"*","hf.IntermediateCA":"true","hf.GenCRL":"true","hf.Registrar.Attributes":"*"}},"lastAppliedTime":"2022-12-19
+      18:23:42.831452 +0800 CST m=+17994.978534504"}'
     kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"ibp.com/v1beta1","kind":"Organization","metadata":{"annotations":{},"name":"org1","namespace":"org1"},"spec":{"admin":"orgadmin","adminSecret":"org-admin-secret","caReference":{"ca":"ca","name":"org-ca"},"description":"test org","displayName":"test organization","license":{"accept":true}}}
-  creationTimestamp: "2022-12-08T04:12:00Z"
+      {"apiVersion":"iam.tenxcloud.com/v1alpha1","kind":"User","metadata":{"annotations":{},"labels":{"t7d.io.username":"org1admin"},"name":"org1admin"},"spec":{"description":"org1admin 用户信息的描述","email":"org1admin@tenxcloud.com","groups":["observability","system:nodes","system:masters","resource-reader","iam.tenxcloud.com","observability"],"name":"org1admin","password":"$2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2","phone":"18890901212","role":"admin"}}
+  creationTimestamp: "2022-12-19T10:23:38Z"
   generation: 1
-  name: org1
-  namespace: org1
-  resourceVersion: "1555"
-  uid: 6848c469-1b42-4161-8138-f2c803d5fc73
+  labels:
+    t7d.io.username: org1admin
+  name: org1admin
+  resourceVersion: "900438"
+  uid: 9c08d919-9c35-4c5b-80f5-ee658d91f197
 spec:
-  admin: orgadmin
-  adminSecret: org-admin-secret
-  caReference:
-    ca: ca
-    name: org-ca
-  description: test org
-  displayName: test organization
-  license:
-    accept: true
-status:
-  errorcode: 28
-  lastHeartbeatTime: 2022-12-08 12:13:00.644114 +0800 CST m=+1.119948975
-  message: 'Code: 28 - failed to initialize organization: failed to get ca connection
-    profile: ConfigMap "org-ca-connection-profile" not found'
-  reason: errorOccurredDuringReconcile
-  status: "True"
-  type: Error
+  description: org1admin 用户信息的描述
+  email: org1admin@tenxcloud.com
+  groups:
+  - observability
+  - system:nodes
+  - system:masters
+  - resource-reader
+  - iam.tenxcloud.com
+  - observability
+  name: org1admin
+  password: $2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2
+  phone: "18890901212"
+  role: admin
 ```
 
 </details>

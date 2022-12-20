@@ -191,13 +191,21 @@ func (r *ReconcileOrganization) PredictFederationUpdate(oldFed *current.Federati
 }
 
 func (r *ReconcileOrganization) PredictCAUpdate(oldCA *current.IBPCA, newCA *current.IBPCA) bool {
-	if newCA.Status.CRStatus.Type == current.Deployed {
-		organization := newCA.GetOrganization()
-		err := r.SetStatusToDeployed(organization)
-		if err != nil {
-			log.Error(err, fmt.Sprintf("set organization %s to `Deployed`", organization.Name))
-		}
+	var err error
+	org := &current.Organization{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Name: newCA.GetOrganization().Name,
+	}, org)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("failed to get organization %s`", newCA.GetOrganization().Name))
+		return false
 	}
+	// sync to CAStatus
+	err = r.SetStatus(org, &newCA.Status.CRStatus)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("set organization %s to %s", org.GetName(), newCA.Status.Type))
+	}
+
 	return false
 }
 func (r *ReconcileOrganization) DeleteFunc(e event.DeleteEvent) bool {
@@ -290,7 +298,7 @@ func (r *ReconcileOrganization) AddFed(m current.Member, federation *current.Fed
 	return nil
 }
 
-func (r *ReconcileOrganization) SetStatusToDeployed(organization current.NamespacedName) error {
+func (r *ReconcileOrganization) UpdateStatus(organization current.NamespacedName, newStatus current.CRStatus) error {
 	var err error
 	org := &current.Organization{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: organization.Name}, org)
@@ -299,9 +307,9 @@ func (r *ReconcileOrganization) SetStatusToDeployed(organization current.Namespa
 	}
 
 	status := org.Status.CRStatus
-	status.Type = current.Deployed
+	status.Type = newStatus.Type
 	status.Status = current.True
-	status.Reason = "IBPCA Deployed"
+	status.Reason = newStatus.Reason
 	status.LastHeartbeatTime = time.Now().String()
 
 	org.Status = current.OrganizationStatus{

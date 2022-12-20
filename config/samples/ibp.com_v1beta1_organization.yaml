@@ -8,3 +8,31 @@ spec:
   displayName: "test organization"
   admin: org1admin
   description: "test org1"
+  caSpec:
+    license:
+      accept: true
+    images:
+      caImage: hyperledgerk8s/fabric-ca
+      caTag: "1.5.5-iam"
+      caInitImage: hyperledgerk8s/ubi-minimal
+      caInitTag: latest
+    resources:
+      ca:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+      init:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+    storage:
+      ca:
+        class: "standard"
+        size: 100M
+    version: 1.5.5

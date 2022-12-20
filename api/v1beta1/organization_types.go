@@ -42,7 +42,11 @@ type OrganizationSpec struct {
 
 	// Admin is the account with `Admin` role both in kubernets and in CA
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Admin string `json:"admin,omitempty"`
+	Admin string `json:"admin"`
+
+	// CASpec is the configurations of organization's related Certificate Authority
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+	CASpec IBPCASpec `json:"caSpec,omitempty"`
 }
 
 // OrganizationStatus defines the observed state of Organization

@@ -91,13 +91,13 @@ type ProposalSpec struct {
 
 type ProposalSource struct {
 	// +optional
-	CreateFederation *CreateFederation `json:"createFederation"`
+	CreateFederation *CreateFederation `json:"createFederation,omitempty"`
 	// +optional
-	AddMember *AddMember `json:"addMember"`
+	AddMember *AddMember `json:"addMember,omitempty"`
 	// +optional
-	DeleteMember *DeleteMember `json:"deleteMember"`
+	DeleteMember *DeleteMember `json:"deleteMember,omitempty"`
 	// +optional
-	DissolveFederation *DissolveFederation `json:"dissolveFederation"`
+	DissolveFederation *DissolveFederation `json:"dissolveFederation,omitempty"`
 }
 
 type AddMember struct {

@@ -44,7 +44,7 @@ type VoteSpec struct {
 	ProposalName     string `json:"proposalName"`
 	OrganizationName string `json:"organizationName"`
 	// +optional
-	Decision *bool `json:"decision"`
+	Decision *bool `json:"decision,omitempty"`
 	// +optional
 	Description string `json:"description"`
 }

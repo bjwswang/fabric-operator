@@ -215,6 +215,13 @@ func OperatorWithSignal(operatorCfg *oconfig.Config, signalHandler context.Conte
 			os.Exit(1)
 		}
 
+		// Setup all Webhook
+		go func() {
+			if err := ibpv1beta1.AddWebhooks(mgr, log); err != nil {
+				log.Error(err, "setup webhook err, exit")
+				os.Exit(1)
+			}
+		}()
 		// Setup all Controllers
 		if err := controller.AddToManager(mgr, operatorCfg); err != nil {
 			log.Error(err, "")

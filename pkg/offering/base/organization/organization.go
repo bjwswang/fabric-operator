@@ -31,6 +31,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/organization/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/IBM-Blockchain/fabric-operator/version"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -260,18 +261,18 @@ func (organization *BaseOrganization) CreateNamespace(instance *current.Organiza
 func (organization *BaseOrganization) PatchAnnotations(instance *current.Organization) error {
 	var err error
 
-	iamuser := &iam.User{}
-	err = organization.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Admin}, iamuser)
+	admin := &iam.User{}
+	err = organization.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Admin}, admin)
 	if err != nil {
 		return err
 	}
 
-	err = SetAdminAnnotations(iamuser, instance)
+	err = SetAdminAnnotations(admin, instance)
 	if err != nil {
 		return err
 	}
 
-	err = organization.Client.Patch(context.TODO(), iamuser, nil, controllerclient.PatchOption{
+	err = organization.Client.Patch(context.TODO(), admin, nil, controllerclient.PatchOption{
 		Resilient: &controllerclient.ResilientPatch{
 			Retry:    2,
 			Into:     &iam.User{},
@@ -286,20 +287,18 @@ func (organization *BaseOrganization) PatchAnnotations(instance *current.Organiz
 	return nil
 }
 
-func SetAdminAnnotations(iamuser *iam.User, instance *current.Organization) error {
+func SetAdminAnnotations(admin *iam.User, instance *current.Organization) error {
 	var err error
 
-	annotationList := &current.BlockchainAnnotationList{
-		List: make(map[string]current.BlockchainAnnotation),
-	}
-	err = annotationList.Unmarshal([]byte(iamuser.Annotations[current.BlockchainAnnotationKey]))
+	// retrieve existing annotation list
+	annotationList := user.NewBlockchainAnnotationList()
+	err = annotationList.Unmarshal([]byte(admin.Annotations[user.BlockchainAnnotationKey]))
 	if err != nil {
 		return err
 	}
-
-	adminAnnotation := instance.GetAdminAnnotations()
-
-	_, err = annotationList.SetOrUpdateAnnotation(instance.GetAnnotationKey(), adminAnnotation)
+	// set admin annotation to current admin User
+	adminAnnotation := user.NewBlockchainAnnotation(instance.GetName(), user.BuildAdminID(admin.Name))
+	err = annotationList.SetAnnotation(instance.GetName(), *adminAnnotation)
 	if err != nil {
 		return err
 	}
@@ -309,7 +308,7 @@ func SetAdminAnnotations(iamuser *iam.User, instance *current.Organization) erro
 		return err
 	}
 
-	iamuser.Annotations[current.BlockchainAnnotationKey] = string(raw)
+	admin.Annotations[user.BlockchainAnnotationKey] = string(raw)
 
 	return nil
 }

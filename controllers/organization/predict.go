@@ -27,6 +27,7 @@ import (
 	iam "github.com/IBM-Blockchain/fabric-operator/api/iam/v1alpha1"
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/go-test/deep"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -152,7 +153,7 @@ func (r *ReconcileOrganization) PredictOrganizationUpdate(oldOrg *current.Organi
 			} else {
 				err = r.DeleteBlockchainAnnotations(oldOrg, oldAdminUser)
 				if err != nil {
-					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", oldOrg.GetAnnotationKey(), oldOrg.Spec.Admin))
+					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", oldOrg.GetName(), oldOrg.Spec.Admin))
 				}
 			}
 		}
@@ -228,12 +229,12 @@ func (r *ReconcileOrganization) PredictOrganizationDelete(organization *current.
 	if r.Config.OrganizationInitConfig.IAMEnabled {
 		userList, err := r.GetIAMUsers(organization.GetName())
 		if err != nil {
-			log.Error(err, fmt.Sprintf("failed to get iam users with organization annotation key %s", organization.GetAnnotationKey()))
+			log.Error(err, fmt.Sprintf("failed to get iam users with organization annotation key %s", organization.GetName()))
 		} else {
 			for _, iamuser := range userList.Items {
 				err = r.DeleteBlockchainAnnotations(organization, &iamuser)
 				if err != nil {
-					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", organization.GetAnnotationKey(), iamuser.GetName()))
+					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", organization.GetName(), iamuser.GetName()))
 				}
 			}
 		}
@@ -323,6 +324,9 @@ func (r *ReconcileOrganization) UpdateStatus(organization current.NamespacedName
 			Strategy: client.MergeFrom,
 		},
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -384,16 +388,13 @@ func (r *ReconcileOrganization) GetIAMUsers(annotationKey string) (*iam.UserList
 func (r *ReconcileOrganization) DeleteBlockchainAnnotations(instance *current.Organization, iamuser *iam.User) error {
 	var err error
 
-	annotationList := &current.BlockchainAnnotationList{
-		List: make(map[string]current.BlockchainAnnotation),
-	}
-
-	err = annotationList.Unmarshal([]byte(iamuser.Annotations[current.BlockchainAnnotationKey]))
+	annotationList := user.NewBlockchainAnnotationList()
+	err = annotationList.Unmarshal([]byte(iamuser.Annotations[user.BlockchainAnnotationKey]))
 	if err != nil {
 		return err
 	}
 
-	err = annotationList.DeleteAnnotation(instance.GetAnnotationKey())
+	err = annotationList.DeleteAnnotation(instance.GetName())
 	if err != nil {
 		return err
 	}
@@ -403,7 +404,7 @@ func (r *ReconcileOrganization) DeleteBlockchainAnnotations(instance *current.Or
 		return err
 	}
 
-	iamuser.Annotations[current.BlockchainAnnotationKey] = string(raw)
+	iamuser.Annotations[user.BlockchainAnnotationKey] = string(raw)
 
 	err = r.client.Patch(context.TODO(), iamuser, nil, k8sclient.PatchOption{
 		Resilient: &k8sclient.ResilientPatch{

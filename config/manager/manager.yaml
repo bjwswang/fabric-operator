@@ -46,35 +46,29 @@ spec:
     spec:
       containers:
         - command:
-            - /manager
-          args:
-            - --enable-leader-election
-          image: controller:latest
-          name: manager
-          resources:
-            limits:
-              cpu: 100m
-              memory: 30Mi
-            requests:
-              cpu: 100m
-              memory: 20Mi
-        - command:
             - ibp-operator
           env:
             - name: WATCH_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
             - name: POD_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             - name: OPERATOR_NAME
-              value: operator
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: CLUSTERTYPE
-              value: OPENSHIFT
-          image: todo:update
-          imagePullPolicy: Always
+              value: K8S
+            - name: OPERATOR_INGRESS_DOMAIN
+              value: 172.22.50.142.nip.io
+            - name: OPERATOR_IAM_SERVER
+              value: https://oidc-server.u4a-system.svc
+          image: controller:latest
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 5
             initialDelaySeconds: 10
@@ -118,7 +112,7 @@ spec:
                     operator: In
                     values:
                       - amd64
-                      - s390x
+                      - arm64
       hostIPC: false
       hostNetwork: false
       hostPID: false

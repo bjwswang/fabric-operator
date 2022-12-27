@@ -49,28 +49,6 @@ func (organization *Organization) GetRoleBinding(role string) string {
 	return organization.GetUserNamespace() + ":" + role + "-binding"
 }
 
-func (organization *Organization) GetAnnotationKey() string {
-	return organization.GetName()
-}
-
-func (organization *Organization) GetAdminAnnotations() BlockchainAnnotation {
-	return BlockchainAnnotation{
-		Organization: organization.GetName(),
-		Namespace:    organization.GetUserNamespace(),
-
-		// Enrollment parts
-		EnrollmentID:           organization.Spec.Admin,
-		Type:                   "admin",
-		Affiliation:            "",
-		RegistrarRoles:         "*",
-		RegistrarDelegateRoles: "*",
-		Revoker:                "*",
-		IntermediateCA:         "true",
-		GenCRL:                 "true",
-		RegistrarAttributes:    "*",
-	}
-}
-
 func (organization *Organization) HasDisplayName() bool {
 	return organization.Spec.DisplayName != ""
 }

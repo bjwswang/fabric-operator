@@ -288,7 +288,7 @@ func (organization *BaseOrganization) ReconcileUsers(instance *current.Organizat
 				return err
 			}
 		} else {
-			err = user.Reconcile(organization.Client, targetUser, instance.GetName(), user.ADMIN, user.Add)
+			err = user.Reconcile(organization.Client, targetUser, instance.GetName(), "", user.ADMIN, user.Add)
 			if err != nil {
 				return err
 			}
@@ -298,7 +298,7 @@ func (organization *BaseOrganization) ReconcileUsers(instance *current.Organizat
 	if update.ClientsUpdated() && organization.Config.OrganizationInitConfig.IAMEnabled {
 		// reconcile user set
 		for _, c := range instance.Spec.Clients {
-			err = user.Reconcile(organization.Client, c, instance.GetName(), user.CLIENT, user.Add)
+			err = user.Reconcile(organization.Client, c, instance.GetName(), "", user.CLIENT, user.Add)
 			if err != nil {
 				return err
 			}
@@ -308,7 +308,7 @@ func (organization *BaseOrganization) ReconcileUsers(instance *current.Organizat
 		if update.ClientsRemoved() != "" {
 			removed := strings.Split(update.ClientsRemoved(), ",")
 			for _, c := range removed {
-				err = user.Reconcile(organization.Client, c, instance.GetName(), user.CLIENT, user.Remove)
+				err = user.Reconcile(organization.Client, c, instance.GetName(), "", user.CLIENT, user.Remove)
 				if err != nil {
 					return err
 				}

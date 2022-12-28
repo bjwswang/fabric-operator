@@ -18,4 +18,11 @@
 
 package override
 
-type Override struct{}
+import (
+	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+)
+
+type Override struct {
+	Client        controllerclient.Client
+	IngressDomain string
+}

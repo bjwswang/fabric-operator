@@ -29,6 +29,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/ibpca"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/ingress"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/ingressv1beta1"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/orderer"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/orderernode"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/pv"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/pvc"
@@ -220,5 +221,15 @@ func (m *Manager) CreateOrderernodeManager(suffix string, oFunc func(v1.Object, 
 		OrdererNodeFile: file,
 		LabelsFunc:      labelsFunc,
 		OverrideFunc:    oFunc,
+	}
+}
+
+func (m *Manager) CreateOrdererManager(suffix string, oFunc func(v1.Object, *current.IBPOrderer, resources.Action) error, labelsFunc func(v1.Object) map[string]string, file string) resources.Manager {
+	return &orderer.Manager{
+		Client:       m.Client,
+		Scheme:       m.Scheme,
+		OrdererFile:  file,
+		LabelsFunc:   labelsFunc,
+		OverrideFunc: oFunc,
 	}
 }

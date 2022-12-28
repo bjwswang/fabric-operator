@@ -33,13 +33,13 @@ type NetworkSpec struct {
 	Federation string `json:"federation,omitempty"`
 
 	// Members which this network contains
-	// (DO NOT EDIT)Cloned automatically from Fderation.Spec.Members
+	// (DO NOT EDIT)Cloned automatically from Federation.Spec.Members
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	Members []Member `json:"members,omitempty"`
 
-	// Consensus cluster(IBPOrderer) which this network utilizes
+	// OrderSpec is the configurations of network's related Order
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Consensus NamespacedName `json:"consensus,omitempty"`
+	OrderSpec IBPOrdererSpec `json:"orderSpec,omitempty"`
 }
 
 // NetworkStatus defines the observed state of Network

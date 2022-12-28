@@ -32,5 +32,9 @@ func AddWebhooks(mgr ctrl.Manager, setupLog logr.Logger) (err error) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Proposal")
 		return err
 	}
+	if err = (&Network{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Network")
+		return err
+	}
 	return nil
 }

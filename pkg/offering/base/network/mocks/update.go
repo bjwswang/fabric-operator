@@ -18,6 +18,26 @@ type Update struct {
 	memberUpdatedReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	OrdererCreateStub        func() bool
+	ordererCreateMutex       sync.RWMutex
+	ordererCreateArgsForCall []struct {
+	}
+	ordererCreateReturns struct {
+		result1 bool
+	}
+	ordererCreateReturnsOnCall map[int]struct {
+		result1 bool
+	}
+	OrdererRemoveStub        func() bool
+	ordererRemoveMutex       sync.RWMutex
+	ordererRemoveArgsForCall []struct {
+	}
+	ordererRemoveReturns struct {
+		result1 bool
+	}
+	ordererRemoveReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	SpecUpdatedStub        func() bool
 	specUpdatedMutex       sync.RWMutex
 	specUpdatedArgsForCall []struct {
@@ -37,15 +57,16 @@ func (fake *Update) MemberUpdated() bool {
 	ret, specificReturn := fake.memberUpdatedReturnsOnCall[len(fake.memberUpdatedArgsForCall)]
 	fake.memberUpdatedArgsForCall = append(fake.memberUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.MemberUpdatedStub
+	fakeReturns := fake.memberUpdatedReturns
 	fake.recordInvocation("MemberUpdated", []interface{}{})
 	fake.memberUpdatedMutex.Unlock()
-	if fake.MemberUpdatedStub != nil {
-		return fake.MemberUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.memberUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -84,20 +105,127 @@ func (fake *Update) MemberUpdatedReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
+func (fake *Update) OrdererCreate() bool {
+	fake.ordererCreateMutex.Lock()
+	ret, specificReturn := fake.ordererCreateReturnsOnCall[len(fake.ordererCreateArgsForCall)]
+	fake.ordererCreateArgsForCall = append(fake.ordererCreateArgsForCall, struct {
+	}{})
+	stub := fake.OrdererCreateStub
+	fakeReturns := fake.ordererCreateReturns
+	fake.recordInvocation("OrdererCreate", []interface{}{})
+	fake.ordererCreateMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *Update) OrdererCreateCallCount() int {
+	fake.ordererCreateMutex.RLock()
+	defer fake.ordererCreateMutex.RUnlock()
+	return len(fake.ordererCreateArgsForCall)
+}
+
+func (fake *Update) OrdererCreateCalls(stub func() bool) {
+	fake.ordererCreateMutex.Lock()
+	defer fake.ordererCreateMutex.Unlock()
+	fake.OrdererCreateStub = stub
+}
+
+func (fake *Update) OrdererCreateReturns(result1 bool) {
+	fake.ordererCreateMutex.Lock()
+	defer fake.ordererCreateMutex.Unlock()
+	fake.OrdererCreateStub = nil
+	fake.ordererCreateReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *Update) OrdererCreateReturnsOnCall(i int, result1 bool) {
+	fake.ordererCreateMutex.Lock()
+	defer fake.ordererCreateMutex.Unlock()
+	fake.OrdererCreateStub = nil
+	if fake.ordererCreateReturnsOnCall == nil {
+		fake.ordererCreateReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.ordererCreateReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *Update) OrdererRemove() bool {
+	fake.ordererRemoveMutex.Lock()
+	ret, specificReturn := fake.ordererRemoveReturnsOnCall[len(fake.ordererRemoveArgsForCall)]
+	fake.ordererRemoveArgsForCall = append(fake.ordererRemoveArgsForCall, struct {
+	}{})
+	stub := fake.OrdererRemoveStub
+	fakeReturns := fake.ordererRemoveReturns
+	fake.recordInvocation("OrdererRemove", []interface{}{})
+	fake.ordererRemoveMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *Update) OrdererRemoveCallCount() int {
+	fake.ordererRemoveMutex.RLock()
+	defer fake.ordererRemoveMutex.RUnlock()
+	return len(fake.ordererRemoveArgsForCall)
+}
+
+func (fake *Update) OrdererRemoveCalls(stub func() bool) {
+	fake.ordererRemoveMutex.Lock()
+	defer fake.ordererRemoveMutex.Unlock()
+	fake.OrdererRemoveStub = stub
+}
+
+func (fake *Update) OrdererRemoveReturns(result1 bool) {
+	fake.ordererRemoveMutex.Lock()
+	defer fake.ordererRemoveMutex.Unlock()
+	fake.OrdererRemoveStub = nil
+	fake.ordererRemoveReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *Update) OrdererRemoveReturnsOnCall(i int, result1 bool) {
+	fake.ordererRemoveMutex.Lock()
+	defer fake.ordererRemoveMutex.Unlock()
+	fake.OrdererRemoveStub = nil
+	if fake.ordererRemoveReturnsOnCall == nil {
+		fake.ordererRemoveReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.ordererRemoveReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *Update) SpecUpdated() bool {
 	fake.specUpdatedMutex.Lock()
 	ret, specificReturn := fake.specUpdatedReturnsOnCall[len(fake.specUpdatedArgsForCall)]
 	fake.specUpdatedArgsForCall = append(fake.specUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.SpecUpdatedStub
+	fakeReturns := fake.specUpdatedReturns
 	fake.recordInvocation("SpecUpdated", []interface{}{})
 	fake.specUpdatedMutex.Unlock()
-	if fake.SpecUpdatedStub != nil {
-		return fake.SpecUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.specUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -141,6 +269,10 @@ func (fake *Update) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.memberUpdatedMutex.RLock()
 	defer fake.memberUpdatedMutex.RUnlock()
+	fake.ordererCreateMutex.RLock()
+	defer fake.ordererCreateMutex.RUnlock()
+	fake.ordererRemoveMutex.RLock()
+	defer fake.ordererRemoveMutex.RUnlock()
 	fake.specUpdatedMutex.RLock()
 	defer fake.specUpdatedMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

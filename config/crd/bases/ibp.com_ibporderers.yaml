@@ -893,7 +893,6 @@ spec:
                 type: string
             required:
             - license
-            - version
             type: object
           status:
             description: IBPOrdererStatus defines the observed state of IBPOrderer

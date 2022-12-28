@@ -23,6 +23,7 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/controllers/mocks"
+	mgrmocks "github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/mocks"
 	basenet "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network"
 	basenetmocks "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network/mocks"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
@@ -41,8 +42,9 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 
 		reconciler *basenet.BaseNetwork
 
-		instance *current.Network
-		update   *basenetmocks.Update
+		instance       *current.Network
+		update         *basenetmocks.Update
+		ordererManager *mgrmocks.ResourceManager
 	)
 	BeforeEach(func() {
 		update = &basenetmocks.Update{
@@ -52,10 +54,12 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 
 		client = &mocks.Client{}
 		o = &basenetmocks.Override{}
+		ordererManager = &mgrmocks.ResourceManager{}
 		reconciler = &basenet.BaseNetwork{
-			Client:      client,
-			Override:    o,
-			RBACManager: rbac.NewRBACManager(client, nil),
+			Client:         client,
+			Override:       o,
+			RBACManager:    rbac.NewRBACManager(client, nil),
+			OrdererManager: ordererManager,
 		}
 
 	})
@@ -67,19 +71,21 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 					Namespace: "org1",
 				},
 				Spec: current.NetworkSpec{
-					Consensus:  current.NamespacedName{Name: "ibp-orderer", Namespace: "org1"},
+					OrderSpec: current.IBPOrdererSpec{
+						License: current.License{Accept: true},
+					},
 					Federation: "federation-sample",
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: false},
+						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
 						{NamespacedName: current.NamespacedName{Name: "org3", Namespace: "org3"}, Initiator: false},
 					},
 				},
 			}
 		})
-		It("failed due to missing consensus", func() {
-			instance.Spec.Consensus = current.NamespacedName{}
+		It("failed due to missing orderSpec", func() {
+			instance.Spec.OrderSpec = current.IBPOrdererSpec{}
 			err = reconciler.PreReconcileChecks(instance, update)
-			Expect(err.Error()).To(ContainSubstring("consensus is empty"))
+			Expect(err.Error()).To(ContainSubstring("network's order is empty"))
 		})
 		It("failed due to missing federation", func() {
 			instance.Spec.Federation = ""

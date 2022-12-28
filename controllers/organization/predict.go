@@ -146,7 +146,7 @@ func (r *ReconcileOrganization) DeleteFunc(e event.DeleteEvent) bool {
 		} else {
 			for i, iamuser := range userList.Items {
 				idType := iamuser.Labels[user.OrganizationLabel.String(organization.Name)]
-				_, err = user.ReconcileRemove(&userList.Items[i], organization.Name, user.IDType(idType))
+				_, err = user.ReconcileRemove(&userList.Items[i], organization.Name, "", user.IDType(idType))
 				if err != nil {
 					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", organization.GetName(), iamuser.GetName()))
 				}

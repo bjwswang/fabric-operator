@@ -39,7 +39,7 @@ const (
 // Reconcile targetUser by `organization` and its `id type`
 // - set blockchain annotation
 // - add blockchain organization label
-func Reconcile(c controllerclient.Client, targetUser string, organization string, idType IDType, action UnaryAction) error {
+func Reconcile(c controllerclient.Client, targetUser string, organization, orderer string, idType IDType, action UnaryAction) error {
 	var err error
 
 	u := &iam.User{}
@@ -50,9 +50,9 @@ func Reconcile(c controllerclient.Client, targetUser string, organization string
 
 	switch action {
 	case Add:
-		err = ReconcileAdd(u, organization, idType)
+		err = ReconcileAdd(u, organization, orderer, idType)
 	case Remove:
-		_, err = ReconcileRemove(u, organization, idType)
+		_, err = ReconcileRemove(u, organization, orderer, idType)
 	}
 
 	if err != nil {
@@ -67,7 +67,7 @@ func Reconcile(c controllerclient.Client, targetUser string, organization string
 	return nil
 }
 
-func ReconcileAdd(u *iam.User, organization string, idType IDType) error {
+func ReconcileAdd(u *iam.User, organization, orderer string, idType IDType) error {
 	var err error
 
 	// add a organization label to targetUser
@@ -80,14 +80,25 @@ func ReconcileAdd(u *iam.User, organization string, idType IDType) error {
 		return err
 	}
 	var id ID
-	if idType == CLIENT {
+	switch idType {
+	case CLIENT:
 		id = BuildAdminID(u.GetName())
-	} else {
+	case ORDERER:
+		id = BuildOrdererID(orderer)
+	default:
 		id = BuildClientID(u.GetName())
 	}
 
-	annotation := NewBlockchainAnnotation(organization, id)
-	err = annotationList.SetAnnotation(organization, *annotation)
+	var annotation BlockchainAnnotation
+	annotation, err = annotationList.GetAnnotation(organization)
+	if errors.Is(err, ErrAnnotationNotExist) {
+		annotation = *NewBlockchainAnnotation(organization, id)
+	}
+	err = annotation.SetID(id)
+	if err != nil {
+		return err
+	}
+	err = annotationList.SetAnnotation(organization, annotation)
 	if err != nil {
 		return err
 	}
@@ -103,7 +114,7 @@ func ReconcileAdd(u *iam.User, organization string, idType IDType) error {
 }
 
 // ReconcileRemove remove organization's organization from User
-func ReconcileRemove(u *iam.User, organization string, idType IDType) (BlockchainAnnotation, error) {
+func ReconcileRemove(u *iam.User, organization, orderer string, idType IDType) (BlockchainAnnotation, error) {
 	var err error
 
 	// remove organization labels
@@ -152,7 +163,7 @@ func ReconcileTransfer(c controllerclient.Client, originUser string, targetUser 
 		return err
 	}
 
-	annotation, err := ReconcileRemove(origin, organization, ADMIN)
+	annotation, err := ReconcileRemove(origin, organization, "", ADMIN)
 	if err != nil {
 		return err
 	}

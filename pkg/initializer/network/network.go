@@ -18,4 +18,6 @@
 
 package network
 
-type Config struct{}
+type Config struct {
+	OrdererFile string
+}

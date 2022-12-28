@@ -4,17 +4,98 @@ package mocks
 import (
 	"sync"
 
+	"github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Override struct {
+	OrdererStub        func(v1.Object, *v1beta1.IBPOrderer, resources.Action) error
+	ordererMutex       sync.RWMutex
+	ordererArgsForCall []struct {
+		arg1 v1.Object
+		arg2 *v1beta1.IBPOrderer
+		arg3 resources.Action
+	}
+	ordererReturns struct {
+		result1 error
+	}
+	ordererReturnsOnCall map[int]struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *Override) Orderer(arg1 v1.Object, arg2 *v1beta1.IBPOrderer, arg3 resources.Action) error {
+	fake.ordererMutex.Lock()
+	ret, specificReturn := fake.ordererReturnsOnCall[len(fake.ordererArgsForCall)]
+	fake.ordererArgsForCall = append(fake.ordererArgsForCall, struct {
+		arg1 v1.Object
+		arg2 *v1beta1.IBPOrderer
+		arg3 resources.Action
+	}{arg1, arg2, arg3})
+	stub := fake.OrdererStub
+	fakeReturns := fake.ordererReturns
+	fake.recordInvocation("Orderer", []interface{}{arg1, arg2, arg3})
+	fake.ordererMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *Override) OrdererCallCount() int {
+	fake.ordererMutex.RLock()
+	defer fake.ordererMutex.RUnlock()
+	return len(fake.ordererArgsForCall)
+}
+
+func (fake *Override) OrdererCalls(stub func(v1.Object, *v1beta1.IBPOrderer, resources.Action) error) {
+	fake.ordererMutex.Lock()
+	defer fake.ordererMutex.Unlock()
+	fake.OrdererStub = stub
+}
+
+func (fake *Override) OrdererArgsForCall(i int) (v1.Object, *v1beta1.IBPOrderer, resources.Action) {
+	fake.ordererMutex.RLock()
+	defer fake.ordererMutex.RUnlock()
+	argsForCall := fake.ordererArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *Override) OrdererReturns(result1 error) {
+	fake.ordererMutex.Lock()
+	defer fake.ordererMutex.Unlock()
+	fake.OrdererStub = nil
+	fake.ordererReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *Override) OrdererReturnsOnCall(i int, result1 error) {
+	fake.ordererMutex.Lock()
+	defer fake.ordererMutex.Unlock()
+	fake.OrdererStub = nil
+	if fake.ordererReturnsOnCall == nil {
+		fake.ordererReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.ordererReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *Override) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.ordererMutex.RLock()
+	defer fake.ordererMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

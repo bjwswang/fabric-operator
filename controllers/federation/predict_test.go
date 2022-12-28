@@ -269,7 +269,7 @@ var _ = Describe("Predict federation events", func() {
 				Spec: current.NetworkSpec{
 					Federation: federation.GetName(),
 					Members:    federation.GetMembers(),
-					Consensus:  current.NamespacedName{Name: "ibporderer-sample", Namespace: "org1"},
+					OrderSpec:  current.IBPOrdererSpec{},
 				},
 			}
 		})

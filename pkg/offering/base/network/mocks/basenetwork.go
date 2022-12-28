@@ -83,15 +83,16 @@ func (fake *Network) CheckStates(arg1 *v1beta1.Network) (common.Result, error) {
 	fake.checkStatesArgsForCall = append(fake.checkStatesArgsForCall, struct {
 		arg1 *v1beta1.Network
 	}{arg1})
+	stub := fake.CheckStatesStub
+	fakeReturns := fake.checkStatesReturns
 	fake.recordInvocation("CheckStates", []interface{}{arg1})
 	fake.checkStatesMutex.Unlock()
-	if fake.CheckStatesStub != nil {
-		return fake.CheckStatesStub(arg1)
+	if stub != nil {
+		return stub(arg1)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.checkStatesReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -147,15 +148,16 @@ func (fake *Network) Initialize(arg1 *v1beta1.Network, arg2 network.Update) erro
 		arg1 *v1beta1.Network
 		arg2 network.Update
 	}{arg1, arg2})
+	stub := fake.InitializeStub
+	fakeReturns := fake.initializeReturns
 	fake.recordInvocation("Initialize", []interface{}{arg1, arg2})
 	fake.initializeMutex.Unlock()
-	if fake.InitializeStub != nil {
-		return fake.InitializeStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.initializeReturns
 	return fakeReturns.result1
 }
 
@@ -208,15 +210,16 @@ func (fake *Network) PreReconcileChecks(arg1 *v1beta1.Network, arg2 network.Upda
 		arg1 *v1beta1.Network
 		arg2 network.Update
 	}{arg1, arg2})
+	stub := fake.PreReconcileChecksStub
+	fakeReturns := fake.preReconcileChecksReturns
 	fake.recordInvocation("PreReconcileChecks", []interface{}{arg1, arg2})
 	fake.preReconcileChecksMutex.Unlock()
-	if fake.PreReconcileChecksStub != nil {
-		return fake.PreReconcileChecksStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.preReconcileChecksReturns
 	return fakeReturns.result1
 }
 
@@ -269,15 +272,16 @@ func (fake *Network) Reconcile(arg1 *v1beta1.Network, arg2 network.Update) (comm
 		arg1 *v1beta1.Network
 		arg2 network.Update
 	}{arg1, arg2})
+	stub := fake.ReconcileStub
+	fakeReturns := fake.reconcileReturns
 	fake.recordInvocation("Reconcile", []interface{}{arg1, arg2})
 	fake.reconcileMutex.Unlock()
-	if fake.ReconcileStub != nil {
-		return fake.ReconcileStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.reconcileReturns
 	return fakeReturns.result1, fakeReturns.result2
 }
 
@@ -333,15 +337,16 @@ func (fake *Network) ReconcileManagers(arg1 *v1beta1.Network, arg2 network.Updat
 		arg1 *v1beta1.Network
 		arg2 network.Update
 	}{arg1, arg2})
+	stub := fake.ReconcileManagersStub
+	fakeReturns := fake.reconcileManagersReturns
 	fake.recordInvocation("ReconcileManagers", []interface{}{arg1, arg2})
 	fake.reconcileManagersMutex.Unlock()
-	if fake.ReconcileManagersStub != nil {
-		return fake.ReconcileManagersStub(arg1, arg2)
+	if stub != nil {
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.reconcileManagersReturns
 	return fakeReturns.result1
 }
 

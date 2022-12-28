@@ -23,11 +23,9 @@ import (
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	basenet "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network"
-	baseoverride "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network/override"
+	basenetworkoverride "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/k8s/network/override"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -39,7 +37,10 @@ type Network struct {
 
 func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config) *Network {
 	o := &override.Override{
-		BaseOverride: &baseoverride.Override{},
+		Override: basenetworkoverride.Override{
+			Client:        client,
+			IngressDomain: config.Operator.IngressDomain,
+		},
 	}
 	network := &Network{
 		BaseNetwork: basenet.New(client, scheme, config, o),
@@ -48,21 +49,7 @@ func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config)
 }
 
 func (network *Network) Reconcile(instance *current.Network, update basenet.Update) (common.Result, error) {
-	var err error
-
-	if err = network.PreReconcileChecks(instance, update); err != nil {
-		return common.Result{}, errors.Wrap(err, "failed on prereconcile checks")
-	}
-
-	if err = network.Initialize(instance, update); err != nil {
-		return common.Result{}, operatorerrors.Wrap(err, operatorerrors.NetworkInitializationFailed, "failed to initialize network")
-	}
-
-	if err = network.ReconcileManagers(instance, update); err != nil {
-		return common.Result{}, errors.Wrap(err, "failed to reconcile managers")
-	}
-
-	return network.CheckStates(instance)
+	return network.BaseNetwork.Reconcile(instance, update)
 }
 
 // TODO: customize for kubernetes

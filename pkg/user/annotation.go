@@ -134,7 +134,7 @@ func NewBlockchainAnnotation(organization string, ids ...ID) *BlockchainAnnotati
 		LastAppliedTimestamp: metav1.Now(),
 	}
 	for _, id := range ids {
-		annotation.SetID(id)
+		_ = annotation.SetID(id)
 	}
 	return annotation
 }

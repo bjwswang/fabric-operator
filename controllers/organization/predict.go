@@ -231,8 +231,8 @@ func (r *ReconcileOrganization) PredictOrganizationDelete(organization *current.
 		if err != nil {
 			log.Error(err, fmt.Sprintf("failed to get iam users with organization annotation key %s", organization.GetName()))
 		} else {
-			for _, iamuser := range userList.Items {
-				err = r.DeleteBlockchainAnnotations(organization, &iamuser)
+			for i, iamuser := range userList.Items {
+				err = r.DeleteBlockchainAnnotations(organization, &userList.Items[i])
 				if err != nil {
 					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", organization.GetName(), iamuser.GetName()))
 				}

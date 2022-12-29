@@ -23,12 +23,11 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/controllers/mocks"
-	mgrmocks "github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/mocks"
 	basenet "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network"
 	basenetmocks "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network/mocks"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,9 +38,6 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 		err    error
 		client *mocks.Client
 		o      basenet.Override
-
-		clusterRoleManager        *mgrmocks.ResourceManager
-		clusterRoleBindingManager *mgrmocks.ResourceManager
 
 		reconciler *basenet.BaseNetwork
 
@@ -56,13 +52,10 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 
 		client = &mocks.Client{}
 		o = &basenetmocks.Override{}
-		clusterRoleManager = &mgrmocks.ResourceManager{}
-		clusterRoleBindingManager = &mgrmocks.ResourceManager{}
 		reconciler = &basenet.BaseNetwork{
-			Client:                    client,
-			ClusterRoleManager:        clusterRoleManager,
-			ClusterRoleBindingManager: clusterRoleBindingManager,
-			Override:                  o,
+			Client:      client,
+			Override:    o,
+			RBACManager: rbac.NewRBACManager(client, nil),
 		}
 
 	})
@@ -140,17 +133,6 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 		It("succ", func() {
 			err = reconciler.ReconcileManagers(instance, update)
 			Expect(err).To(BeNil())
-		})
-		It("fails due to cluster role manger fails", func() {
-			clusterRoleManager.ReconcileReturns(errors.New("cluster role manager reconcile fails"))
-			err = reconciler.ReconcileManagers(instance, update)
-			Expect(err).To(HaveOccurred())
-
-		})
-		It("fails due to cluster role binding manger fails", func() {
-			clusterRoleBindingManager.ReconcileReturns(errors.New("cluster role binding manager reconcile fails"))
-			err = reconciler.ReconcileManagers(instance, update)
-			Expect(err).To(HaveOccurred())
 		})
 	})
 

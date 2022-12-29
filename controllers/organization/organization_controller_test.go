@@ -26,6 +26,7 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/controllers/mocks"
 	orgmocks "github.com/IBM-Blockchain/fabric-operator/controllers/organization/mocks"
+	"github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -86,9 +87,14 @@ var _ = Describe("ReconcileOrganization", func() {
 		reconciler = &ReconcileOrganization{
 			Offering: mockOrgReconcile,
 			client:   mockKubeClient,
-			scheme:   &runtime.Scheme{},
-			update:   map[string][]Update{},
-			mutex:    &sync.Mutex{},
+			Config: &operatorconfig.Config{
+				Operator: operatorconfig.Operator{
+					Namespace: "operator-system",
+				},
+			},
+			scheme: &runtime.Scheme{},
+			update: map[string][]Update{},
+			mutex:  &sync.Mutex{},
 		}
 		request = reconcile.Request{
 			NamespacedName: types.NamespacedName{

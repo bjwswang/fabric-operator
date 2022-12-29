@@ -80,6 +80,7 @@ func load(config []byte, operator *Operator) error {
 
 // Operator defines operator configuration parameters
 type Operator struct {
+	Namespace     string             `json:"namespace" yaml:"namespace"`
 	IngressDomain string             `json:"ingressDomain" yaml:"ingressDomain"`
 	IAM           IAM                `json:"iam" yaml:"iam"`
 	Orderer       Orderer            `json:"orderer" yaml:"orderer"`

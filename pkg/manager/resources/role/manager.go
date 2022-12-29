@@ -53,7 +53,8 @@ func (m *Manager) GetName(instance v1.Object) string {
 
 func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 	name := m.GetName(instance)
-	err := m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, &rbacv1.Role{})
+	role := &rbacv1.Role{}
+	err := m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, role)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf("Creating role '%s'", name))
@@ -71,7 +72,17 @@ func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 		return err
 	}
 
-	// TODO: If needed, update logic for servie goes here
+	if update {
+		if m.OverrideFunc != nil {
+			err := m.OverrideFunc(instance, role, resources.Update)
+			if err != nil {
+				return operatorerrors.New(operatorerrors.InvalidRoleUpdateRequest, err.Error())
+			}
+		}
+		if err = m.Client.Update(context.TODO(), role); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

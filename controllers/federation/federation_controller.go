@@ -34,6 +34,7 @@ import (
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -76,11 +77,12 @@ func newReconciler(mgr manager.Manager, cfg *config.Config) (*ReconcileFederatio
 	scheme := mgr.GetScheme()
 
 	federation := &ReconcileFederation{
-		client: client,
-		scheme: scheme,
-		Config: cfg,
-		update: map[string][]Update{},
-		mutex:  &sync.Mutex{},
+		client:      client,
+		scheme:      scheme,
+		Config:      cfg,
+		update:      map[string][]Update{},
+		mutex:       &sync.Mutex{},
+		rbacManager: bcrbac.NewRBACManager(client, nil),
 	}
 
 	switch cfg.Offering {
@@ -95,31 +97,38 @@ func newReconciler(mgr manager.Manager, cfg *config.Config) (*ReconcileFederatio
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r *ReconcileFederation) error {
-	// Create a new controller
-	predicateFuncs := predicate.Funcs{
-		CreateFunc: r.CreateFunc,
-		UpdateFunc: r.UpdateFunc,
-		DeleteFunc: r.DeleteFunc,
-	}
-
 	c, err := controller.New("federation-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
 	// Watch for changes to primary resource Federation
+	predicateFuncs := predicate.Funcs{
+		CreateFunc: r.CreateFunc,
+		UpdateFunc: r.UpdateFunc,
+		DeleteFunc: r.DeleteFunc,
+	}
+
 	err = c.Watch(&source.Kind{Type: &current.Federation{}}, &handler.EnqueueRequestForObject{}, predicateFuncs)
 	if err != nil {
 		return err
 	}
 
 	// Watch for changes to Network
-	err = c.Watch(&source.Kind{Type: &current.Network{}}, handler.EnqueueRequestsFromMapFunc(network2federationMap), predicateFuncs)
+	networkPredicFuncs := predicate.Funcs{
+		CreateFunc: r.NetworkCreateFunc,
+		DeleteFunc: r.NetworkDeleteFunc,
+	}
+	err = c.Watch(&source.Kind{Type: &current.Network{}}, handler.EnqueueRequestsFromMapFunc(network2federationMap), networkPredicFuncs)
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &current.Proposal{}}, handler.EnqueueRequestsFromMapFunc(proposal2federationMap), predicateFuncs)
+	// Watch for changes to Proposal
+	proposalFuncs := predicate.Funcs{
+		UpdateFunc: r.ProposalUpdateFunc,
+	}
+	err = c.Watch(&source.Kind{Type: &current.Proposal{}}, handler.EnqueueRequestsFromMapFunc(proposal2federationMap), proposalFuncs)
 	if err != nil {
 		return err
 	}
@@ -169,6 +178,8 @@ type ReconcileFederation struct {
 
 	update map[string][]Update
 	mutex  *sync.Mutex
+
+	rbacManager *bcrbac.Manager
 }
 
 func (r *ReconcileFederation) SetupWithManager(mgr ctrl.Manager) error {
@@ -338,8 +349,8 @@ func (r *ReconcileFederation) SaveSpecState(instance *current.Federation) error 
 
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-spec", instance.GetName()),
-			Namespace: metav1.NamespaceSystem,
+			Name:      fmt.Sprintf("fed-%s-spec", instance.GetName()),
+			Namespace: r.Config.Operator.Namespace,
 			Labels:    instance.GetLabels(),
 		},
 		BinaryData: map[string][]byte{
@@ -361,8 +372,8 @@ func (r *ReconcileFederation) SaveSpecState(instance *current.Federation) error 
 func (r *ReconcileFederation) GetSpecState(instance *current.Federation) (*corev1.ConfigMap, error) {
 	cm := &corev1.ConfigMap{}
 	nn := types.NamespacedName{
-		Name:      fmt.Sprintf("%s-spec", instance.GetName()),
-		Namespace: metav1.NamespaceSystem,
+		Name:      fmt.Sprintf("fed-%s-spec", instance.GetName()),
+		Namespace: r.Config.Operator.Namespace,
 	}
 
 	err := r.client.Get(context.TODO(), nn, cm)

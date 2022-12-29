@@ -23,10 +23,6 @@ func (federation *Federation) GetLabels() map[string]string {
 	}
 }
 
-func (federation *Federation) NamespacedName() NamespacedName {
-	return NamespacedName{Name: federation.Name, Namespace: federation.Namespace}
-}
-
 func (federation *Federation) GetInitiator() (int, Member) {
 	for index, m := range federation.Spec.Members {
 		if m.Initiator {
@@ -82,19 +78,19 @@ func DifferMembers(old []Member, new []Member) (added []Member, removed []Member
 	// cache in map
 	oldMapper := make(map[string]Member, len(old))
 	for _, m := range old {
-		oldMapper[m.GetNamespacedName()] = m
+		oldMapper[m.Name] = m
 	}
 
 	// calculate differences
 	for _, m := range new {
 
 		// added: in new ,but not in old
-		if _, ok := oldMapper[m.GetNamespacedName()]; !ok {
+		if _, ok := oldMapper[m.Name]; !ok {
 			added = append(added, m)
 		}
 
 		// delete the intersection
-		delete(oldMapper, m.GetNamespacedName())
+		delete(oldMapper, m.Name)
 	}
 
 	for _, m := range oldMapper {

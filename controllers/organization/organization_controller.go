@@ -114,12 +114,20 @@ func add(mgr manager.Manager, r *ReconcileOrganization) error {
 	}
 
 	// Watch for changes to secrets
-	err = c.Watch(&source.Kind{Type: &current.Federation{}}, handler.EnqueueRequestsFromMapFunc(federation2organizationMap), predicateFuncs)
+	federationFuncs := predicate.Funcs{
+		CreateFunc: r.FederationCreateFunc,
+		UpdateFunc: r.FederationUpdateFunc,
+		DeleteFunc: r.FederationDeleteFunc,
+	}
+	err = c.Watch(&source.Kind{Type: &current.Federation{}}, handler.EnqueueRequestsFromMapFunc(federation2organizationMap), federationFuncs)
 	if err != nil {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &current.IBPCA{}}, &handler.EnqueueRequestForObject{}, predicateFuncs)
+	caFuncs := predicate.Funcs{
+		UpdateFunc: r.CAUpdateFunc,
+	}
+	err = c.Watch(&source.Kind{Type: &current.IBPCA{}}, &handler.EnqueueRequestForObject{}, caFuncs)
 	if err != nil {
 		return err
 	}
@@ -327,8 +335,8 @@ func (r *ReconcileOrganization) SaveSpecState(instance *current.Organization) er
 
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-spec", instance.GetName()),
-			Namespace: instance.GetUserNamespace(),
+			Name:      fmt.Sprintf("org-%s-spec", instance.GetName()),
+			Namespace: r.Config.Operator.Namespace,
 			Labels:    instance.GetLabels(),
 		},
 		BinaryData: map[string][]byte{
@@ -350,8 +358,8 @@ func (r *ReconcileOrganization) SaveSpecState(instance *current.Organization) er
 func (r *ReconcileOrganization) GetSpecState(instance *current.Organization) (*corev1.ConfigMap, error) {
 	cm := &corev1.ConfigMap{}
 	nn := types.NamespacedName{
-		Name:      fmt.Sprintf("%s-spec", instance.GetName()),
-		Namespace: instance.GetUserNamespace(),
+		Name:      fmt.Sprintf("org-%s-spec", instance.GetName()),
+		Namespace: r.Config.Operator.Namespace,
 	}
 
 	err := r.client.Get(context.TODO(), nn, cm)

@@ -31,6 +31,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/organization/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/IBM-Blockchain/fabric-operator/version"
 	"github.com/pkg/errors"
@@ -50,13 +51,19 @@ var log = logf.Log.WithName("base_organization")
 type Update interface {
 	SpecUpdated() bool
 	AdminUpdated() bool
+	ClientsUpdated() bool
 }
 
 type Override interface {
 	AdminRole(v1.Object, *rbacv1.Role, resources.Action) error
-	AdminRoleBinding(v1.Object, *rbacv1.RoleBinding, resources.Action) error
-	AdminClusterRoleBinding(v1.Object, *rbacv1.ClusterRoleBinding, resources.Action) error
 	ClientRole(v1.Object, *rbacv1.Role, resources.Action) error
+	AdminRoleBinding(v1.Object, *rbacv1.RoleBinding, resources.Action) error
+	ClientRoleBinding(v1.Object, *rbacv1.RoleBinding, resources.Action) error
+
+	AdminClusterRole(v1.Object, *rbacv1.ClusterRole, resources.Action) error
+	AdminClusterRoleBinding(v1.Object, *rbacv1.ClusterRoleBinding, resources.Action) error
+	ClientClusterRole(v1.Object, *rbacv1.ClusterRole, resources.Action) error
+	ClientClusterRoleBinding(v1.Object, *rbacv1.ClusterRoleBinding, resources.Action) error
 
 	CertificateAuthority(v1.Object, *current.IBPCA, resources.Action) error
 }
@@ -89,10 +96,15 @@ type BaseOrganization struct {
 
 	Override Override
 
-	AdminRoleManager               resources.Manager
-	AdminRoleBindingManager        resources.Manager
-	AdminClusterRoleBindingManager resources.Manager
-	ClientRoleManager              resources.Manager
+	AdminRoleManager         resources.Manager
+	AdminRoleBindingManager  resources.Manager
+	ClientRoleManager        resources.Manager
+	ClientRoleBindingManager resources.Manager
+
+	AdminClusterRoleManager         resources.Manager
+	AdminClusterRoleBindingManager  resources.Manager
+	ClientClusterRoleManager        resources.Manager
+	ClientClusterRoleBindingManager resources.Manager
 
 	CAManager resources.Manager
 }
@@ -122,11 +134,17 @@ func (organization *BaseOrganization) CreateManagers() {
 	override := organization.Override
 	mgr := manager.New(organization.Client, organization.Scheme)
 
-	organization.AdminRoleManager = mgr.CreateRoleManager("", override.AdminRole, organization.GetLabels, organization.Config.OrganizationInitConfig.AdminRoleFile)
-	organization.AdminRoleBindingManager = mgr.CreateRoleBindingManager("", override.AdminRoleBinding, organization.GetLabels, organization.Config.OrganizationInitConfig.AdminRoleBindingFile)
-	organization.AdminClusterRoleBindingManager = mgr.CreateClusterRoleBindingManager("", override.AdminClusterRoleBinding, organization.GetLabels, organization.Config.OrganizationInitConfig.AdminClusterRoleBindingFile)
+	organization.AdminRoleManager = mgr.CreateRoleManager(bcrbac.AdminSuffix, override.AdminRole, organization.GetLabels, organization.Config.OrganizationInitConfig.AdminRoleFile)
+	organization.AdminRoleBindingManager = mgr.CreateRoleBindingManager(bcrbac.AdminSuffix, override.AdminRoleBinding, organization.GetLabels, organization.Config.OrganizationInitConfig.RoleBindingFile)
 
-	organization.ClientRoleManager = mgr.CreateRoleManager("", override.ClientRole, organization.GetLabels, organization.Config.OrganizationInitConfig.ClientRoleFile)
+	organization.ClientRoleManager = mgr.CreateRoleManager(bcrbac.ClientSuffix, override.ClientRole, organization.GetLabels, organization.Config.OrganizationInitConfig.ClientRoleFile)
+	organization.ClientRoleBindingManager = mgr.CreateRoleBindingManager(bcrbac.ClientSuffix, override.ClientRoleBinding, organization.GetLabels, organization.Config.OrganizationInitConfig.RoleBindingFile)
+
+	organization.AdminClusterRoleManager = mgr.CreateClusterRoleManager(bcrbac.AdminSuffix, override.AdminClusterRole, organization.GetLabels, organization.Config.OrganizationInitConfig.ClusterRoleFile)
+	organization.AdminClusterRoleBindingManager = mgr.CreateClusterRoleBindingManager(bcrbac.AdminSuffix, override.AdminClusterRoleBinding, organization.GetLabels, organization.Config.OrganizationInitConfig.ClusterRoleBindingFile)
+
+	organization.ClientClusterRoleManager = mgr.CreateClusterRoleManager(bcrbac.ClientSuffix, override.ClientClusterRole, organization.GetLabels, organization.Config.OrganizationInitConfig.ClusterRoleFile)
+	organization.ClientClusterRoleBindingManager = mgr.CreateClusterRoleBindingManager(bcrbac.ClientSuffix, override.ClientClusterRoleBinding, organization.GetLabels, organization.Config.OrganizationInitConfig.ClusterRoleBindingFile)
 
 	organization.CAManager = mgr.CreateCAManager("", override.CertificateAuthority, organization.GetLabels, organization.Config.OrganizationInitConfig.CAFile)
 }
@@ -183,34 +201,69 @@ func (organization *BaseOrganization) ReconcileManagers(instance *current.Organi
 		return err
 	}
 
-	// AdminRole
+	err = organization.ReconcileRBAC(instance, update)
+	if err != nil {
+		return err
+	}
+
+	//	Patch admin annotations to new Admin User(Only when subject kind is User)
+	if update.AdminUpdated() && organization.Config.OrganizationInitConfig.IAMEnabled {
+		err = organization.PatchAnnotations(instance)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (organization *BaseOrganization) ReconcileRBAC(instance *current.Organization, update Update) error {
+	var err error
+	// Create AdminRole if not exist
 	err = organization.AdminRoleManager.Reconcile(instance, false)
 	if err != nil {
 		return err
 	}
-
-	// ClientRole
-	err = organization.ClientRoleManager.Reconcile(instance, false)
+	// Create AdminClusterRole if not exist
+	err = organization.AdminClusterRoleManager.Reconcile(instance, false)
 	if err != nil {
 		return err
 	}
 
-	// AdminRoleBinding
+	// Create ClientRole if not exist
+	err = organization.ClientRoleManager.Reconcile(instance, false)
+	if err != nil {
+		return err
+	}
+	// Create ClientClusterRole if not exist
+	err = organization.ClientClusterRoleManager.Reconcile(instance, false)
+	if err != nil {
+		return err
+	}
+
 	if update.AdminUpdated() {
+		// reconcile AdminRoleBinding
 		err = organization.AdminRoleBindingManager.Reconcile(instance, true)
 		if err != nil {
 			return err
 		}
-		// AdminClusterRoleBinding
+
+		// reconcile AdminClusterRoleBinding
 		err = organization.AdminClusterRoleBindingManager.Reconcile(instance, true)
 		if err != nil {
 			return err
 		}
 	}
 
-	//	Patch admin annotations to new Admin User(Only when subject kind is User)
-	if update.AdminUpdated() && organization.Config.OrganizationInitConfig.IAMEnabled {
-		err = organization.PatchAnnotations(instance)
+	// TODO: enable clients update in organization
+	if update.ClientsUpdated() {
+		// reconcile ClientRoleBinding
+		err = organization.ClientRoleBindingManager.Reconcile(instance, true)
+		if err != nil {
+			return err
+		}
+		// reconcile ClientClusterRoleBinding
+		err = organization.ClientClusterRoleBindingManager.Reconcile(instance, true)
 		if err != nil {
 			return err
 		}
@@ -241,14 +294,7 @@ func (organization *BaseOrganization) CreateNamespace(instance *current.Organiza
 			Labels: instance.GetLabels(),
 		},
 	}
-	ns.OwnerReferences = []v1.OwnerReference{
-		{
-			Kind:       "Organization",
-			APIVersion: "ibp.com/v1beta1",
-			Name:       instance.GetName(),
-			UID:        instance.GetUID(),
-		},
-	}
+	ns.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Organization, instance)}
 	return organization.Client.CreateOrUpdate(context.TODO(), &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
 			Name:   instance.GetUserNamespace(),

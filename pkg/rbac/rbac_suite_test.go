@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package override_test
+package rbac_test
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestOverride(t *testing.T) {
+func TestRBAC(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Federation k8s Override Suite")
+	RunSpecs(t, "RBAC Suite")
 }

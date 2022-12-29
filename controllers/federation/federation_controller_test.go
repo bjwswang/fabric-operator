@@ -26,7 +26,9 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	mockedreconcile "github.com/IBM-Blockchain/fabric-operator/controllers/federation/mocks"
 	"github.com/IBM-Blockchain/fabric-operator/controllers/mocks"
+	"github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -74,8 +76,14 @@ var _ = Describe("ReconcileFederation", func() {
 		reconciler = &ReconcileFederation{
 			client:   client,
 			Offering: k8soffering,
-			update:   make(map[string][]Update),
-			mutex:    &sync.Mutex{},
+			Config: &operatorconfig.Config{
+				Operator: operatorconfig.Operator{
+					Namespace: "operator-system",
+				},
+			},
+			update:      make(map[string][]Update),
+			mutex:       &sync.Mutex{},
+			rbacManager: rbac.NewRBACManager(client, nil),
 		}
 
 		request = reconcile.Request{

@@ -30,8 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-//go:generate counterfeiter -o mocks/crypto.go -fake-name Crypto . Crypto
-
 type Initializer struct {
 	Config *initializer.Config
 

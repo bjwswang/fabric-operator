@@ -25,6 +25,7 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/go-test/deep"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -35,24 +36,9 @@ import (
 )
 
 func (r *ReconcileFederation) CreateFunc(e event.CreateEvent) bool {
-	var reconcile bool
+	federation := e.Object.(*current.Federation)
+	log.Info(fmt.Sprintf("Create event detected for federation '%s'", federation.GetName()))
 
-	switch e.Object.(type) {
-	case *current.Federation:
-		federation := e.Object.(*current.Federation)
-		log.Info(fmt.Sprintf("Create event detected for federation '%s'", federation.GetName()))
-		reconcile = r.PredictFederationCreate(federation)
-
-	case *current.Network:
-		network := e.Object.(*current.Network)
-		log.Info(fmt.Sprintf("Create event detected for network '%s'", network.GetName()))
-		reconcile = r.PredictNetworkCreate(network)
-	}
-
-	return reconcile
-}
-
-func (r *ReconcileFederation) PredictFederationCreate(federation *current.Federation) bool {
 	update := Update{}
 
 	if federation.HasType() {
@@ -101,7 +87,10 @@ func (r *ReconcileFederation) PredictFederationCreate(federation *current.Federa
 	return true
 }
 
-func (r *ReconcileFederation) PredictNetworkCreate(network *current.Network) bool {
+func (r *ReconcileFederation) NetworkCreateFunc(e event.CreateEvent) bool {
+	network := e.Object.(*current.Network)
+	log.Info(fmt.Sprintf("Create event detected for network '%s'", network.GetName()))
+
 	err := r.AddNetwork(network.Spec.Federation, network.Name)
 	if err != nil {
 		log.Error(err, fmt.Sprintf("Network %s in Federation %s", network.GetName(), network.Spec.Federation))
@@ -139,26 +128,11 @@ func (r *ReconcileFederation) AddNetwork(fedns, netns string) error {
 	return nil
 }
 
-// Watch Federation & Proposal
 func (r *ReconcileFederation) UpdateFunc(e event.UpdateEvent) bool {
-	var reconcile bool
+	oldFed := e.ObjectOld.(*current.Federation)
+	newFed := e.ObjectNew.(*current.Federation)
+	log.Info(fmt.Sprintf("Update event detected for federation '%s'", oldFed.GetName()))
 
-	switch e.ObjectOld.(type) {
-	case *current.Federation:
-		oldFed := e.ObjectOld.(*current.Federation)
-		newFed := e.ObjectNew.(*current.Federation)
-		log.Info(fmt.Sprintf("Update event detected for federation '%s'", oldFed.GetName()))
-		reconcile = r.PredicFederationUpdate(oldFed, newFed)
-	case *current.Proposal:
-		oldProposal := e.ObjectOld.(*current.Proposal)
-		newProposal := e.ObjectNew.(*current.Proposal)
-		log.Info(fmt.Sprintf("Update event detected for proposal '%s'", oldProposal.Spec.Federation))
-		reconcile = r.PredicProposalUpdate(oldProposal, newProposal)
-	}
-	return reconcile
-}
-
-func (r *ReconcileFederation) PredicFederationUpdate(oldFed *current.Federation, newFed *current.Federation) bool {
 	update := Update{}
 
 	if reflect.DeepEqual(oldFed.Spec, newFed.Spec) {
@@ -181,7 +155,10 @@ func (r *ReconcileFederation) PredicFederationUpdate(oldFed *current.Federation,
 	return true
 }
 
-func (r *ReconcileFederation) PredicProposalUpdate(oldProposal *current.Proposal, newProposal *current.Proposal) bool {
+func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
+	oldProposal := e.ObjectOld.(*current.Proposal)
+	newProposal := e.ObjectNew.(*current.Proposal)
+	log.Info(fmt.Sprintf("Update event detected for proposal '%s'", oldProposal.Spec.Federation))
 	update := Update{}
 
 	if reflect.DeepEqual(oldProposal.Spec, newProposal.Spec) && reflect.DeepEqual(oldProposal.Status, newProposal.Status) {
@@ -270,17 +247,17 @@ func (r *ReconcileFederation) PredicProposalUpdate(oldProposal *current.Proposal
 }
 
 func (r *ReconcileFederation) DeleteFunc(e event.DeleteEvent) bool {
-	var reconcile bool
-	switch e.Object.(type) {
-	case *current.Network:
-		network := e.Object.(*current.Network)
-		log.Info(fmt.Sprintf("Delete event detected for network '%s'", network.GetName()))
-		reconcile = r.PredictNetworkDelete(network)
+	federation := e.Object.(*current.Federation)
+	log.Info(fmt.Sprintf("Delete event detected for federation '%s'", federation.GetName()))
+	err := r.rbacManager.Reconcile(bcrbac.Federation, federation, bcrbac.ResourceDelete)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Federation %s", federation.Name))
 	}
-	return reconcile
+	return false
 }
 
-func (r *ReconcileFederation) PredictNetworkDelete(network *current.Network) bool {
+func (r *ReconcileFederation) NetworkDeleteFunc(e event.DeleteEvent) bool {
+	network := e.Object.(*current.Network)
 	fedns := network.Spec.Federation
 	netns := network.Name
 	err := r.DeleteNetwork(fedns, netns)

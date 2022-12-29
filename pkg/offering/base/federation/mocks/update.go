@@ -67,16 +67,15 @@ func (fake *Update) MemberUpdated() bool {
 	ret, specificReturn := fake.memberUpdatedReturnsOnCall[len(fake.memberUpdatedArgsForCall)]
 	fake.memberUpdatedArgsForCall = append(fake.memberUpdatedArgsForCall, struct {
 	}{})
-	stub := fake.MemberUpdatedStub
-	fakeReturns := fake.memberUpdatedReturns
 	fake.recordInvocation("MemberUpdated", []interface{}{})
 	fake.memberUpdatedMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.MemberUpdatedStub != nil {
+		return fake.MemberUpdatedStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.memberUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -120,16 +119,15 @@ func (fake *Update) ProposalActivated() bool {
 	ret, specificReturn := fake.proposalActivatedReturnsOnCall[len(fake.proposalActivatedArgsForCall)]
 	fake.proposalActivatedArgsForCall = append(fake.proposalActivatedArgsForCall, struct {
 	}{})
-	stub := fake.ProposalActivatedStub
-	fakeReturns := fake.proposalActivatedReturns
 	fake.recordInvocation("ProposalActivated", []interface{}{})
 	fake.proposalActivatedMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.ProposalActivatedStub != nil {
+		return fake.ProposalActivatedStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.proposalActivatedReturns
 	return fakeReturns.result1
 }
 
@@ -173,16 +171,15 @@ func (fake *Update) ProposalDissolved() bool {
 	ret, specificReturn := fake.proposalDissolvedReturnsOnCall[len(fake.proposalDissolvedArgsForCall)]
 	fake.proposalDissolvedArgsForCall = append(fake.proposalDissolvedArgsForCall, struct {
 	}{})
-	stub := fake.ProposalDissolvedStub
-	fakeReturns := fake.proposalDissolvedReturns
 	fake.recordInvocation("ProposalDissolved", []interface{}{})
 	fake.proposalDissolvedMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.ProposalDissolvedStub != nil {
+		return fake.ProposalDissolvedStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.proposalDissolvedReturns
 	return fakeReturns.result1
 }
 
@@ -226,16 +223,15 @@ func (fake *Update) ProposalFailed() bool {
 	ret, specificReturn := fake.proposalFailedReturnsOnCall[len(fake.proposalFailedArgsForCall)]
 	fake.proposalFailedArgsForCall = append(fake.proposalFailedArgsForCall, struct {
 	}{})
-	stub := fake.ProposalFailedStub
-	fakeReturns := fake.proposalFailedReturns
 	fake.recordInvocation("ProposalFailed", []interface{}{})
 	fake.proposalFailedMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.ProposalFailedStub != nil {
+		return fake.ProposalFailedStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.proposalFailedReturns
 	return fakeReturns.result1
 }
 
@@ -279,16 +275,15 @@ func (fake *Update) SpecUpdated() bool {
 	ret, specificReturn := fake.specUpdatedReturnsOnCall[len(fake.specUpdatedArgsForCall)]
 	fake.specUpdatedArgsForCall = append(fake.specUpdatedArgsForCall, struct {
 	}{})
-	stub := fake.SpecUpdatedStub
-	fakeReturns := fake.specUpdatedReturns
 	fake.recordInvocation("SpecUpdated", []interface{}{})
 	fake.specUpdatedMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.SpecUpdatedStub != nil {
+		return fake.SpecUpdatedStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.specUpdatedReturns
 	return fakeReturns.result1
 }
 

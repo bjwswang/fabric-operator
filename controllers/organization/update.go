@@ -26,8 +26,9 @@ import (
 
 // Update defines a list of elements that we detect spec updates on
 type Update struct {
-	specUpdated  bool
-	adminUpdated bool
+	specUpdated    bool
+	adminUpdated   bool
+	clientsUpdated bool
 }
 
 func (u *Update) SpecUpdated() bool {
@@ -36,6 +37,10 @@ func (u *Update) SpecUpdated() bool {
 
 func (u *Update) AdminUpdated() bool {
 	return u.adminUpdated
+}
+
+func (u *Update) ClientsUpdated() bool {
+	return u.clientsUpdated
 }
 
 // GetUpdateStackWithTrues is a helper method to print updates that have been detected
@@ -48,6 +53,10 @@ func (u *Update) GetUpdateStackWithTrues() string {
 
 	if u.AdminUpdated() {
 		stack += "adminUpdated "
+	}
+
+	if u.ClientsUpdated() {
+		stack += "clientsUpdated "
 	}
 
 	if len(stack) == 0 {

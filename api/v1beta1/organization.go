@@ -2,6 +2,8 @@ package v1beta1
 
 import (
 	"os"
+
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func init() {
@@ -23,6 +25,9 @@ func (organization *Organization) GetLabels() map[string]string {
 		"app.kubernetes.io/instance":   label + "organization",
 		"app.kubernetes.io/managed-by": label + "-operator",
 	}
+}
+func (organization *Organization) GetNamespaced() types.NamespacedName {
+	return types.NamespacedName{Name: organization.Name, Namespace: organization.GetUserNamespace()}
 }
 
 func (organization *Organization) GetUserNamespace() string {

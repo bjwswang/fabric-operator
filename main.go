@@ -215,21 +215,19 @@ func setDefaultConsoleDefinitions(cfg *config.Config) {
 
 func setDefaultOrganizationDefinitions(cfg *config.Config) {
 	cfg.OrganizationInitConfig = &orginit.Config{
-		IAMEnabled:                  os.Getenv("OPERATOR_USER_TYPE") != "sa",
-		AdminRoleFile:               filepath.Join(defaultOrganizationDef, "admin_role.yaml"),
-		AdminRoleBindingFile:        filepath.Join(defaultOrganizationDef, "admin_role_binding.yaml"),
-		AdminClusterRoleBindingFile: filepath.Join(defaultOrganizationDef, "admin_clusterrole_binding.yaml"),
-		ClientRoleFile:              filepath.Join(defaultOrganizationDef, "client_role.yaml"),
-		CAFile:                      filepath.Join(defaultOrganizationDef, "ca.yaml"),
-		StoragePath:                 "/tmp/orginit",
+		IAMEnabled:             os.Getenv("OPERATOR_USER_TYPE") != "sa",
+		AdminRoleFile:          filepath.Join(defaultOrganizationDef, "admin_role.yaml"),
+		ClientRoleFile:         filepath.Join(defaultOrganizationDef, "client_role.yaml"),
+		RoleBindingFile:        filepath.Join(defaultOrganizationDef, "role_binding.yaml"),
+		ClusterRoleFile:        filepath.Join(defaultOrganizationDef, "cluster_role.yaml"),
+		ClusterRoleBindingFile: filepath.Join(defaultOrganizationDef, "cluster_role_binding.yaml"),
+		CAFile:                 filepath.Join(defaultOrganizationDef, "ca.yaml"),
+		StoragePath:            "/tmp/orginit",
 	}
 }
 
 func setDefaultFederationDefinitions(cfg *config.Config) {
-	cfg.FederationInitConfig = &fedinit.Config{
-		ClusterRoleFile:        filepath.Join(defaultFederationDef, "clusterrole.yaml"),
-		ClusterRoleBindingFile: filepath.Join(defaultFederationDef, "clusterrolebinding.yaml"),
-	}
+	cfg.FederationInitConfig = &fedinit.Config{}
 }
 
 func setDefaultVoteDefinitions(cfg *config.Config) {
@@ -241,10 +239,7 @@ func setDefaultVoteDefinitions(cfg *config.Config) {
 }
 
 func setDefaultNetworkDefinitions(cfg *config.Config) {
-	cfg.NetworkInitConfig = &netinit.Config{
-		ClusterRoleFile:        filepath.Join(defaultFederationDef, "clusterrole.yaml"),
-		ClusterRoleBindingFile: filepath.Join(defaultFederationDef, "clusterrolebinding.yaml"),
-	}
+	cfg.NetworkInitConfig = &netinit.Config{}
 }
 
 func setOperatorConfigFromEnvironment(cfg *config.Config) {

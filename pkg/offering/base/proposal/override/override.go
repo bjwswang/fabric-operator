@@ -18,26 +18,5 @@
 
 package override
 
-import (
-	"context"
-
-	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/clusterrolebinding"
-	"k8s.io/apimachinery/pkg/types"
-)
-
 type Override struct {
-	Client controllerclient.Client
-
-	SubjectKind clusterrolebinding.SubjectKind
-}
-
-func (o *Override) GetOrganization(member current.NamespacedName) (*current.Organization, error) {
-	organization := &current.Organization{}
-	if err := o.Client.Get(context.TODO(), types.NamespacedName{Name: member.Name, Namespace: member.Namespace}, organization); err != nil {
-		return nil, err
-	}
-
-	return organization, nil
 }

@@ -23,26 +23,16 @@ import (
 	"reflect"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/go-test/deep"
 	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
 func (r *ReconcileNetwork) CreateFunc(e event.CreateEvent) bool {
-	var reconcile bool
+	network := e.Object.(*current.Network)
 
-	switch e.Object.(type) {
-	case *current.Network:
-		network := e.Object.(*current.Network)
-		log.Info(fmt.Sprintf("Create event detected for network '%s'", network.GetName()))
-		reconcile = r.PredictNetworkCreate(network)
-
-	}
-
-	return reconcile
-}
-
-func (r *ReconcileNetwork) PredictNetworkCreate(network *current.Network) bool {
+	log.Info(fmt.Sprintf("Create event detected for network '%s'", network.GetName()))
 	update := Update{}
 
 	if network.HasType() {
@@ -92,22 +82,10 @@ func (r *ReconcileNetwork) PredictNetworkCreate(network *current.Network) bool {
 	return true
 }
 
-// Watch Network & Proposal
 func (r *ReconcileNetwork) UpdateFunc(e event.UpdateEvent) bool {
-	var reconcile bool
-
-	switch e.ObjectOld.(type) {
-	case *current.Network:
-		oldNet := e.ObjectOld.(*current.Network)
-		newNet := e.ObjectNew.(*current.Network)
-		log.Info(fmt.Sprintf("Update event detected for network '%s'", oldNet.GetName()))
-
-		reconcile = r.PredicNetworkUpdate(oldNet, newNet)
-	}
-	return reconcile
-}
-
-func (r *ReconcileNetwork) PredicNetworkUpdate(oldNet *current.Network, newNet *current.Network) bool {
+	oldNet := e.ObjectOld.(*current.Network)
+	newNet := e.ObjectNew.(*current.Network)
+	log.Info(fmt.Sprintf("Update event detected for network '%s'", oldNet.GetName()))
 	update := Update{}
 
 	if reflect.DeepEqual(oldNet.Spec, newNet.Spec) {
@@ -128,4 +106,14 @@ func (r *ReconcileNetwork) PredicNetworkUpdate(oldNet *current.Network, newNet *
 	log.Info(fmt.Sprintf("Spec update triggering reconcile on Network custom resource %s: update [ %+v ]", oldNet.Name, update.GetUpdateStackWithTrues()))
 
 	return true
+}
+
+func (r *ReconcileNetwork) DeleteFunc(e event.DeleteEvent) bool {
+	network := e.Object.(*current.Network)
+	err := r.rbacManager.Reconcile(bcrbac.Network, network, bcrbac.ResourceDelete)
+	if err != nil {
+		log.Error(err, "failed to sync rbac uppon proposal delete")
+	}
+
+	return false
 }

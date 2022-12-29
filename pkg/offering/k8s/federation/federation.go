@@ -39,9 +39,7 @@ type Federation struct {
 
 func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config) *Federation {
 	o := &override.Override{
-		BaseOverride: &baseoverride.Override{
-			Client: client,
-		},
+		BaseOverride: &baseoverride.Override{},
 	}
 	federation := &Federation{
 		BaseFederation: basefed.New(client, scheme, config, o),

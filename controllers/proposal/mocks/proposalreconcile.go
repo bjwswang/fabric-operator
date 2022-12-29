@@ -8,11 +8,11 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 )
 
-type VoteReconcile struct {
-	ReconcileStub        func(*v1beta1.Vote) (common.Result, error)
+type ProposalReconcile struct {
+	ReconcileStub        func(*v1beta1.Proposal) (common.Result, error)
 	reconcileMutex       sync.RWMutex
 	reconcileArgsForCall []struct {
-		arg1 *v1beta1.Vote
+		arg1 *v1beta1.Proposal
 	}
 	reconcileReturns struct {
 		result1 common.Result
@@ -26,11 +26,11 @@ type VoteReconcile struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *VoteReconcile) Reconcile(arg1 *v1beta1.Vote) (common.Result, error) {
+func (fake *ProposalReconcile) Reconcile(arg1 *v1beta1.Proposal) (common.Result, error) {
 	fake.reconcileMutex.Lock()
 	ret, specificReturn := fake.reconcileReturnsOnCall[len(fake.reconcileArgsForCall)]
 	fake.reconcileArgsForCall = append(fake.reconcileArgsForCall, struct {
-		arg1 *v1beta1.Vote
+		arg1 *v1beta1.Proposal
 	}{arg1})
 	fake.recordInvocation("Reconcile", []interface{}{arg1})
 	fake.reconcileMutex.Unlock()
@@ -44,26 +44,26 @@ func (fake *VoteReconcile) Reconcile(arg1 *v1beta1.Vote) (common.Result, error) 
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *VoteReconcile) ReconcileCallCount() int {
+func (fake *ProposalReconcile) ReconcileCallCount() int {
 	fake.reconcileMutex.RLock()
 	defer fake.reconcileMutex.RUnlock()
 	return len(fake.reconcileArgsForCall)
 }
 
-func (fake *VoteReconcile) ReconcileCalls(stub func(*v1beta1.Vote) (common.Result, error)) {
+func (fake *ProposalReconcile) ReconcileCalls(stub func(*v1beta1.Proposal) (common.Result, error)) {
 	fake.reconcileMutex.Lock()
 	defer fake.reconcileMutex.Unlock()
 	fake.ReconcileStub = stub
 }
 
-func (fake *VoteReconcile) ReconcileArgsForCall(i int) *v1beta1.Vote {
+func (fake *ProposalReconcile) ReconcileArgsForCall(i int) *v1beta1.Proposal {
 	fake.reconcileMutex.RLock()
 	defer fake.reconcileMutex.RUnlock()
 	argsForCall := fake.reconcileArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *VoteReconcile) ReconcileReturns(result1 common.Result, result2 error) {
+func (fake *ProposalReconcile) ReconcileReturns(result1 common.Result, result2 error) {
 	fake.reconcileMutex.Lock()
 	defer fake.reconcileMutex.Unlock()
 	fake.ReconcileStub = nil
@@ -73,7 +73,7 @@ func (fake *VoteReconcile) ReconcileReturns(result1 common.Result, result2 error
 	}{result1, result2}
 }
 
-func (fake *VoteReconcile) ReconcileReturnsOnCall(i int, result1 common.Result, result2 error) {
+func (fake *ProposalReconcile) ReconcileReturnsOnCall(i int, result1 common.Result, result2 error) {
 	fake.reconcileMutex.Lock()
 	defer fake.reconcileMutex.Unlock()
 	fake.ReconcileStub = nil
@@ -89,7 +89,7 @@ func (fake *VoteReconcile) ReconcileReturnsOnCall(i int, result1 common.Result, 
 	}{result1, result2}
 }
 
-func (fake *VoteReconcile) Invocations() map[string][][]interface{} {
+func (fake *ProposalReconcile) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.reconcileMutex.RLock()
@@ -101,7 +101,7 @@ func (fake *VoteReconcile) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *VoteReconcile) recordInvocation(key string, args []interface{}) {
+func (fake *ProposalReconcile) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {

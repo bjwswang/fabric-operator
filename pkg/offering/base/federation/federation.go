@@ -24,12 +24,10 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/manager"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/pkg/errors"
-	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -49,10 +47,7 @@ type Update interface {
 
 //go:generate counterfeiter -o mocks/override.go -fake-name Override . Override
 
-type Override interface {
-	ClusterRole(v1.Object, *rbacv1.ClusterRole, resources.Action) error
-	ClusterRoleBinding(v1.Object, *rbacv1.ClusterRoleBinding, resources.Action) error
-}
+type Override interface{}
 
 //go:generate counterfeiter -o mocks/basefederation.go -fake-name Federation . Federation
 
@@ -78,8 +73,7 @@ type BaseFederation struct {
 
 	Override Override
 
-	ClusterRoleManager        resources.Manager
-	ClusterRoleBindingManager resources.Manager
+	RBACManager *bcrbac.Manager
 }
 
 func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.Config, o Override) *BaseFederation {
@@ -95,14 +89,8 @@ func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.
 	return base
 }
 
-// TODO: leave this due to we might need managers in the future
-// - configmap manager
 func (federation *BaseFederation) CreateManagers() {
-	override := federation.Override
-	mgr := manager.New(federation.Client, federation.Scheme)
-
-	federation.ClusterRoleManager = mgr.CreateClusterRoleManager("", override.ClusterRole, federation.GetLabels, federation.Config.FederationInitConfig.ClusterRoleFile)
-	federation.ClusterRoleBindingManager = mgr.CreateClusterRoleBindingManager("", override.ClusterRoleBinding, federation.GetLabels, federation.Config.FederationInitConfig.ClusterRoleBindingFile)
+	federation.RBACManager = bcrbac.NewRBACManager(federation.Client, nil)
 }
 
 // Reconcile on Federation upon Update
@@ -151,17 +139,17 @@ func (federation *BaseFederation) Initialize(instance *current.Federation, updat
 
 // ReconcileManagers on Federation upon Update
 func (federation *BaseFederation) ReconcileManagers(instance *current.Federation, update Update) error {
-	var err error
-
-	// cluster role do not need to update
-	if err = federation.ClusterRoleManager.Reconcile(instance, true); err != nil {
-		return errors.Wrap(err, "reconcile cluster role")
+	if update.MemberUpdated() {
+		err := federation.RBACManager.Reconcile(bcrbac.Federation, instance, bcrbac.ResourceUpdate)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
+}
 
-	if err = federation.ClusterRoleBindingManager.Reconcile(instance, true); err != nil {
-		return errors.Wrap(err, "reconcile cluster role binding")
-	}
-
+// ReconcileRBAC will sync current federation to every member's AdminClusterRole
+func (federation *BaseFederation) ReconcileRBAC() error {
 	return nil
 }
 

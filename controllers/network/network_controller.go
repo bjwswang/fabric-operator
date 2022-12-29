@@ -37,6 +37,8 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
+
 	basenet "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	k8snet "github.com/IBM-Blockchain/fabric-operator/pkg/offering/k8s/network"
@@ -76,11 +78,12 @@ func newReconciler(mgr manager.Manager, cfg *config.Config) (*ReconcileNetwork, 
 	scheme := mgr.GetScheme()
 
 	network := &ReconcileNetwork{
-		client: client,
-		scheme: scheme,
-		Config: cfg,
-		update: map[string][]Update{},
-		mutex:  &sync.Mutex{},
+		client:      client,
+		scheme:      scheme,
+		Config:      cfg,
+		update:      map[string][]Update{},
+		mutex:       &sync.Mutex{},
+		rbacManager: bcrbac.NewRBACManager(client, nil),
 	}
 
 	switch cfg.Offering {
@@ -99,6 +102,7 @@ func add(mgr manager.Manager, r *ReconcileNetwork) error {
 	predicateFuncs := predicate.Funcs{
 		CreateFunc: r.CreateFunc,
 		UpdateFunc: r.UpdateFunc,
+		DeleteFunc: r.DeleteFunc,
 	}
 
 	c, err := controller.New("network-controller", mgr, controller.Options{Reconciler: r})
@@ -135,6 +139,8 @@ type ReconcileNetwork struct {
 
 	update map[string][]Update
 	mutex  *sync.Mutex
+
+	rbacManager *bcrbac.Manager
 }
 
 func (r *ReconcileNetwork) SetupWithManager(mgr ctrl.Manager) error {
@@ -304,8 +310,8 @@ func (r *ReconcileNetwork) SaveSpecState(instance *current.Network) error {
 
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-spec", instance.GetName()),
-			Namespace: instance.GetNamespace(),
+			Name:      fmt.Sprintf("net-%s-spec", instance.GetName()),
+			Namespace: r.Config.Operator.Namespace,
 			Labels:    instance.GetLabels(),
 		},
 		BinaryData: map[string][]byte{
@@ -327,8 +333,8 @@ func (r *ReconcileNetwork) SaveSpecState(instance *current.Network) error {
 func (r *ReconcileNetwork) GetSpecState(instance *current.Network) (*corev1.ConfigMap, error) {
 	cm := &corev1.ConfigMap{}
 	nn := types.NamespacedName{
-		Name:      fmt.Sprintf("%s-spec", instance.GetName()),
-		Namespace: instance.GetNamespace(),
+		Name:      fmt.Sprintf("net-%s-spec", instance.GetName()),
+		Namespace: r.Config.Operator.Namespace,
 	}
 
 	err := r.client.Get(context.TODO(), nn, cm)

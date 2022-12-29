@@ -19,11 +19,12 @@
 package organization
 
 type Config struct {
-	IAMEnabled                  bool
-	AdminRoleFile               string
-	AdminRoleBindingFile        string
-	AdminClusterRoleBindingFile string
-	ClientRoleFile              string
-	CAFile                      string
-	StoragePath                 string
+	IAMEnabled             bool
+	AdminRoleFile          string
+	ClientRoleFile         string
+	RoleBindingFile        string
+	ClusterRoleFile        string
+	ClusterRoleBindingFile string
+	CAFile                 string
+	StoragePath            string
 }

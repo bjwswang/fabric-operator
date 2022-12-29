@@ -1,8 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: blockchain:admin-role
+  name: blockchain:admin
 rules:
+# Core Groups
 - apiGroups:
     - ""
   resources:
@@ -70,6 +71,8 @@ rules:
     - ibpcas
   verbs:
     - get
+    - update
+    - patch
     - list
     - watch
 - apiGroups:

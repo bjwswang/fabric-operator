@@ -18,7 +18,4 @@
 
 package network
 
-type Config struct {
-	ClusterRoleFile        string
-	ClusterRoleBindingFile string
-}
+type Config struct{}

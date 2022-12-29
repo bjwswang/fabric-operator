@@ -18,19 +18,8 @@
 
 package override
 
-import (
-	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
-	rbacv1 "k8s.io/api/rbac/v1"
-)
-
 //go:generate counterfeiter -o mocks/baseOverride.go -fake-name BaseOverride . baseOverride
-type baseOverride interface {
-	CreateClusterRole(*current.Federation, *rbacv1.ClusterRole) error
-	UpdateClusterRole(*current.Federation, *rbacv1.ClusterRole) error
-
-	CreateClusterRoleBinding(*current.Federation, *rbacv1.ClusterRoleBinding) error
-	UpdateClusterRoleBinding(*current.Federation, *rbacv1.ClusterRoleBinding) error
-}
+type baseOverride interface{}
 
 type Override struct {
 	BaseOverride baseOverride

@@ -44,9 +44,7 @@ type Proposal struct {
 
 func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config) *Proposal {
 	o := &override.Override{
-		Override: &baseproposaloverride.Override{
-			Client: client,
-		},
+		Override: &baseproposaloverride.Override{},
 	}
 
 	Proposal := &Proposal{

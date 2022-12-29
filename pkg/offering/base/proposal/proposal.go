@@ -27,11 +27,9 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
-	resourcemanager "github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/manager"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/pkg/errors"
-	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,10 +40,7 @@ import (
 
 var log = logf.Log.WithName("base_proposal")
 
-type Override interface {
-	ClusterRole(v1.Object, *rbacv1.ClusterRole, resources.Action) error
-	ClusterRoleBinding(v1.Object, *rbacv1.ClusterRoleBinding, resources.Action) error
-}
+type Override interface{}
 
 //go:generate counterfeiter -o mocks/update.go -fake-name Update . Update
 
@@ -65,9 +60,9 @@ type BaseProposal struct {
 	Scheme *runtime.Scheme
 	Config *config.Config
 
-	ClusterRoleManager        resources.Manager
-	ClusterRoleBindingManager resources.Manager
-	Override                  Override
+	RBACManager *bcrbac.Manager
+
+	Override Override
 }
 
 func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config, o Override) *BaseProposal {
@@ -83,10 +78,7 @@ func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config,
 }
 
 func (p *BaseProposal) CreateManagers() {
-	override := p.Override
-	resourceManager := resourcemanager.New(p.Client, p.Scheme)
-	p.ClusterRoleManager = resourceManager.CreateClusterRoleManager("", override.ClusterRole, p.GetLabels, p.Config.CAInitConfig.RoleFile)
-	p.ClusterRoleBindingManager = resourceManager.CreateClusterRoleBindingManager("", override.ClusterRoleBinding, p.GetLabels, p.Config.CAInitConfig.RoleBindingFile)
+	p.RBACManager = bcrbac.NewRBACManager(p.Client, nil)
 }
 
 func (p *BaseProposal) PreReconcileChecks(instance *current.Proposal) (bool, error) {
@@ -121,14 +113,9 @@ func (c *BaseProposal) ReconcileManagers(ctx context.Context, instance *current.
 }
 
 func (c *BaseProposal) ReconcileRBAC(instance *current.Proposal) (err error) {
-	if err = c.ClusterRoleManager.Reconcile(instance, false); err != nil {
-		return errors.Wrap(err, "failed ClusterRole reconciliation")
+	if err = c.RBACManager.Reconcile(bcrbac.Proposal, instance, bcrbac.ResourceCreate); err != nil {
+		return errors.Wrap(err, "failed sync rbac")
 	}
-
-	if err = c.ClusterRoleBindingManager.Reconcile(instance, false); err != nil {
-		return errors.Wrap(err, "failed ClusterRoleBinding reconciliation")
-	}
-
 	return
 }
 

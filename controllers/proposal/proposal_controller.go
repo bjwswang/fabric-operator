@@ -34,6 +34,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	k8sproposal "github.com/IBM-Blockchain/fabric-operator/pkg/offering/k8s/proposal"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/pkg/errors"
 	"k8s.io/utils/pointer"
 
@@ -71,11 +72,12 @@ func newReconciler(mgr manager.Manager, cfg *config.Config) (*ReconcileProposal,
 	scheme := mgr.GetScheme()
 
 	proposal := &ReconcileProposal{
-		client:     client,
-		scheme:     scheme,
-		Config:     cfg,
-		voteResult: map[string]map[string]current.VoteResult{},
-		mutex:      &sync.Mutex{},
+		client:      client,
+		scheme:      scheme,
+		Config:      cfg,
+		voteResult:  map[string]map[string]current.VoteResult{},
+		mutex:       &sync.Mutex{},
+		rbacManager: bcrbac.NewRBACManager(client, nil),
 	}
 
 	switch cfg.Offering {
@@ -92,6 +94,7 @@ func newReconciler(mgr manager.Manager, cfg *config.Config) (*ReconcileProposal,
 func add(mgr manager.Manager, r *ReconcileProposal) error {
 	proposalPredicateFuncs := predicate.Funcs{
 		CreateFunc: r.CreateFunc,
+		DeleteFunc: r.DeleteFunc,
 	}
 
 	c, err := controller.New("proposal-controller", mgr, controller.Options{Reconciler: r})
@@ -123,7 +126,7 @@ var _ reconcile.Reconciler = &ReconcileProposal{}
 
 //go:generate counterfeiter -o mocks/proposalreconcile.go -fake-name ProposalReconcile . proposalReconcile
 
-type consoleReconcile interface {
+type proposalReconcile interface {
 	Reconcile(*current.Proposal) (common.Result, error)
 }
 
@@ -134,11 +137,13 @@ type ReconcileProposal struct {
 	client k8sclient.Client
 	scheme *runtime.Scheme
 
-	Offering consoleReconcile
+	Offering proposalReconcile
 	Config   *config.Config
 
 	voteResult map[string]map[string]current.VoteResult
 	mutex      *sync.Mutex
+
+	rbacManager *bcrbac.Manager
 }
 
 // Reconcile reads that state of the cluster for a proposal object and makes changes based on the state read
@@ -363,6 +368,17 @@ func (r *ReconcileProposal) CreateFunc(e event.CreateEvent) bool {
 	}
 	// todo phase and conditions union check
 	return true
+}
+
+func (r *ReconcileProposal) DeleteFunc(e event.DeleteEvent) bool {
+	proposal := e.Object.(*current.Proposal)
+
+	err := r.rbacManager.Reconcile(bcrbac.Proposal, proposal, bcrbac.ResourceDelete)
+	if err != nil {
+		log.Error(err, "failed to sync rbac uppon proposal delete")
+	}
+
+	return false
 }
 
 func (r *ReconcileProposal) UpdateFunc(e event.UpdateEvent) bool {

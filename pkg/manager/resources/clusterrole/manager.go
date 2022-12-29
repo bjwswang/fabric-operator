@@ -54,7 +54,8 @@ func (m *Manager) GetName(instance v1.Object) string {
 func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 	var err error
 	name := m.GetName(instance)
-	err = m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, &rbacv1.ClusterRole{})
+	clusterRole := &rbacv1.ClusterRole{}
+	err = m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, clusterRole)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf("Creating cluster role '%s'", name))
@@ -68,22 +69,22 @@ func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 			if err != nil {
 				return err
 			}
+
 			return nil
 		}
 		return err
 	}
 
 	if update {
-		// update if exists(same like Create)
-		clusterRole, err := m.GetClusterRoleBasedOnCRFromFile(instance)
-		if err != nil {
-			return err
+		if m.OverrideFunc != nil {
+			err := m.OverrideFunc(instance, clusterRole, resources.Update)
+			if err != nil {
+				return operatorerrors.New(operatorerrors.InvalidClusterRoleUpdateRequest, err.Error())
+			}
 		}
-
 		if err = m.Client.Update(context.TODO(), clusterRole); err != nil {
 			return err
 		}
-
 	}
 	return nil
 }

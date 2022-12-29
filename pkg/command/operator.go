@@ -129,6 +129,7 @@ func OperatorWithSignal(operatorCfg *oconfig.Config, signalHandler context.Conte
 		log.Info("Installing operator in own namespace mode", "WATCH_NAMESPACE", watchNamespace)
 		operatorNamespace = watchNamespace
 	}
+	operatorCfg.Operator.Namespace = operatorNamespace
 
 	if !local {
 		label := os.Getenv("OPERATOR_LABEL_PREFIX")
@@ -216,12 +217,16 @@ func OperatorWithSignal(operatorCfg *oconfig.Config, signalHandler context.Conte
 		}
 
 		// Setup all Webhook
-		go func() {
-			if err := ibpv1beta1.AddWebhooks(mgr, log); err != nil {
-				log.Error(err, "setup webhook err, exit")
-				os.Exit(1)
-			}
-		}()
+		webhookDisabled := os.Getenv("WEBHOOK_DISABLED")
+		if webhookDisabled != "true" {
+			go func() {
+				if err := ibpv1beta1.AddWebhooks(mgr, log); err != nil {
+					log.Error(err, "setup webhook err, exit")
+					os.Exit(1)
+				}
+			}()
+		}
+
 		// Setup all Controllers
 		if err := controller.AddToManager(mgr, operatorCfg); err != nil {
 			log.Error(err, "")

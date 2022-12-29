@@ -40,21 +40,11 @@ import (
 
 func (r *ReconcileOrganization) CreateFunc(e event.CreateEvent) bool {
 	var reconcile bool
-	switch e.Object.(type) {
-	case *current.Organization:
-		organization := e.Object.(*current.Organization)
-		log.Info(fmt.Sprintf("Create event detected for organization '%s'", organization.GetName()))
-		reconcile = r.PredictOrganizationCreate(organization)
-		if reconcile {
-			log.Info(fmt.Sprintf("Create event triggering reconcile for creating organization '%s'", organization.GetName()))
-		}
-
-	case *current.Federation:
-		federation := e.Object.(*current.Federation)
-		log.Info(fmt.Sprintf("Create event detected for federation '%s'", federation.GetName()))
-		reconcile = r.PredictFederationCreate(federation)
-	case *current.IBPCA:
-		reconcile = false
+	organization := e.Object.(*current.Organization)
+	log.Info(fmt.Sprintf("Create event detected for organization '%s'", organization.GetName()))
+	reconcile = r.PredictOrganizationCreate(organization)
+	if reconcile {
+		log.Info(fmt.Sprintf("Create event triggering reconcile for creating organization '%s'", organization.GetName()))
 	}
 	return reconcile
 }
@@ -96,44 +86,12 @@ func (r *ReconcileOrganization) PredictOrganizationCreate(organization *current.
 	return true
 }
 
-func (r *ReconcileOrganization) PredictFederationCreate(federation *current.Federation) bool {
-	var err error
-
-	for _, m := range federation.Spec.Members {
-		err = r.AddFed(m, federation)
-		if err != nil {
-			log.Error(err, fmt.Sprintf("Member %s in Federation %s", m.GetNamespacedName(), federation.GetName()))
-		}
-	}
-
-	return false
-}
-
 func (r *ReconcileOrganization) UpdateFunc(e event.UpdateEvent) bool {
-	var reconcile bool
+	oldOrg := e.ObjectOld.(*current.Organization)
+	newOrg := e.ObjectNew.(*current.Organization)
+	log.Info(fmt.Sprintf("Update event detected for organization '%s'", oldOrg.GetName()))
 
-	switch e.ObjectOld.(type) {
-	case *current.Organization:
-		oldOrg := e.ObjectOld.(*current.Organization)
-		newOrg := e.ObjectNew.(*current.Organization)
-		log.Info(fmt.Sprintf("Update event detected for organization '%s'", oldOrg.GetName()))
-
-		reconcile = r.PredictOrganizationUpdate(oldOrg, newOrg)
-
-	case *current.Federation:
-		oldFed := e.ObjectOld.(*current.Federation)
-		newFed := e.ObjectNew.(*current.Federation)
-		log.Info(fmt.Sprintf("Update event detected for fedeartion '%s'", oldFed.GetName()))
-
-		reconcile = r.PredictFederationUpdate(oldFed, newFed)
-	case *current.IBPCA:
-		oldCA := e.ObjectOld.(*current.IBPCA)
-		newCA := e.ObjectNew.(*current.IBPCA)
-		log.Info(fmt.Sprintf("Update event detected for ibpca '%s'", oldCA.GetName()))
-
-		reconcile = r.PredictCAUpdate(oldCA, newCA)
-	}
-	return reconcile
+	return r.PredictOrganizationUpdate(oldOrg, newOrg)
 }
 
 func (r *ReconcileOrganization) PredictOrganizationUpdate(oldOrg *current.Organization, newOrg *current.Organization) bool {
@@ -166,66 +124,10 @@ func (r *ReconcileOrganization) PredictOrganizationUpdate(oldOrg *current.Organi
 	return true
 }
 
-func (r *ReconcileOrganization) PredictFederationUpdate(oldFed *current.Federation, newFed *current.Federation) bool {
-	var err error
-
-	oldMembers := oldFed.Spec.Members
-	newMembers := newFed.Spec.Members
-
-	added, removed := current.DifferMembers(oldMembers, newMembers)
-
-	for _, am := range added {
-		err = r.AddFed(am, newFed)
-		if err != nil {
-			log.Error(err, fmt.Sprintf("Member %s in Federation %s", am.GetNamespacedName(), newFed.GetName()))
-		}
-	}
-
-	for _, rm := range removed {
-		err = r.DeleteFed(rm, newFed)
-		if err != nil {
-			log.Error(err, fmt.Sprintf("Member %s in Federation %s", rm.GetNamespacedName(), newFed.GetName()))
-		}
-	}
-
-	return false
-}
-
-func (r *ReconcileOrganization) PredictCAUpdate(oldCA *current.IBPCA, newCA *current.IBPCA) bool {
-	var err error
-	org := &current.Organization{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{
-		Name: newCA.GetOrganization().Name,
-	}, org)
-	if err != nil {
-		log.Error(err, fmt.Sprintf("failed to get organization %s`", newCA.GetOrganization().Name))
-		return false
-	}
-	// sync to CAStatus
-	err = r.SetStatus(org, &newCA.Status.CRStatus)
-	if err != nil {
-		log.Error(err, fmt.Sprintf("set organization %s to %s", org.GetName(), newCA.Status.Type))
-	}
-
-	return false
-}
 func (r *ReconcileOrganization) DeleteFunc(e event.DeleteEvent) bool {
-	var reconcile bool
-	switch e.Object.(type) {
-	case *current.Organization:
-		organiation := e.Object.(*current.Organization)
-		log.Info(fmt.Sprintf("Delete event detected for organization '%s'", organiation.GetName()))
-		reconcile = r.PredictOrganizationDelete(organiation)
-	case *current.Federation:
-		federation := e.Object.(*current.Federation)
-		log.Info(fmt.Sprintf("Delete event detected for federation '%s'", federation.GetName()))
-		reconcile = r.PredictFederationDelete(federation)
-	}
-	return reconcile
-}
-
-func (r *ReconcileOrganization) PredictOrganizationDelete(organization *current.Organization) bool {
 	var err error
+	organization := e.Object.(*current.Organization)
+	log.Info(fmt.Sprintf("Delete event detected for organization '%s'", organization.GetName()))
 	if r.Config.OrganizationInitConfig.IAMEnabled {
 		userList, err := r.GetIAMUsers(organization.GetName())
 		if err != nil {
@@ -252,8 +154,57 @@ func (r *ReconcileOrganization) PredictOrganizationDelete(organization *current.
 	return false
 }
 
-func (r *ReconcileOrganization) PredictFederationDelete(federation *current.Federation) bool {
+// Federation related predict funcs
+func (r *ReconcileOrganization) FederationCreateFunc(e event.CreateEvent) bool {
 	var err error
+
+	federation := e.Object.(*current.Federation)
+	log.Info(fmt.Sprintf("Create event detected for federation '%s'", federation.GetName()))
+
+	for _, m := range federation.Spec.Members {
+		err = r.AddFed(m, federation)
+		if err != nil {
+			log.Error(err, fmt.Sprintf("Member %s in Federation %s", m.GetNamespacedName(), federation.GetName()))
+		}
+	}
+
+	return false
+}
+
+func (r *ReconcileOrganization) FederationUpdateFunc(e event.UpdateEvent) bool {
+	var err error
+
+	oldFed := e.ObjectOld.(*current.Federation)
+	newFed := e.ObjectNew.(*current.Federation)
+	log.Info(fmt.Sprintf("Update event detected for fedeartion '%s'", oldFed.GetName()))
+
+	oldMembers := oldFed.Spec.Members
+	newMembers := newFed.Spec.Members
+
+	added, removed := current.DifferMembers(oldMembers, newMembers)
+
+	for _, am := range added {
+		err = r.AddFed(am, newFed)
+		if err != nil {
+			log.Error(err, fmt.Sprintf("Member %s in Federation %s", am.GetNamespacedName(), newFed.GetName()))
+		}
+	}
+
+	for _, rm := range removed {
+		err = r.DeleteFed(rm, newFed)
+		if err != nil {
+			log.Error(err, fmt.Sprintf("Member %s in Federation %s", rm.GetNamespacedName(), newFed.GetName()))
+		}
+	}
+
+	return false
+}
+
+func (r *ReconcileOrganization) FederationDeleteFunc(e event.DeleteEvent) bool {
+	var err error
+
+	federation := e.Object.(*current.Federation)
+	log.Info(fmt.Sprintf("Delete event detected for federation '%s'", federation.GetName()))
 
 	for _, m := range federation.Spec.Members {
 		err = r.DeleteFed(m, federation)
@@ -261,7 +212,6 @@ func (r *ReconcileOrganization) PredictFederationDelete(federation *current.Fede
 			log.Error(err, fmt.Sprintf("Member %s in Federation %s", m.GetNamespacedName(), federation.GetName()))
 		}
 	}
-
 	return false
 }
 
@@ -297,6 +247,31 @@ func (r *ReconcileOrganization) AddFed(m current.Member, federation *current.Fed
 	}
 
 	return nil
+}
+
+// CA related predict funcs
+func (r *ReconcileOrganization) CAUpdateFunc(e event.UpdateEvent) bool {
+	var err error
+
+	oldCA := e.ObjectOld.(*current.IBPCA)
+	newCA := e.ObjectNew.(*current.IBPCA)
+	log.Info(fmt.Sprintf("Update event detected for ibpca '%s'", oldCA.GetName()))
+
+	org := &current.Organization{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Name: newCA.GetOrganization().Name,
+	}, org)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("failed to get organization %s`", newCA.GetOrganization().Name))
+		return false
+	}
+	// sync to CAStatus
+	err = r.SetStatus(org, &newCA.Status.CRStatus)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("set organization %s to %s", org.GetName(), newCA.Status.Type))
+	}
+
+	return false
 }
 
 func (r *ReconcileOrganization) UpdateStatus(organization current.NamespacedName, newStatus current.CRStatus) error {

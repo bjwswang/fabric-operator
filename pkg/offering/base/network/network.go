@@ -25,12 +25,10 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/manager"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
+	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/pkg/errors"
-	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -49,8 +47,6 @@ type Update interface {
 //go:generate counterfeiter -o mocks/override.go -fake-name Override . Override
 
 type Override interface {
-	ClusterRole(v1.Object, *rbacv1.ClusterRole, resources.Action) error
-	ClusterRoleBinding(v1.Object, *rbacv1.ClusterRoleBinding, resources.Action) error
 }
 
 //go:generate counterfeiter -o mocks/basenetwork.go -fake-name Network . Network
@@ -77,8 +73,7 @@ type BaseNetwork struct {
 
 	Override Override
 
-	ClusterRoleManager        resources.Manager
-	ClusterRoleBindingManager resources.Manager
+	RBACManager *bcrbac.Manager
 }
 
 func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.Config, o Override) *BaseNetwork {
@@ -97,11 +92,7 @@ func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.
 // TODO: leave this due to we might need managers in the future
 // - configmap manager
 func (network *BaseNetwork) CreateManagers() {
-	override := network.Override
-	mgr := manager.New(network.Client, network.Scheme)
-
-	network.ClusterRoleManager = mgr.CreateClusterRoleManager("", override.ClusterRole, network.GetLabels, network.Config.NetworkInitConfig.ClusterRoleFile)
-	network.ClusterRoleBindingManager = mgr.CreateClusterRoleBindingManager("", override.ClusterRoleBinding, network.GetLabels, network.Config.NetworkInitConfig.ClusterRoleBindingFile)
+	network.RBACManager = bcrbac.NewRBACManager(network.Client, nil)
 }
 
 // Reconcile on Network upon Update
@@ -169,16 +160,12 @@ func (network *BaseNetwork) Initialize(instance *current.Network, update Update)
 // ReconcileManagers on Network upon Update
 func (network *BaseNetwork) ReconcileManagers(instance *current.Network, update Update) error {
 	var err error
-
-	// cluster role do not need to update
-	if err = network.ClusterRoleManager.Reconcile(instance, true); err != nil {
-		return errors.Wrap(err, "reconcile cluster role")
+	if update.MemberUpdated() {
+		err = network.RBACManager.Reconcile(bcrbac.Network, instance, bcrbac.ResourceUpdate)
+		if err != nil {
+			return err
+		}
 	}
-
-	if err = network.ClusterRoleBindingManager.Reconcile(instance, true); err != nil {
-		return errors.Wrap(err, "reconcile cluster role binding")
-	}
-
 	return nil
 }
 

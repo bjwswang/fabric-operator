@@ -24,6 +24,8 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/controllers/mocks"
+	"github.com/IBM-Blockchain/fabric-operator/operatorconfig"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
@@ -49,6 +51,12 @@ var _ = Describe("Predict on Network", func() {
 			update: map[string][]Update{},
 			client: client,
 			mutex:  &sync.Mutex{},
+			Config: &operatorconfig.Config{
+				Operator: operatorconfig.Operator{
+					Namespace: "operator-system",
+				},
+			},
+			rbacManager: rbac.NewRBACManager(client, nil),
 		}
 
 		federation = &current.Federation{

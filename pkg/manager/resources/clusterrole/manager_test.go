@@ -41,7 +41,7 @@ var _ = Describe("ClusterRole manager", func() {
 	BeforeEach(func() {
 		mockKubeClient = &mocks.Client{}
 		manager = &clusterrole.Manager{
-			ClusterRoleFile: "../../../../definitions/federation/clusterrole.yaml",
+			ClusterRoleFile: "../../../../definitions/organization/cluster_role.yaml",
 			Client:          mockKubeClient,
 			OverrideFunc: func(v1.Object, *rbacv1.ClusterRole, resources.Action) error {
 				return nil

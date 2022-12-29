@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: blockchain:common
+rules:
+# CRD Organization
+- apiGroups:
+    - ibp.com
+  resources:
+    - organizations
+  verbs:
+    - create
+    - get
+    - list

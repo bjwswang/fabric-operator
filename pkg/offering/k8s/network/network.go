@@ -39,9 +39,7 @@ type Network struct {
 
 func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config) *Network {
 	o := &override.Override{
-		BaseOverride: &baseoverride.Override{
-			Client: client,
-		},
+		BaseOverride: &baseoverride.Override{},
 	}
 	network := &Network{
 		BaseNetwork: basenet.New(client, scheme, config, o),

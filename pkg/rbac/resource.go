@@ -16,16 +16,33 @@
  * limitations under the License.
  */
 
-package override_test
+package rbac
 
 import (
-	"testing"
+	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 )
 
-func TestOverride(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "BaseFederation Override Suite")
+var GroupVersion = v1beta1.GroupVersion
+
+type Resource string
+
+const (
+	// Cluster Scope
+	Organization Resource = "Organization"
+	Federation   Resource = "Federation"
+	Proposal     Resource = "Proposal"
+	Network      Resource = "Network"
+	Channel      Resource = "Channel"
+
+	// Namespaced Scope
+	Votes       Resource = "Vote"
+	IBPCAs      Resource = "IBPCA"
+	IBPOrderers Resource = "IBPOrderer"
+	IBPPeers    Resource = "IBPPeer"
+)
+
+func (resource Resource) String() string {
+	return strings.ToLower(string(resource)) + "s"
 }

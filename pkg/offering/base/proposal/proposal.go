@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
@@ -97,22 +96,6 @@ func (p *BaseProposal) PreReconcileChecks(instance *current.Proposal) (bool, err
 
 func (p *BaseProposal) Reconcile(instance *current.Proposal) (result common.Result, err error) {
 	log.Info("Reconciling...")
-	update := false
-	if instance.Spec.EndAt.IsZero() {
-		instance.Spec.EndAt = v1.NewTime(time.Now().Add(time.Hour * 24))
-		update = true
-	}
-	if instance.Spec.StartAt.IsZero() {
-		instance.Spec.StartAt = v1.Now()
-		update = true
-	}
-	if update {
-		if err := p.Client.Update(context.TODO(), instance); err != nil {
-			return common.Result{}, err
-		} else {
-			return common.Result{}, nil
-		}
-	}
 	if instance.Status.Phase == current.ProposalPending {
 
 	} else if instance.Status.Phase == current.ProposalVoting {

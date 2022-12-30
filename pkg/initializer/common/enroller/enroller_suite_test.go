@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/common/enroller"
-	"github.com/hyperledger/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

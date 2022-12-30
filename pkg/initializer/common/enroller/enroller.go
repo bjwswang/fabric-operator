@@ -27,7 +27,7 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/common/config"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
-	"github.com/hyperledger/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib"
 	"github.com/pkg/errors"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"

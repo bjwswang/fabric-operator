@@ -23,7 +23,7 @@ package enroller
 
 import (
 	commonapi "github.com/IBM-Blockchain/fabric-operator/pkg/apis/common"
-	"github.com/hyperledger/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib"
 )
 
 func GetClient(client *lib.Client, bccsp *commonapi.BCCSP) *lib.Client {

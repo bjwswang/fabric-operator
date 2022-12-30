@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/IBM-Blockchain/fabric-operator/pkg/certificate/reenroller"
-	"github.com/hyperledger/fabric-ca/api"
-	"github.com/hyperledger/fabric-ca/lib"
-	"github.com/hyperledger/fabric-ca/lib/client/credential/x509"
+	"github.com/bestchains/fabric-ca/api"
+	"github.com/bestchains/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib/client/credential/x509"
 )
 
 type Identity struct {

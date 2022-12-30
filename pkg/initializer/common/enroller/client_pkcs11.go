@@ -23,7 +23,7 @@ package enroller
 
 import (
 	commonapi "github.com/IBM-Blockchain/fabric-operator/pkg/apis/common"
-	"github.com/hyperledger/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/bccsp/pkcs11"
 )

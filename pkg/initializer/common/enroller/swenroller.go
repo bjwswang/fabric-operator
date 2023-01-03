@@ -50,6 +50,7 @@ type SWEnroller struct {
 	Client CAClient
 }
 
+// NewSWEnroller To create a new client.
 func NewSWEnroller(caClient CAClient) *SWEnroller {
 	return &SWEnroller{
 		Client: caClient,
@@ -110,6 +111,7 @@ func (e *SWEnroller) ReadKey() ([]byte, error) {
 	return nil, errors.Errorf("failed to read private key")
 }
 
+// enroll: The authentication logic of iam is executed only if token is not empty.
 func enroll(client CAClient) (*config.Response, error) {
 	req := client.GetEnrollmentRequest()
 	log.Info(fmt.Sprintf("Enrolling with CA '%s'", req.CAHost))
@@ -135,6 +137,15 @@ func enroll(client CAClient) (*config.Response, error) {
 		Name:   req.EnrollID,
 		Secret: req.EnrollSecret,
 		CAName: req.CAName,
+	}
+	if req.EnrollToken != "" && req.EnrollUser != "" {
+		enrollReq.IAMEnroll = true
+		if enrollReq.Headers == nil {
+			enrollReq.Headers = make(map[string]string)
+		}
+		enrollReq.Headers["iam-user"] = req.EnrollUser
+		enrollReq.Headers["iam-token"] = req.EnrollToken
+		enrollReq.Headers["iam-peer-order-id"] = req.EnrollID
 	}
 	if req.CSR != nil && len(req.CSR.Hosts) > 0 {
 		enrollReq.CSR = &api.CSRInfo{

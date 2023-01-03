@@ -576,6 +576,12 @@ spec:
                             description: EnrollSecret is enrollment secret ( password
                               )
                             type: string
+                          enrolltoken:
+                            type: string
+                          enrolluser:
+                            description: IAM auth information. Generally speaking,
+                              it is the organization's admin
+                            type: string
                         type: object
                       component:
                         description: Component contains ecert enrollment details
@@ -617,6 +623,12 @@ spec:
                             description: EnrollSecret is enrollment secret ( password
                               )
                             type: string
+                          enrolltoken:
+                            type: string
+                          enrolluser:
+                            description: IAM auth information. Generally speaking,
+                              it is the organization's admin
+                            type: string
                         type: object
                       tls:
                         description: TLS contains tls enrollment details
@@ -657,6 +669,12 @@ spec:
                           enrollsecret:
                             description: EnrollSecret is enrollment secret ( password
                               )
+                            type: string
+                          enrolltoken:
+                            type: string
+                          enrolluser:
+                            description: IAM auth information. Generally speaking,
+                              it is the organization's admin
                             type: string
                         type: object
                     type: object

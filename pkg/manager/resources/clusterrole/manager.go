@@ -51,20 +51,22 @@ func (m *Manager) GetName(instance v1.Object) string {
 	return GetName(instance.GetName(), m.Name)
 }
 
+// Reconcle handles:
+//   - create on clusterRole
+//   - update on currentClusterRole
 func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 	var err error
-	name := m.GetName(instance)
-	clusterRole := &rbacv1.ClusterRole{}
-	err = m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, clusterRole)
+
+	clusterRole, err := m.GetClusterRoleBasedOnCRFromFile(instance)
+	if err != nil {
+		return err
+	}
+
+	currrentClusterRole := &rbacv1.ClusterRole{}
+	err = m.Client.Get(context.TODO(), types.NamespacedName{Name: clusterRole.Name, Namespace: clusterRole.Namespace}, currrentClusterRole)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Creating cluster role '%s'", name))
-
-			clusterRole, err := m.GetClusterRoleBasedOnCRFromFile(instance)
-			if err != nil {
-				return err
-			}
-
+			log.Info(fmt.Sprintf("Creating cluster role '%s'", clusterRole.Name))
 			err = m.Client.Create(context.TODO(), clusterRole, k8sclient.CreateOption{Owner: instance, Scheme: m.Scheme})
 			if err != nil {
 				return err
@@ -77,12 +79,12 @@ func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 
 	if update {
 		if m.OverrideFunc != nil {
-			err := m.OverrideFunc(instance, clusterRole, resources.Update)
+			err := m.OverrideFunc(instance, currrentClusterRole, resources.Update)
 			if err != nil {
 				return operatorerrors.New(operatorerrors.InvalidClusterRoleUpdateRequest, err.Error())
 			}
 		}
-		if err = m.Client.Update(context.TODO(), clusterRole); err != nil {
+		if err = m.Client.Update(context.TODO(), currrentClusterRole); err != nil {
 			return err
 		}
 	}

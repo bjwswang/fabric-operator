@@ -21,8 +21,8 @@ package organization
 import (
 	"context"
 	"fmt"
+	"strings"
 
-	iam "github.com/IBM-Blockchain/fabric-operator/api/iam/v1alpha1"
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
@@ -39,8 +39,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -51,7 +49,9 @@ var log = logf.Log.WithName("base_organization")
 type Update interface {
 	SpecUpdated() bool
 	AdminUpdated() bool
+	AdminTransfered() string
 	ClientsUpdated() bool
+	ClientsRemoved() string
 }
 
 type Override interface {
@@ -206,19 +206,22 @@ func (organization *BaseOrganization) ReconcileManagers(instance *current.Organi
 		return err
 	}
 
-	//	Patch admin annotations to new Admin User(Only when subject kind is User)
-	if update.AdminUpdated() && organization.Config.OrganizationInitConfig.IAMEnabled {
-		err = organization.PatchAnnotations(instance)
-		if err != nil {
-			return err
-		}
+	err = organization.ReconcileUsers(instance, update)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
+// RecnocleRBAC on current organization,including:
+// - Create admin role and client role
+// - Create admin/client clusterrole if not exists
+// - Create/update admin clusterrole binding if admin updated
+// - Create/update client clusterrole binding if clients updated
 func (organization *BaseOrganization) ReconcileRBAC(instance *current.Organization, update Update) error {
 	var err error
+
 	// Create AdminRole if not exist
 	err = organization.AdminRoleManager.Reconcile(instance, false)
 	if err != nil {
@@ -255,7 +258,6 @@ func (organization *BaseOrganization) ReconcileRBAC(instance *current.Organizati
 		}
 	}
 
-	// TODO: enable clients update in organization
 	if update.ClientsUpdated() {
 		// reconcile ClientRoleBinding
 		err = organization.ClientRoleBindingManager.Reconcile(instance, true)
@@ -266,6 +268,51 @@ func (organization *BaseOrganization) ReconcileRBAC(instance *current.Organizati
 		err = organization.ClientClusterRoleBindingManager.Reconcile(instance, true)
 		if err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+// ReconcileUsers handles User's annotation change
+func (organization *BaseOrganization) ReconcileUsers(instance *current.Organization, update Update) error {
+	var err error
+
+	// Set/Transfer Admin annotations
+	if update.AdminUpdated() && organization.Config.OrganizationInitConfig.IAMEnabled {
+		targetUser := instance.Spec.Admin
+		transferFrom := update.AdminTransfered()
+		if transferFrom != "" {
+			err = user.ReconcileTransfer(organization.Client, transferFrom, targetUser, instance.GetName())
+			if err != nil {
+				return err
+			}
+		} else {
+			err = user.Reconcile(organization.Client, targetUser, instance.GetName(), user.ADMIN, user.Add)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if update.ClientsUpdated() && organization.Config.OrganizationInitConfig.IAMEnabled {
+		// reconcile user set
+		for _, c := range instance.Spec.Clients {
+			err = user.Reconcile(organization.Client, c, instance.GetName(), user.CLIENT, user.Add)
+			if err != nil {
+				return err
+			}
+		}
+
+		// reconcile user remove
+		if update.ClientsRemoved() != "" {
+			removed := strings.Split(update.ClientsRemoved(), ",")
+			for _, c := range removed {
+				err = user.Reconcile(organization.Client, c, instance.GetName(), user.CLIENT, user.Remove)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -301,60 +348,4 @@ func (organization *BaseOrganization) CreateNamespace(instance *current.Organiza
 			Labels: instance.GetLabels(),
 		},
 	})
-}
-
-// Patch to annotations
-func (organization *BaseOrganization) PatchAnnotations(instance *current.Organization) error {
-	var err error
-
-	admin := &iam.User{}
-	err = organization.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Admin}, admin)
-	if err != nil {
-		return err
-	}
-
-	err = SetAdminAnnotations(admin, instance)
-	if err != nil {
-		return err
-	}
-
-	err = organization.Client.Patch(context.TODO(), admin, nil, controllerclient.PatchOption{
-		Resilient: &controllerclient.ResilientPatch{
-			Retry:    2,
-			Into:     &iam.User{},
-			Strategy: client.MergeFrom,
-		},
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func SetAdminAnnotations(admin *iam.User, instance *current.Organization) error {
-	var err error
-
-	// retrieve existing annotation list
-	annotationList := user.NewBlockchainAnnotationList()
-	err = annotationList.Unmarshal([]byte(admin.Annotations[user.BlockchainAnnotationKey]))
-	if err != nil {
-		return err
-	}
-	// set admin annotation to current admin User
-	adminAnnotation := user.NewBlockchainAnnotation(instance.GetName(), user.BuildAdminID(admin.Name))
-	err = annotationList.SetAnnotation(instance.GetName(), *adminAnnotation)
-	if err != nil {
-		return err
-	}
-
-	raw, err := annotationList.Marshal()
-	if err != nil {
-		return err
-	}
-
-	admin.Annotations[user.BlockchainAnnotationKey] = string(raw)
-
-	return nil
 }

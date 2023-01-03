@@ -7,6 +7,8 @@ spec:
     accept: true
   displayName: "test organization"
   admin: org2admin
+  clients:
+    - client
   description: "test org2"
   caSpec:
     license:

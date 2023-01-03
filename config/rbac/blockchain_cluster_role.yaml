@@ -3,7 +3,6 @@ kind: ClusterRole
 metadata:
   name: blockchain:common
 rules:
-# CRD Organization
 - apiGroups:
     - ibp.com
   resources:
@@ -12,3 +11,12 @@ rules:
     - create
     - get
     - list
+- apiGroups:
+    - ibp.com
+  resources:
+    - federations
+    - proposals
+    - networks
+    - channels
+  verbs:
+    - create

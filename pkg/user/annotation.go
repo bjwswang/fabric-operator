@@ -194,6 +194,10 @@ const (
 	ORDERER IDType = "orderer"
 )
 
+func (idType IDType) String() string {
+	return string(idType)
+}
+
 // ID stands for a Fabric-CA identity
 type ID struct {
 	Name                 string            `json:"name"`
@@ -209,7 +213,7 @@ func BuildAdminID(id string) ID {
 		Type: ADMIN,
 		Attributes: map[string]string{
 			"hf.EnrollmentID":            id,
-			"hf.Type":                    string(ADMIN),
+			"hf.Type":                    ADMIN.String(),
 			"hf.Affiliation":             "",
 			"hf.Registrar.Roles":         "*",
 			"hf.RegistrarDelegateRoles":  "*",
@@ -229,7 +233,7 @@ func BuildClientID(id string) ID {
 		Type: CLIENT,
 		Attributes: map[string]string{
 			"hf.EnrollmentID": id,
-			"hf.Type":         string(CLIENT),
+			"hf.Type":         CLIENT.String(),
 			"hf.Affiliation":  "",
 		},
 		CreationTimestamp:    metav1.Now(),
@@ -243,7 +247,7 @@ func BuildPeerID(id string) ID {
 		Type: PEER,
 		Attributes: map[string]string{
 			"hf.EnrollmentID": id,
-			"hf.Type":         string(PEER),
+			"hf.Type":         PEER.String(),
 			"hf.Affiliation":  "",
 		},
 		CreationTimestamp:    metav1.Now(),
@@ -257,7 +261,7 @@ func BuildOrdererID(id string) ID {
 		Type: ORDERER,
 		Attributes: map[string]string{
 			"hf.EnrollmentID": id,
-			"hf.Type":         string(ORDERER),
+			"hf.Type":         ORDERER.String(),
 			"hf.Affiliation":  "",
 		},
 		CreationTimestamp:    metav1.Now(),

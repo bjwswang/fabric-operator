@@ -1964,6 +1964,11 @@ func (in *OrganizationList) DeepCopyObject() runtime.Object {
 func (in *OrganizationSpec) DeepCopyInto(out *OrganizationSpec) {
 	*out = *in
 	out.License = in.License
+	if in.Clients != nil {
+		in, out := &in.Clients, &out.Clients
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	in.CASpec.DeepCopyInto(&out.CASpec)
 }
 

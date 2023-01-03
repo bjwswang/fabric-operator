@@ -51,18 +51,19 @@ func (m *Manager) GetName(instance v1.Object) string {
 	return GetName(instance.GetName(), m.Name)
 }
 
+// Reconcle handles:
+//   - create on role
+//   - update on currentRole
 func (m *Manager) Reconcile(instance v1.Object, update bool) error {
-	name := m.GetName(instance)
-	role := &rbacv1.Role{}
-	err := m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, role)
+	role, err := m.GetRoleBasedOnCRFromFile(instance)
+	if err != nil {
+		return err
+	}
+	currentRole := &rbacv1.Role{}
+	err = m.Client.Get(context.TODO(), types.NamespacedName{Name: role.Name, Namespace: role.Namespace}, currentRole)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Creating role '%s'", name))
-			role, err := m.GetRoleBasedOnCRFromFile(instance)
-			if err != nil {
-				return err
-			}
-
+			log.Info(fmt.Sprintf("Creating role '%s'", role.Name))
 			err = m.Client.Create(context.TODO(), role, k8sclient.CreateOption{Owner: instance, Scheme: m.Scheme})
 			if err != nil {
 				return err
@@ -74,12 +75,12 @@ func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 
 	if update {
 		if m.OverrideFunc != nil {
-			err := m.OverrideFunc(instance, role, resources.Update)
+			err := m.OverrideFunc(instance, currentRole, resources.Update)
 			if err != nil {
 				return operatorerrors.New(operatorerrors.InvalidRoleUpdateRequest, err.Error())
 			}
 		}
-		if err = m.Client.Update(context.TODO(), role); err != nil {
+		if err = m.Client.Update(context.TODO(), currentRole); err != nil {
 			return err
 		}
 	}

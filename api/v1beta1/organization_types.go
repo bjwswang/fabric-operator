@@ -40,9 +40,12 @@ type OrganizationSpec struct {
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	Description string `json:"description,omitempty"`
 
-	// Admin is the account with `Admin` role both in kubernets and in CA
+	// Admin is the User/ServiceAccount with `Admin` role both in kubernetes and in CA
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	Admin string `json:"admin"`
+
+	// Clients are the Users/ServiceAccounts with `Client` role both in kubernetes and in CA
+	Clients []string `json:"clients,omitempty"`
 
 	// CASpec is the configurations of organization's related Certificate Authority
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true

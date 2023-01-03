@@ -87,6 +87,7 @@ func DifferMembers(old []Member, new []Member) (added []Member, removed []Member
 		// added: in new ,but not in old
 		if _, ok := oldMapper[m.Name]; !ok {
 			added = append(added, m)
+			continue
 		}
 
 		// delete the intersection

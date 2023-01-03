@@ -18,15 +18,25 @@ $ kubectl apply -f config/rbac/admin_cluster_role.yaml
 
 </detail>
 
-## 组织和联盟管理
+## 用户注册
 
-### 1. 创建3个User
+### 1. 创建5个用户
 
 ```bash
 kubectl apply -f config/samples/users
 ```
 
-### 2. 创建 3 个组织(对应3个User)
+分别为:
+
+- org1admin
+- org2admin
+- org3admin
+- client
+- client2
+
+## 组织用户管理
+
+### 1. 创建3个组织
 
 ```bash
 kubectl apply -f config/samples/orgs
@@ -76,6 +86,8 @@ items:
     uid: 4fe5089a-a03e-4133-a997-f9078fdcde5b
   spec:
     admin: org1admin
+    clients:
+    - client
     caSpec:
       images:
         caImage: hyperledgerk8s/fabric-ca
@@ -276,25 +288,28 @@ metadata:
 </details>
 
 <details>
-<summary>对应User更新如下(annotations增加bestchain相关项):</summary>
 
+<summary>组织的Admin User:</summary>
+总结:
+- annotaion增加`bestchains.list.org1`
+- label增加 `bestchains.organization.org1:admin`
 
 ```yaml
 apiVersion: iam.tenxcloud.com/v1alpha1
 kind: User
 metadata:
   annotations:
-    bestchains: '{"list":{"org1":{"organization":"org1","namespace":"org1","hf.EnrollmentID":"org1admin","hf.Type":"admin","hf.Registrar.Roles":"*","hf.Registrar.DelegateRoles":"*","hf.Revoker":"*","hf.IntermediateCA":"true","hf.GenCRL":"true","hf.Registrar.Attributes":"*"}},"lastAppliedTime":"2022-12-19
-      18:23:42.831452 +0800 CST m=+17994.978534504"}'
+    bestchains: '{"list":{"org1":{"organization":"org1","ids":{"org1admin":{"name":"org1admin","type":"client","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"org1admin","hf.Type":"client"},"creationTimestamp":"2022-12-30T03:31:30Z","lastAppliedTimestamp":"2022-12-30T03:31:30Z"}},"creationTimestamp":"2022-12-30T03:31:30Z","lastAppliedTimestamp":"2022-12-30T03:31:30Z","lastDeletionTimestamp":null}},"creationTimestamp":"2022-12-30T03:31:30Z","lastAppliedTimestamp":"2022-12-30T03:31:30Z","lastDeletetionTimestamp":null}'
     kubectl.kubernetes.io/last-applied-configuration: |
       {"apiVersion":"iam.tenxcloud.com/v1alpha1","kind":"User","metadata":{"annotations":{},"labels":{"t7d.io.username":"org1admin"},"name":"org1admin"},"spec":{"description":"org1admin 用户信息的描述","email":"org1admin@tenxcloud.com","groups":["observability","system:nodes","system:masters","resource-reader","iam.tenxcloud.com","observability"],"name":"org1admin","password":"$2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2","phone":"18890901212","role":"admin"}}
-  creationTimestamp: "2022-12-19T10:23:38Z"
+  creationTimestamp: "2022-12-30T03:31:26Z"
   generation: 1
   labels:
+    bestchains.organizaiton.org1: admin
     t7d.io.username: org1admin
   name: org1admin
-  resourceVersion: "900438"
-  uid: 9c08d919-9c35-4c5b-80f5-ee658d91f197
+  resourceVersion: "1254605"
+  uid: 53b666a7-b6c1-42e1-8adb-5c98c3347f7e
 spec:
   description: org1admin 用户信息的描述
   email: org1admin@tenxcloud.com
@@ -313,7 +328,385 @@ spec:
 
 </details>
 
-### 2. 创建联盟
+<details>
+
+<summary>组织的Client User:</summary>
+总结:
+- annotaion增加`bestchains.list.org1`
+- label增加 `bestchains.organization.org1:client`
+
+```yaml
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
+metadata:
+  annotations:
+    bestchains: '{"list":{"org1":{"organization":"org1","ids":{"client":{"name":"client","type":"admin","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"client","hf.GenCRL":"true","hf.IntermediateCA":"true","hf.Registrar.Roles":"*","hf.RegistrarDelegateRoles":"*","hf.Revoker":"*","hf.Type":"admin","hf.hf.Registrar.Attributes":"*"},"creationTimestamp":"2022-12-30T03:40:17Z","lastAppliedTimestamp":"2022-12-30T03:40:17Z"}},"creationTimestamp":"2022-12-30T03:40:17Z","lastAppliedTimestamp":"2022-12-30T03:40:17Z","lastDeletionTimestamp":null},"org2":{"organization":"org2","ids":{"client":{"name":"client","type":"admin","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"client","hf.GenCRL":"true","hf.IntermediateCA":"true","hf.Registrar.Roles":"*","hf.RegistrarDelegateRoles":"*","hf.Revoker":"*","hf.Type":"admin","hf.hf.Registrar.Attributes":"*"},"creationTimestamp":"2022-12-30T03:40:17Z","lastAppliedTimestamp":"2022-12-30T03:40:17Z"}},"creationTimestamp":"2022-12-30T03:40:17Z","lastAppliedTimestamp":"2022-12-30T03:40:17Z","lastDeletionTimestamp":null},"org3":{"organization":"org3","ids":{"client":{"name":"client","type":"admin","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"client","hf.GenCRL":"true","hf.IntermediateCA":"true","hf.Registrar.Roles":"*","hf.RegistrarDelegateRoles":"*","hf.Revoker":"*","hf.Type":"admin","hf.hf.Registrar.Attributes":"*"},"creationTimestamp":"2022-12-30T03:40:22Z","lastAppliedTimestamp":"2022-12-30T03:40:22Z"}},"creationTimestamp":"2022-12-30T03:40:22Z","lastAppliedTimestamp":"2022-12-30T03:40:22Z","lastDeletionTimestamp":null}},"creationTimestamp":"2022-12-30T03:40:17Z","lastAppliedTimestamp":"2022-12-30T03:40:22Z","lastDeletetionTimestamp":null}'
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"iam.tenxcloud.com/v1alpha1","kind":"User","metadata":{"annotations":{},"labels":{"t7d.io.username":"client"},"name":"client"},"spec":{"description":"client 用户信息的描述","email":"client@tenxcloud.com","groups":["observability","system:nodes","system:masters","resource-reader","iam.tenxcloud.com","observability"],"name":"client","phone":"18890901212","role":"admin"}}
+  creationTimestamp: "2022-12-30T03:39:54Z"
+  generation: 1
+  labels:
+    bestchains.organizaiton.org1: client
+    bestchains.organizaiton.org2: client
+    bestchains.organizaiton.org3: client
+    t7d.io.username: client
+  name: client
+  resourceVersion: "1257278"
+  uid: db142b11-d5ed-463c-a2cc-348eaa77b889
+spec:
+  description: client 用户信息的描述
+  email: client@tenxcloud.com
+  groups:
+  - observability
+  - system:nodes
+  - system:masters
+  - resource-reader
+  - iam.tenxcloud.com
+  - observability
+  name: client
+  phone: "18890901212"
+  role: admin
+```
+</details>
+
+### 2. 更新组织的client用户
+
+1. 新增client用户
+
+通过更新`spec.clients`字段
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_organization_add_client.yaml
+```
+
+<details>
+
+<summary>详细yaml</summary>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Organization
+metadata:
+  name: org1
+spec:
+  license:
+    accept: true
+  displayName: "test organization"
+  admin: org1admin
+  clients:
+    - client
+    - client2
+  description: "test org1"
+  caSpec:
+    license:
+      accept: true
+    images:
+      caImage: hyperledgerk8s/fabric-ca
+      caTag: "1.5.5-iam"
+      caInitImage: hyperledgerk8s/ubi-minimal
+      caInitTag: latest
+    resources:
+      ca:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+      init:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+    storage:
+      ca:
+        class: "standard"
+        size: 100M
+    version: 1.5.5
+```
+
+</details>
+
+<details>
+<summary>新client用户详情</summary>
+总结:
+- annotation增加`bestchains.list.org1`
+- labels增加`bestchains.organization.org1:client`
+
+```yaml
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
+metadata:
+  annotations:
+    bestchains: '{"list":{"org1":{"organization":"org1","ids":{"client2":{"name":"client2","type":"admin","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"client2","hf.GenCRL":"true","hf.IntermediateCA":"true","hf.Registrar.Roles":"*","hf.RegistrarDelegateRoles":"*","hf.Revoker":"*","hf.Type":"admin","hf.hf.Registrar.Attributes":"*"},"creationTimestamp":"2022-12-30T03:32:16Z","lastAppliedTimestamp":"2022-12-30T03:32:16Z"}},"creationTimestamp":"2022-12-30T03:32:16Z","lastAppliedTimestamp":"2022-12-30T03:32:16Z","lastDeletionTimestamp":null}},"creationTimestamp":"2022-12-30T03:32:16Z","lastAppliedTimestamp":"2022-12-30T03:32:16Z","lastDeletetionTimestamp":null}'
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"iam.tenxcloud.com/v1alpha1","kind":"User","metadata":{"annotations":{},"labels":{"t7d.io.username":"client2"},"name":"client2"},"spec":{"description":"client2 用户信息的描述","email":"client2@tenxcloud.com","groups":["observability","system:nodes","system:masters","resource-reader","iam.tenxcloud.com","observability"],"name":"client2","phone":"18890901212","role":"admin"}}
+  creationTimestamp: "2022-12-30T03:31:25Z"
+  generation: 1
+  labels:
+    bestchains.organizaiton.org1: client
+    t7d.io.username: client2
+  name: client2
+  resourceVersion: "1255034"
+  uid: c2d78fd6-b2f3-4802-86ba-680587232169
+spec:
+  description: client2 用户信息的描述
+  email: client2@tenxcloud.com
+  groups:
+  - observability
+  - system:nodes
+  - system:masters
+  - resource-reader
+  - iam.tenxcloud.com
+  - observability
+  name: client2
+  phone: "18890901212"
+  role: admin
+```
+
+</details>
+
+2. 从组织中删除client用户
+
+通过更新`spec.clients`字段
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_organization_remove_client.yaml
+```
+
+<details>
+
+<summary>详细yaml</summary>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Organization
+metadata:
+  name: org1
+spec:
+  license:
+    accept: true
+  displayName: "test organization"
+  admin: org1admin
+  clients:
+    - client2
+  description: "test org1"
+  caSpec:
+    license:
+      accept: true
+    images:
+      caImage: hyperledgerk8s/fabric-ca
+      caTag: "1.5.5-iam"
+      caInitImage: hyperledgerk8s/ubi-minimal
+      caInitTag: latest
+    resources:
+      ca:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+      init:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+    storage:
+      ca:
+        class: "standard"
+        size: 100M
+    version: 1.5.5
+```
+
+</details>
+
+<details>
+<summary>删除的client用户的详情</summary>
+总结:
+- annotation删除了`bestchains.list.org1`
+- labels删除了`bestchains.organization.org1:client`
+
+```yaml
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
+metadata:
+  annotations:
+    bestchains: '{"list":{"org2":{"organization":"org2","ids":{"client":{"name":"client","type":"admin","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"client","hf.GenCRL":"true","hf.IntermediateCA":"true","hf.Registrar.Roles":"*","hf.RegistrarDelegateRoles":"*","hf.Revoker":"*","hf.Type":"admin","hf.hf.Registrar.Attributes":"*"},"creationTimestamp":"2022-12-30T03:31:35Z","lastAppliedTimestamp":"2022-12-30T03:31:35Z"}},"creationTimestamp":"2022-12-30T03:31:35Z","lastAppliedTimestamp":"2022-12-30T03:31:35Z","lastDeletionTimestamp":null},"org3":{"organization":"org3","ids":{"client":{"name":"client","type":"admin","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"client","hf.GenCRL":"true","hf.IntermediateCA":"true","hf.Registrar.Roles":"*","hf.RegistrarDelegateRoles":"*","hf.Revoker":"*","hf.Type":"admin","hf.hf.Registrar.Attributes":"*"},"creationTimestamp":"2022-12-30T03:31:39Z","lastAppliedTimestamp":"2022-12-30T03:31:39Z"}},"creationTimestamp":"2022-12-30T03:31:39Z","lastAppliedTimestamp":"2022-12-30T03:31:39Z","lastDeletionTimestamp":null}},"creationTimestamp":"2022-12-30T03:31:30Z","lastAppliedTimestamp":"2022-12-30T03:32:16Z","lastDeletetionTimestamp":"2022-12-30T03:33:21Z"}'
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"iam.tenxcloud.com/v1alpha1","kind":"User","metadata":{"annotations":{},"labels":{"t7d.io.username":"client"},"name":"client"},"spec":{"description":"client 用户信息的描述","email":"client@tenxcloud.com","groups":["observability","system:nodes","system:masters","resource-reader","iam.tenxcloud.com","observability"],"name":"client","phone":"18890901212","role":"admin"}}
+  creationTimestamp: "2022-12-30T03:31:25Z"
+  generation: 1
+  labels:
+    bestchains.organizaiton.org2: client
+    bestchains.organizaiton.org3: client
+    t7d.io.username: client
+  name: client
+  resourceVersion: "1255296"
+  uid: f094a5f3-a350-49d9-8a12-d3bfae566682
+spec:
+  description: client 用户信息的描述
+  email: client@tenxcloud.com
+  groups:
+  - observability
+  - system:nodes
+  - system:masters
+  - resource-reader
+  - iam.tenxcloud.com
+  - observability
+  name: client
+  phone: "18890901212"
+  role: admin
+```
+
+</details>
+
+### 3.  转移组织Admin权限
+
+通过更新`spec.admin`字段
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_organization_transfer_admin.yaml
+```
+
+<details>
+
+<summary>详细yaml</summary>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Organization
+metadata:
+  name: org1
+spec:
+  license:
+    accept: true
+  displayName: "test organization"
+  admin: org2admin
+  clients:
+    - client
+  description: "test org1"
+  caSpec:
+    license:
+      accept: true
+    images:
+      caImage: hyperledgerk8s/fabric-ca
+      caTag: "1.5.5-iam"
+      caInitImage: hyperledgerk8s/ubi-minimal
+      caInitTag: latest
+    resources:
+      ca:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+      init:
+        limits:
+          cpu: 100m
+          memory: 200M
+        requests:
+          cpu: 10m
+          memory: 10M
+    storage:
+      ca:
+        class: "standard"
+        size: 100M
+    version: 1.5.5
+
+```
+</details>
+
+<details>
+<summary>原Admin用户</summary>
+
+总结：
+- annotations去除了`bestchains.list.org1`
+- labels去除了 `bestchains.organization.org1:admin` 
+
+```yaml
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
+metadata:
+  annotations:
+    bestchains: '{"creationTimestamp":"2022-12-30T03:56:47Z","lastAppliedTimestamp":"2022-12-30T03:56:47Z","lastDeletetionTimestamp":"2022-12-30T04:03:50Z"}'
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"iam.tenxcloud.com/v1alpha1","kind":"User","metadata":{"annotations":{},"labels":{"t7d.io.username":"org1admin"},"name":"org1admin"},"spec":{"description":"org1admin 用户信息的描述","email":"org1admin@tenxcloud.com","groups":["observability","system:nodes","system:masters","resource-reader","iam.tenxcloud.com","observability"],"name":"org1admin","password":"$2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2","phone":"18890901212","role":"admin"}}
+  creationTimestamp: "2022-12-30T03:56:36Z"
+  generation: 1
+  labels:
+    t7d.io.username: org1admin
+  name: org1admin
+  resourceVersion: "1264655"
+  uid: fb955b00-494b-4545-bd53-01ead52520f3
+spec:
+  description: org1admin 用户信息的描述
+  email: org1admin@tenxcloud.com
+  groups:
+  - observability
+  - system:nodes
+  - system:masters
+  - resource-reader
+  - iam.tenxcloud.com
+  - observability
+  name: org1admin
+  password: $2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2
+  phone: "18890901212"
+  role: admin
+```
+
+</details>
+
+<details>
+<summary>新Admin用户</summary>
+
+总结：
+- annotations增加了`bestchains.list.org1`
+- labels增加了 `bestchains.organization.org1:admin`
+
+```yaml
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
+metadata:
+  annotations:
+    bestchains: '{"list":{"org1":{"organization":"org1","ids":{"org2admin":{"name":"org2admin","type":"admin","attributes":{"hf.Affiliation":"","hf.EnrollmentID":"org2admin","hf.GenCRL":"true","hf.IntermediateCA":"true","hf.Registrar.Roles":"*","hf.RegistrarDelegateRoles":"*","hf.Revoker":"*","hf.Type":"admin","hf.hf.Registrar.Attributes":"*"},"creationTimestamp":"2022-12-30T04:03:50Z","lastAppliedTimestamp":"2022-12-30T04:03:50Z"}},"creationTimestamp":"2022-12-30T03:56:47Z","lastAppliedTimestamp":"2022-12-30T04:03:50Z","lastDeletionTimestamp":"2022-12-30T04:03:50Z"}},"creationTimestamp":"2022-12-30T04:03:50Z","lastAppliedTimestamp":"2022-12-30T04:03:50Z","lastDeletetionTimestamp":null}'
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"iam.tenxcloud.com/v1alpha1","kind":"User","metadata":{"annotations":{},"labels":{"t7d.io.username":"org2admin"},"name":"org2admin"},"spec":{"description":"org2admin 用户信息的描述","email":"org2admin@tenxcloud.com","groups":["observability","system:nodes","system:masters","resource-reader","iam.tenxcloud.com","observability"],"name":"org2admin","password":"$2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2","phone":"18890901212","role":"admin"}}
+  creationTimestamp: "2022-12-30T03:56:36Z"
+  generation: 1
+  labels:
+    bestchains.organizaiton.org1: admin
+    bestchains.organizaiton.org2: admin
+    t7d.io.username: org2admin
+  name: org2admin
+  resourceVersion: "1264656"
+  uid: e80da140-bb9c-4a8d-a271-edd81971fbdf
+spec:
+  description: org2admin 用户信息的描述
+  email: org2admin@tenxcloud.com
+  groups:
+  - observability
+  - system:nodes
+  - system:masters
+  - resource-reader
+  - iam.tenxcloud.com
+  - observability
+  name: org2admin
+  password: $2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2
+  phone: "18890901212"
+  role: admin
+```
+
+</details>
+
+## 组织和联盟管理
+
+### 1. 创建联盟
 
 某个组织要想创建一个联盟 (Federation)，需要按以下步骤：
 
@@ -322,7 +715,7 @@ spec:
 3. 等待每个可以投票的组织手动修改选票（Vote），即投票，表明自己的意愿，同意或者拒绝。
 4. 投票符合提案（Proposal）中规定的策略（spec.Policy）后，成功创建联盟。
 
-#### 2.1 创建联盟 federation 的 CRD
+#### 1.1 创建联盟 federation 的 CRD
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_federation.yaml
@@ -364,7 +757,7 @@ status:
 
 </details>
 
-#### 2.2 发起提案 proposal，内容为创建联盟
+#### 1.2 发起提案 proposal，内容为创建联盟
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_proposal_create_federation.yaml
@@ -414,7 +807,7 @@ status:
 
 </details>
 
-#### 2.3 涉及到的组织投票
+#### 1.3 涉及到的组织投票
 
 投票 Vote 是一个 Namespaced 纬度的 CRD。
 
@@ -580,7 +973,7 @@ metadata:
 
 </details>
 
-#### 2.4 投票成功，联盟创立
+#### 1.4 投票成功，联盟创立
 
 因为 所有组织都同意了创建联盟的提案，proposal 的状态更新为 `Finished`:
 
@@ -710,7 +1103,7 @@ status:
 
 至此，联盟创立成功。
 
-### 3. 向一个联盟中添加组织
+### 2. 向一个联盟中添加组织
 
 某个组织要在现有的联盟中添加一个组织作为成员，需要按以下步骤：
 
@@ -718,7 +1111,7 @@ status:
 2. 等待每个可以投票的组织手动修改选票（Vote），即投票，表明自己的意愿，同意或者拒绝。
 3. 投票符合提案（Proposal）中规定的策略（spec.Policy）后，成功添加该组织作为成员。
 
-#### 3.1 发起提案 proposal，内容为添加成员
+#### 2.1 发起提案 proposal，内容为添加成员
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_proposal_add_member.yaml
@@ -793,7 +1186,7 @@ org3        vote-org3-add-member-federation-sample   67s
 
 </details>
 
-#### 3.2 涉及到的组织投票
+#### 2.2 涉及到的组织投票
 
 ```bash
 kubectl patch vote -n org2 vote-org2-add-member-federation-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
@@ -1037,7 +1430,7 @@ status:
 
 </details>
 
-#### 3.3 投票成功，成员成功添加
+#### 2.3 投票成功，成员成功添加
 
 <details>
 
@@ -1077,7 +1470,7 @@ status:
 
 </details>
 
-### 4. 从一个联盟中驱逐一个组织
+### 3. 从一个联盟中驱逐一个组织
 
 某个组织要在现有的联盟中驱逐一个组织，需要按以下步骤：
 
@@ -1085,7 +1478,7 @@ status:
 2. 等待每个可以投票的组织手动修改选票（Vote），即投票，表明自己的意愿，同意或者拒绝。
 3. 投票符合提案（Proposal）中规定的策略（spec.Policy）后，成功添加该组织作为成员。
 
-#### 4.1 发起提案 proposal，内容为驱逐成员
+#### 3.1 发起提案 proposal，内容为驱逐成员
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_proposal_delete_member.yaml
@@ -1218,7 +1611,7 @@ metadata:
 
 </details>
 
-#### 4.2 涉及到的组织投票
+#### 3.2 涉及到的组织投票
 
 ```bash
 kubectl patch vote -n org3 vote-org3-delete-member-federation-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
@@ -1302,7 +1695,7 @@ metadata:
 
 </details>
 
-#### 4.3 投票成功，成员成功驱逐
+#### 3.3 投票成功，成员成功驱逐
 
 <details>
 
@@ -1340,7 +1733,7 @@ status:
 
 </details>
 
-### 5. 解散联盟
+### 4. 解散联盟
 
 某个组织想要解散现有联盟，需要按以下步骤：
 
@@ -1348,7 +1741,7 @@ status:
 2. 等待每个可以投票的组织手动修改选票（Vote），即投票，表明自己的意愿，同意或者拒绝。
 3. 投票符合提案（Proposal）中规定的策略（spec.Policy）后，成功添加该组织作为成员。
 
-#### 5.1 发起提案 proposal，内容为解散联盟
+#### 4.1 发起提案 proposal，内容为解散联盟
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_proposal_dissolve_federation.yaml
@@ -1476,7 +1869,7 @@ metadata:
 
 </details>
 
-#### 5.2 涉及到的组织投票
+#### 4.2 涉及到的组织投票
 
 ```bash
 kubectl patch vote -n org3 vote-org3-dissolve-federation-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
@@ -1561,7 +1954,7 @@ metadata:
 
 </details>
 
-#### 5.3 投票成功，联盟成功解散
+#### 4.3 投票成功，联盟成功解散
 
 联盟状态变为：
 

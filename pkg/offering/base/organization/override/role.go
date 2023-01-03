@@ -37,8 +37,9 @@ func (o *Override) AdminRole(object v1.Object, role *rbacv1.Role, action resourc
 }
 
 func (o *Override) SyncAdminRole(instance *current.Organization, role *rbacv1.Role) error {
-	role.Name = bcrbac.GetRole(instance.GetNamespaced(), bcrbac.Admin).Name
-	role.Namespace = instance.GetUserNamespace()
+	namespaced := instance.GetNamespaced()
+	role.Name = bcrbac.GetRole(namespaced, bcrbac.Admin).Name
+	role.Namespace = namespaced.Namespace
 	role.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Organization, instance)}
 	return nil
 }
@@ -53,8 +54,9 @@ func (o *Override) ClientRole(object v1.Object, role *rbacv1.Role, action resour
 }
 
 func (o *Override) SyncClientRole(instance *current.Organization, role *rbacv1.Role) error {
-	role.Name = bcrbac.GetRole(instance.GetNamespaced(), bcrbac.Client).Name
-	role.Namespace = instance.GetUserNamespace()
+	namespaced := instance.GetNamespaced()
+	role.Name = bcrbac.GetRole(namespaced, bcrbac.Client).Name
+	role.Namespace = namespaced.Namespace
 
 	role.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Organization, instance)}
 	return nil

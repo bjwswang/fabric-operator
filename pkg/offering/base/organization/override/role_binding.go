@@ -38,15 +38,17 @@ func (o *Override) AdminRoleBinding(object v1.Object, rb *rbacv1.RoleBinding, ac
 
 // Sync Admin RoleBinding based on Organization.Spec.Admin
 func (o *Override) SyncAdminRoleBinding(instance *current.Organization, rb *rbacv1.RoleBinding) error {
-	rb.Name = bcrbac.GetRoleBinding(instance.GetNamespaced(), bcrbac.Admin).Name
-	rb.Namespace = instance.GetUserNamespace()
+	namespaced := instance.GetNamespaced()
+
+	rb.Name = bcrbac.GetRoleBinding(namespaced, bcrbac.Admin).Name
+	rb.Namespace = namespaced.Namespace
 
 	// Only one `Admin`
 	rb.Subjects = []rbacv1.Subject{
-		common.GetDefaultSubject(instance.Spec.Admin, instance.Namespace, o.SubjectKind),
+		common.GetDefaultSubject(instance.Spec.Admin, namespaced.Namespace, o.SubjectKind),
 	}
 
-	rb.RoleRef = bcrbac.RoleRef(instance.GetNamespaced(), bcrbac.Admin)
+	rb.RoleRef = bcrbac.RoleRef(namespaced, bcrbac.Admin)
 
 	rb.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Organization, instance)}
 
@@ -64,6 +66,24 @@ func (o *Override) ClientRoleBinding(object v1.Object, rb *rbacv1.RoleBinding, a
 
 // TODO: Sync Client RoleBinding based on Organization.Spec.Clients
 func (o *Override) SyncClientRoleBinding(instance *current.Organization, rb *rbacv1.RoleBinding) error {
-	rb.Name = bcrbac.GetRoleBinding(instance.GetNamespaced(), bcrbac.Client).Name
+	namespaced := instance.GetNamespaced()
+
+	rb.Name = bcrbac.GetRoleBinding(namespaced, bcrbac.Client).Name
+	rb.Namespace = namespaced.Namespace
+
+	clients := instance.Spec.Clients
+
+	subjects := make([]rbacv1.Subject, len(clients))
+	for i, c := range clients {
+		if c != instance.Spec.Admin {
+			subjects[i] = common.GetDefaultSubject(c, namespaced.Namespace, o.SubjectKind)
+		}
+	}
+	rb.Subjects = subjects
+
+	rb.RoleRef = bcrbac.RoleRef(namespaced, bcrbac.Client)
+
+	rb.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Organization, instance)}
+
 	return nil
 }

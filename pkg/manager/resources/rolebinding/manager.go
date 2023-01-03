@@ -56,18 +56,19 @@ func (m *Manager) GetName(instance v1.Object) string {
 	return fmt.Sprintf("%s-rolebinding", instance.GetName())
 }
 
+// Reconcle handles:
+//   - create on roleBinding
+//   - update on currentRoleBinding
 func (m *Manager) Reconcile(instance v1.Object, update bool) error {
-	name := m.GetName(instance)
-	roleBinding := &rbacv1.RoleBinding{}
-	err := m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, roleBinding)
+	roleBinding, err := m.GetRoleBindingBasedOnCRFromFile(instance)
+	if err != nil {
+		return err
+	}
+	currentRoleBinding := &rbacv1.RoleBinding{}
+	err = m.Client.Get(context.TODO(), types.NamespacedName{Name: roleBinding.Name, Namespace: roleBinding.Namespace}, currentRoleBinding)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Creating role binding '%s'", name))
-			roleBinding, err := m.GetRoleBindingBasedOnCRFromFile(instance)
-			if err != nil {
-				return err
-			}
-
+			log.Info(fmt.Sprintf("Creating role binding '%s'", roleBinding.Name))
 			err = m.Client.Create(context.TODO(), roleBinding, k8sclient.CreateOption{Owner: instance, Scheme: m.Scheme})
 			if err != nil {
 				return err
@@ -79,12 +80,12 @@ func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 
 	if update {
 		if m.OverrideFunc != nil {
-			err := m.OverrideFunc(instance, roleBinding, resources.Update)
+			err := m.OverrideFunc(instance, currentRoleBinding, resources.Update)
 			if err != nil {
 				return operatorerrors.New(operatorerrors.InvalidRoleBindingUpdateRequest, err.Error())
 			}
 		}
-		if err = m.Client.Update(context.TODO(), roleBinding); err != nil {
+		if err = m.Client.Update(context.TODO(), currentRoleBinding); err != nil {
 			return err
 		}
 	}

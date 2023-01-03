@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	iam "github.com/IBM-Blockchain/fabric-operator/api/iam/v1alpha1"
@@ -74,14 +75,26 @@ func (r *ReconcileOrganization) PredictOrganizationCreate(organization *current.
 			log.Info(fmt.Sprintf("Difference detected: %s", diff))
 			update.specUpdated = true
 		}
+
 		if organization.Spec.Admin != existingOrg.Spec.Admin {
 			update.adminUpdated = true
+			update.adminTransfered = existingOrg.Spec.Admin
 		}
+
+		added, removed := current.DifferClients(existingOrg.Spec.Clients, organization.Spec.Clients)
+		if len(added) != 0 || len(removed) != 0 {
+			update.clientsUpdated = true
+			update.clientsRemoved = strings.Join(removed, ",")
+		}
+
 		r.PushUpdate(organization.GetName(), update)
 		return true
 	}
 
+	update.specUpdated = true
 	update.adminUpdated = true
+	update.clientsUpdated = true
+
 	r.PushUpdate(organization.GetName(), update)
 	return true
 }
@@ -103,18 +116,13 @@ func (r *ReconcileOrganization) PredictOrganizationUpdate(oldOrg *current.Organi
 
 	if oldOrg.Spec.Admin != newOrg.Spec.Admin {
 		update.adminUpdated = true
-		if r.Config.OrganizationInitConfig.IAMEnabled {
-			// delete annotations from previous Admin
-			oldAdminUser, err := r.GetIAMUser(oldOrg.Spec.Admin)
-			if err != nil {
-				log.Error(err, fmt.Sprintf("failed to get iam user %s", oldOrg.Spec.Admin))
-			} else {
-				err = r.DeleteBlockchainAnnotations(oldOrg, oldAdminUser)
-				if err != nil {
-					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", oldOrg.GetName(), oldOrg.Spec.Admin))
-				}
-			}
-		}
+		update.adminTransfered = oldOrg.Spec.Admin
+	}
+
+	added, removed := current.DifferClients(oldOrg.Spec.Clients, newOrg.Spec.Clients)
+	if len(added) != 0 || len(removed) != 0 {
+		update.clientsUpdated = true
+		update.clientsRemoved = strings.Join(removed, ",")
 	}
 
 	r.PushUpdate(oldOrg.Name, update)
@@ -128,19 +136,28 @@ func (r *ReconcileOrganization) DeleteFunc(e event.DeleteEvent) bool {
 	var err error
 	organization := e.Object.(*current.Organization)
 	log.Info(fmt.Sprintf("Delete event detected for organization '%s'", organization.GetName()))
+
+	// reconcile users uppon organization delete
 	if r.Config.OrganizationInitConfig.IAMEnabled {
-		userList, err := r.GetIAMUsers(organization.GetName())
+		selector, _ := user.OrganizationSelector(organization.Name)
+		userList, err := user.ListUsers(r.client, selector)
 		if err != nil {
 			log.Error(err, fmt.Sprintf("failed to get iam users with organization annotation key %s", organization.GetName()))
 		} else {
 			for i, iamuser := range userList.Items {
-				err = r.DeleteBlockchainAnnotations(organization, &userList.Items[i])
+				idType := iamuser.Labels[user.OrganizationLabel.String(organization.Name)]
+				_, err = user.ReconcileRemove(&userList.Items[i], organization.Name, user.IDType(idType))
 				if err != nil {
 					log.Error(err, fmt.Sprintf("failed to delete annotation %s for %s", organization.GetName(), iamuser.GetName()))
 				}
 			}
 		}
+		err = user.PatchUsers(r.client, userList.Items...)
+		if err != nil {
+			log.Error(err, fmt.Sprintf("failed to patch users for %s", organization.GetName()))
+		}
 	}
+
 	// delete namespace
 	ns := &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
@@ -349,49 +366,4 @@ func (r *ReconcileOrganization) GetIAMUser(username string) (*iam.User, error) {
 		return nil, err
 	}
 	return iamuser, nil
-}
-
-func (r *ReconcileOrganization) GetIAMUsers(annotationKey string) (*iam.UserList, error) {
-	userList := &iam.UserList{}
-	err := r.client.List(context.TODO(), userList, &client.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return userList, nil
-}
-
-func (r *ReconcileOrganization) DeleteBlockchainAnnotations(instance *current.Organization, iamuser *iam.User) error {
-	var err error
-
-	annotationList := user.NewBlockchainAnnotationList()
-	err = annotationList.Unmarshal([]byte(iamuser.Annotations[user.BlockchainAnnotationKey]))
-	if err != nil {
-		return err
-	}
-
-	err = annotationList.DeleteAnnotation(instance.GetName())
-	if err != nil {
-		return err
-	}
-
-	raw, err := annotationList.Marshal()
-	if err != nil {
-		return err
-	}
-
-	iamuser.Annotations[user.BlockchainAnnotationKey] = string(raw)
-
-	err = r.client.Patch(context.TODO(), iamuser, nil, k8sclient.PatchOption{
-		Resilient: &k8sclient.ResilientPatch{
-			Retry:    2,
-			Into:     &iam.User{},
-			Strategy: client.MergeFrom,
-		},
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

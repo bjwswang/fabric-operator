@@ -62,17 +62,19 @@ func (m *Manager) GetName(instance v1.Object) string {
 	return fmt.Sprintf("%s-clusterrolebinding", instance.GetName())
 }
 
+// Reconcle handles:
+//   - create on clusterRoleBinding
+//   - update on currentClusterRoleBinding
 func (m *Manager) Reconcile(instance v1.Object, update bool) error {
-	name := m.GetName(instance)
-	clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-	err := m.Client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: instance.GetNamespace()}, clusterRoleBinding)
+	clusterRoleBinding, err := m.GetClusterRoleBindingBasedOnCRFromFile(instance)
+	if err != nil {
+		return err
+	}
+	currentClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+	err = m.Client.Get(context.TODO(), types.NamespacedName{Name: clusterRoleBinding.Name, Namespace: clusterRoleBinding.Namespace}, currentClusterRoleBinding)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
-			log.Info(fmt.Sprintf("Creating cluster role binding '%s'", name))
-			clusterRoleBinding, err := m.GetClusterRoleBindingBasedOnCRFromFile(instance)
-			if err != nil {
-				return err
-			}
+			log.Info(fmt.Sprintf("Creating cluster role binding '%s'", clusterRoleBinding.Name))
 
 			err = m.Client.Create(context.TODO(), clusterRoleBinding, k8sclient.CreateOption{Owner: instance, Scheme: m.Scheme})
 			if err != nil {
@@ -86,12 +88,12 @@ func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 	// update if exists(same like Create)
 	if update {
 		if m.OverrideFunc != nil {
-			err := m.OverrideFunc(instance, clusterRoleBinding, resources.Update)
+			err := m.OverrideFunc(instance, currentClusterRoleBinding, resources.Update)
 			if err != nil {
 				return operatorerrors.New(operatorerrors.InvalidClusterRoleBindingUpdateRequest, err.Error())
 			}
 		}
-		if err = m.Client.Update(context.TODO(), clusterRoleBinding); err != nil {
+		if err = m.Client.Update(context.TODO(), currentClusterRoleBinding); err != nil {
 			return err
 		}
 	}

@@ -39,8 +39,8 @@ spec:
             description: OrganizationSpec defines the desired state of Organization
             properties:
               admin:
-                description: Admin is the account with `Admin` role both in kubernets
-                  and in CA
+                description: Admin is the User/ServiceAccount with `Admin` role both
+                  in kubernetes and in CA
                 type: string
               caSpec:
                 description: CASpec is the configurations of organization's related
@@ -341,6 +341,12 @@ spec:
                 - license
                 - version
                 type: object
+              clients:
+                description: Clients are the Users/ServiceAccounts with `Client` role
+                  both in kubernetes and in CA
+                items:
+                  type: string
+                type: array
               description:
                 description: Description
                 type: string

@@ -38,22 +38,6 @@ func (organization *Organization) GetCA() NamespacedName {
 	return NamespacedName{Namespace: organization.GetUserNamespace(), Name: organization.GetName()}
 }
 
-func (organization *Organization) GetAdminRole() string {
-	return "blockchain:admin-role"
-}
-
-func (organization *Organization) GetClientRole() string {
-	return "blockchain:client-role"
-}
-
-func (organization *Organization) GetAdminClusterRole() string {
-	return "blockchain:admin-cluster-role"
-}
-
-func (organization *Organization) GetRoleBinding(role string) string {
-	return organization.GetUserNamespace() + ":" + role + "-binding"
-}
-
 func (organization *Organization) HasDisplayName() bool {
 	return organization.Spec.DisplayName != ""
 }
@@ -64,6 +48,33 @@ func (organization *Organization) HasAdmin() bool {
 
 func (organization *Organization) HasType() bool {
 	return organization.Status.CRStatus.Type != ""
+}
+
+func DifferClients(old []string, new []string) (added []string, removed []string) {
+	// cache in map
+	oldMapper := make(map[string]struct{}, len(old))
+	for _, c := range old {
+		oldMapper[c] = struct{}{}
+	}
+
+	// calculate differences
+	for _, c := range new {
+
+		// added: in new ,but not in old
+		if _, ok := oldMapper[c]; !ok {
+			added = append(added, c)
+			continue
+		}
+
+		// delete the intersection
+		delete(oldMapper, c)
+	}
+
+	for c := range oldMapper {
+		removed = append(removed, c)
+	}
+
+	return
 }
 
 func (organizationStatus *OrganizationStatus) AddFederation(federation NamespacedName) bool {

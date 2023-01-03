@@ -9,6 +9,7 @@ spec:
   admin: org1admin
   clients:
     - client
+    - client2
   description: "test org1"
   caSpec:
     license:

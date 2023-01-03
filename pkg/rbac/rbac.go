@@ -34,6 +34,14 @@ const (
 	Client RoleType = "client"
 )
 
+func (rt RoleType) String() string {
+	return string(rt)
+}
+
+func Roles() []string {
+	return []string{Admin.String(), Client.String()}
+}
+
 const (
 	// AdminSuffix used to keep same format with pkg/manager's rolo/clusterrole reconcile
 	AdminSuffix = "blockchain:admin"

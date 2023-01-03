@@ -1,0 +1,31 @@
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
+metadata:
+  labels:
+    t7d.io.username: client
+  name: client
+spec:
+  description: client 用户信息的描述
+  email: client@tenxcloud.com
+  groups:
+  - observability
+  - system:nodes
+  - system:masters
+  - resource-reader
+  - iam.tenxcloud.com
+  - observability
+  name: client
+  phone: "18890901212"
+  role: admin
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: client:blockchain:common
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: blockchain:common
+subjects:
+- kind: User
+  name: client

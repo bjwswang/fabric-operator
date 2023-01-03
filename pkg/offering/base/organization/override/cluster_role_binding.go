@@ -38,14 +38,16 @@ func (o *Override) AdminClusterRoleBinding(object v1.Object, crb *rbacv1.Cluster
 }
 
 func (o *Override) SyncAdminClusterRoleBinding(instance *current.Organization, crb *rbacv1.ClusterRoleBinding) error {
-	crb.Name = bcrbac.GetClusterRoleBinding(instance.GetNamespaced(), bcrbac.Admin).Name
+	namespaced := instance.GetNamespaced()
+
+	crb.Name = bcrbac.GetClusterRoleBinding(namespaced, bcrbac.Admin).Name
 
 	// only one Admin
 	crb.Subjects = []rbacv1.Subject{
-		common.GetDefaultSubject(instance.Spec.Admin, instance.GetUserNamespace(), o.SubjectKind),
+		common.GetDefaultSubject(instance.Spec.Admin, namespaced.Namespace, o.SubjectKind),
 	}
 
-	crb.RoleRef = bcrbac.ClusterRoleRef(instance.GetNamespaced(), bcrbac.Admin)
+	crb.RoleRef = bcrbac.ClusterRoleRef(namespaced, bcrbac.Admin)
 
 	crb.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Organization, instance)}
 
@@ -64,6 +66,24 @@ func (o *Override) ClientClusterRoleBinding(object v1.Object, crb *rbacv1.Cluste
 
 // TODO: Sync Client RoleBinding based on Organization.Spec.Clients
 func (o *Override) SyncClientClusterRoleBinding(instance *current.Organization, crb *rbacv1.ClusterRoleBinding) error {
-	crb.Name = bcrbac.GetClusterRoleBinding(instance.GetNamespaced(), bcrbac.Client).Name
+	namespaced := instance.GetNamespaced()
+
+	crb.Name = bcrbac.GetClusterRoleBinding(namespaced, bcrbac.Client).Name
+
+	clients := instance.Spec.Clients
+
+	subjects := make([]rbacv1.Subject, len(clients))
+	for i, c := range clients {
+		if c != instance.Spec.Admin {
+			subjects[i] = common.GetDefaultSubject(c, namespaced.Namespace, o.SubjectKind)
+		}
+	}
+
+	crb.Subjects = subjects
+
+	crb.RoleRef = bcrbac.ClusterRoleRef(namespaced, bcrbac.Client)
+
+	crb.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Organization, instance)}
+
 	return nil
 }

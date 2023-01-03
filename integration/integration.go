@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	TestAutomation1IngressDomain = "vcap.me"
+	TestAutomation1IngressDomain = "localho.st"
 )
 
 var (

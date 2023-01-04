@@ -24,8 +24,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hyperledger/fabric-ca/lib"
-	"github.com/hyperledger/fabric-ca/lib/tls"
+	"github.com/bestchains/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib/tls"
 	"github.com/pkg/errors"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"

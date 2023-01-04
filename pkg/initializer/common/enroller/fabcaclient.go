@@ -29,8 +29,8 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	commonapi "github.com/IBM-Blockchain/fabric-operator/pkg/apis/common"
-	"github.com/hyperledger/fabric-ca/lib"
-	catls "github.com/hyperledger/fabric-ca/lib/tls"
+	"github.com/bestchains/fabric-ca/lib"
+	catls "github.com/bestchains/fabric-ca/lib/tls"
 	"github.com/pkg/errors"
 )
 

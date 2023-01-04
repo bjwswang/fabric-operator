@@ -25,8 +25,8 @@ import (
 	"path/filepath"
 
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca/tls"
+	"github.com/bestchains/fabric-ca/api"
 	cfcsr "github.com/cloudflare/cfssl/csr"
-	"github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

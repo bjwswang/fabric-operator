@@ -7,7 +7,7 @@ import (
 	v1 "github.com/IBM-Blockchain/fabric-operator/pkg/apis/ca/v1"
 	initializer "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca/config"
-	"github.com/hyperledger/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib"
 )
 
 type IBPCA struct {

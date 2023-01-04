@@ -35,7 +35,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util/merge"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util/pointer"
-	"github.com/hyperledger/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"sigs.k8s.io/yaml"

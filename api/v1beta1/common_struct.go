@@ -280,6 +280,11 @@ type Enrollment struct {
 	// CSR is the CSR override object
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	CSR *CSR `json:"csr,omitempty"`
+
+	// IAM auth information.
+	// Generally speaking, it is the organization's admin
+	EnrollUser  string `json:"enrolluser,omitempty"`
+	EnrollToken string `json:"enrolltoken,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true

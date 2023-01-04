@@ -19,7 +19,7 @@
 package initializer
 
 import (
-	"github.com/hyperledger/fabric-ca/lib"
+	"github.com/bestchains/fabric-ca/lib"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"

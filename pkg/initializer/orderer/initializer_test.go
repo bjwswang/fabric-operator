@@ -77,6 +77,8 @@ var _ = Describe("Initializing the Orderer", func() {
 			CAPort:       "7054",
 			EnrollID:     "admin",
 			EnrollSecret: "adminpw",
+			EnrollUser:   "admin",
+			EnrollToken:  "abc",
 			CATLS: &current.CATLS{
 				CACert: testcert,
 			},

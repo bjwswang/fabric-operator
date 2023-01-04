@@ -2892,5 +2892,6 @@ kubectl apply -f config/samples/ibp.com_v1beta1_channel_create.yaml
 #### 2. peer节点加入通道
 
 ```bash
-kubectl apply -f config/samples/ibp.com_v1beta1_channel_join.yaml
+kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org1.yaml
+kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml
 ```

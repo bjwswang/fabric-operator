@@ -121,11 +121,12 @@ var _ = Describe("Enroller", func() {
 			Expect(err).To(MatchError("unable to enroll, enrollment ID not specified"))
 		})
 
-		It("returns error if missing enrollment secret", func() {
+		It("returns error if missing enrollment secret and token", func() {
 			req.EnrollSecret = ""
+			req.EnrollToken = ""
 
 			err := testEnroller.Validate()
-			Expect(err).To(MatchError("unable to enroll, enrollment secret not specified"))
+			Expect(err).To(MatchError("unable to enroll, enrollment secret or token not specified"))
 		})
 
 		It("returns error if missing CA TLS cert", func() {

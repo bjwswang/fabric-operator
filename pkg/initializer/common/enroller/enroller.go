@@ -94,8 +94,8 @@ func (e *Enroller) Validate() error {
 		return errors.New("unable to enroll, enrollment ID not specified")
 	}
 
-	if req.EnrollSecret == "" {
-		return errors.New("unable to enroll, enrollment secret not specified")
+	if req.EnrollToken == "" && req.EnrollSecret == "" {
+		return errors.New("unable to enroll, enrollment secret or token not specified")
 	}
 
 	if req.CATLS.CACert == "" {

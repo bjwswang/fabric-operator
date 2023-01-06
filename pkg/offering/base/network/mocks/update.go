@@ -47,16 +47,15 @@ func (fake *Update) MemberUpdated() bool {
 	ret, specificReturn := fake.memberUpdatedReturnsOnCall[len(fake.memberUpdatedArgsForCall)]
 	fake.memberUpdatedArgsForCall = append(fake.memberUpdatedArgsForCall, struct {
 	}{})
-	stub := fake.MemberUpdatedStub
-	fakeReturns := fake.memberUpdatedReturns
 	fake.recordInvocation("MemberUpdated", []interface{}{})
 	fake.memberUpdatedMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.MemberUpdatedStub != nil {
+		return fake.MemberUpdatedStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.memberUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -100,16 +99,15 @@ func (fake *Update) OrdererCreate() bool {
 	ret, specificReturn := fake.ordererCreateReturnsOnCall[len(fake.ordererCreateArgsForCall)]
 	fake.ordererCreateArgsForCall = append(fake.ordererCreateArgsForCall, struct {
 	}{})
-	stub := fake.OrdererCreateStub
-	fakeReturns := fake.ordererCreateReturns
 	fake.recordInvocation("OrdererCreate", []interface{}{})
 	fake.ordererCreateMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.OrdererCreateStub != nil {
+		return fake.OrdererCreateStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.ordererCreateReturns
 	return fakeReturns.result1
 }
 
@@ -153,16 +151,15 @@ func (fake *Update) SpecUpdated() bool {
 	ret, specificReturn := fake.specUpdatedReturnsOnCall[len(fake.specUpdatedArgsForCall)]
 	fake.specUpdatedArgsForCall = append(fake.specUpdatedArgsForCall, struct {
 	}{})
-	stub := fake.SpecUpdatedStub
-	fakeReturns := fake.specUpdatedReturns
 	fake.recordInvocation("SpecUpdated", []interface{}{})
 	fake.specUpdatedMutex.Unlock()
-	if stub != nil {
-		return stub()
+	if fake.SpecUpdatedStub != nil {
+		return fake.SpecUpdatedStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.specUpdatedReturns
 	return fakeReturns.result1
 }
 

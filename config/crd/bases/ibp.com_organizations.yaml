@@ -42,6 +42,8 @@ spec:
                 description: Admin is the User/ServiceAccount with `Admin` role both
                   in kubernetes and in CA
                 type: string
+              admintoken:
+                type: string
               caSpec:
                 description: CASpec is the configurations of organization's related
                   Certificate Authority

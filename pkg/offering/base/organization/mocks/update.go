@@ -58,6 +58,16 @@ type Update struct {
 	specUpdatedReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	TokenUpdatedStub        func() bool
+	tokenUpdatedMutex       sync.RWMutex
+	tokenUpdatedArgsForCall []struct {
+	}
+	tokenUpdatedReturns struct {
+		result1 bool
+	}
+	tokenUpdatedReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -322,6 +332,58 @@ func (fake *Update) SpecUpdatedReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
+func (fake *Update) TokenUpdated() bool {
+	fake.tokenUpdatedMutex.Lock()
+	ret, specificReturn := fake.tokenUpdatedReturnsOnCall[len(fake.tokenUpdatedArgsForCall)]
+	fake.tokenUpdatedArgsForCall = append(fake.tokenUpdatedArgsForCall, struct {
+	}{})
+	fake.recordInvocation("TokenUpdated", []interface{}{})
+	fake.tokenUpdatedMutex.Unlock()
+	if fake.TokenUpdatedStub != nil {
+		return fake.TokenUpdatedStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.tokenUpdatedReturns
+	return fakeReturns.result1
+}
+
+func (fake *Update) TokenUpdatedCallCount() int {
+	fake.tokenUpdatedMutex.RLock()
+	defer fake.tokenUpdatedMutex.RUnlock()
+	return len(fake.tokenUpdatedArgsForCall)
+}
+
+func (fake *Update) TokenUpdatedCalls(stub func() bool) {
+	fake.tokenUpdatedMutex.Lock()
+	defer fake.tokenUpdatedMutex.Unlock()
+	fake.TokenUpdatedStub = stub
+}
+
+func (fake *Update) TokenUpdatedReturns(result1 bool) {
+	fake.tokenUpdatedMutex.Lock()
+	defer fake.tokenUpdatedMutex.Unlock()
+	fake.TokenUpdatedStub = nil
+	fake.tokenUpdatedReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *Update) TokenUpdatedReturnsOnCall(i int, result1 bool) {
+	fake.tokenUpdatedMutex.Lock()
+	defer fake.tokenUpdatedMutex.Unlock()
+	fake.TokenUpdatedStub = nil
+	if fake.tokenUpdatedReturnsOnCall == nil {
+		fake.tokenUpdatedReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.tokenUpdatedReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *Update) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -335,6 +397,8 @@ func (fake *Update) Invocations() map[string][][]interface{} {
 	defer fake.clientsUpdatedMutex.RUnlock()
 	fake.specUpdatedMutex.RLock()
 	defer fake.specUpdatedMutex.RUnlock()
+	fake.tokenUpdatedMutex.RLock()
+	defer fake.tokenUpdatedMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

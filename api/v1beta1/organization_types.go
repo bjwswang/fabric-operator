@@ -42,7 +42,8 @@ type OrganizationSpec struct {
 
 	// Admin is the User/ServiceAccount with `Admin` role both in kubernetes and in CA
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Admin string `json:"admin"`
+	Admin      string `json:"admin"`
+	AdminToken string `json:"admintoken,omitempty"`
 
 	// Clients are the Users/ServiceAccounts with `Client` role both in kubernetes and in CA
 	Clients []string `json:"clients,omitempty"`

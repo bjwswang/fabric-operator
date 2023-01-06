@@ -18,10 +18,10 @@
 
 package override
 
-//go:generate counterfeiter -o mocks/baseOverride.go -fake-name BaseOverride . baseOverride
-type baseOverride interface {
-}
+import (
+	basenetwork "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/network/override"
+)
 
 type Override struct {
-	BaseOverride baseOverride
+	basenetwork.Override
 }

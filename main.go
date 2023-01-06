@@ -239,5 +239,7 @@ func setDefaultVoteDefinitions(cfg *config.Config) {
 }
 
 func setDefaultNetworkDefinitions(cfg *config.Config) {
-	cfg.NetworkInitConfig = &netinit.Config{}
+	cfg.NetworkInitConfig = &netinit.Config{
+		OrdererFile: filepath.Join(defaultNetworkDef, "orderer.yaml"),
+	}
 }

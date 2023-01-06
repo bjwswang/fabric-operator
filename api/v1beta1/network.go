@@ -27,12 +27,21 @@ func (network *Network) GetMembers() []Member {
 	return network.Spec.Members
 }
 
+func (network *Network) GetInitiatorMember() NamespacedName {
+	for _, m := range network.GetMembers() {
+		if m.Initiator {
+			return m.NamespacedName
+		}
+	}
+	return NamespacedName{}
+}
+
 func (network *Network) HasFederation() bool {
 	return network.Spec.Federation != ""
 }
 
-func (network *Network) HasConsensus() bool {
-	return network.Spec.Consensus.Name != ""
+func (network *Network) HasOrder() bool {
+	return network.Spec.OrderSpec.License.Accept
 }
 
 func (network *Network) HasType() bool {

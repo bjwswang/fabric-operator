@@ -25,9 +25,12 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
+	resourcemanager "github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/manager"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
 	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,11 +45,14 @@ var log = logf.Log.WithName("base_network")
 type Update interface {
 	SpecUpdated() bool
 	MemberUpdated() bool
+	OrdererCreate() bool
+	OrdererRemove() bool
 }
 
 //go:generate counterfeiter -o mocks/override.go -fake-name Override . Override
 
 type Override interface {
+	Orderer(v1.Object, *current.IBPOrderer, resources.Action) error
 }
 
 //go:generate counterfeiter -o mocks/basenetwork.go -fake-name Network . Network
@@ -73,7 +79,8 @@ type BaseNetwork struct {
 
 	Override Override
 
-	RBACManager *bcrbac.Manager
+	RBACManager    *bcrbac.Manager
+	OrdererManager resources.Manager
 }
 
 func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.Config, o Override) *BaseNetwork {
@@ -93,6 +100,9 @@ func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.
 // - configmap manager
 func (network *BaseNetwork) CreateManagers() {
 	network.RBACManager = bcrbac.NewRBACManager(network.Client, nil)
+	override := network.Override
+	mgr := resourcemanager.New(network.Client, network.Scheme)
+	network.OrdererManager = mgr.CreateOrdererManager("", override.Orderer, network.GetLabels, network.Config.NetworkInitConfig.OrdererFile)
 }
 
 // Reconcile on Network upon Update
@@ -106,8 +116,9 @@ func (network *BaseNetwork) Reconcile(instance *current.Network, update Update) 
 	if err = network.Initialize(instance, update); err != nil {
 		return common.Result{}, operatorerrors.Wrap(err, operatorerrors.NetworkInitializationFailed, "failed to initialize network")
 	}
-
-	// TODO: define managers
+	if err = network.ReconcileUser(instance, update); err != nil {
+		return common.Result{}, operatorerrors.Wrap(err, operatorerrors.NetworkInitializationFailed, "failed to reconcileUser")
+	}
 	if err = network.ReconcileManagers(instance, update); err != nil {
 		return common.Result{}, errors.Wrap(err, "failed to reconcile managers")
 	}
@@ -119,9 +130,8 @@ func (network *BaseNetwork) Reconcile(instance *current.Network, update Update) 
 func (network *BaseNetwork) PreReconcileChecks(instance *current.Network, update Update) error {
 	log.Info(fmt.Sprintf("PreReconcileChecks on Network %s", instance.GetName()))
 
-	// TODO: check Consensus component(IBPOrderer status)
-	if !instance.HasConsensus() {
-		return errors.New("network's consensus is empty")
+	if !instance.HasOrder() {
+		return errors.New("network's order is empty")
 	}
 
 	// Federation & Member check
@@ -166,7 +176,8 @@ func (network *BaseNetwork) ReconcileManagers(instance *current.Network, update 
 			return err
 		}
 	}
-	return nil
+	log.Info(fmt.Sprintf("ReconcileManagers on Order %s", instance.GetName()))
+	return network.OrdererManager.Reconcile(instance, false)
 }
 
 // CheckStates on Network
@@ -194,4 +205,29 @@ func (network *BaseNetwork) GetFederation(instance *current.Network) (*current.F
 		return nil, err
 	}
 	return federation, nil
+}
+
+// ReconcileUser on Network upon Update
+func (network *BaseNetwork) ReconcileUser(instance *current.Network, update Update) (err error) {
+	if !network.Config.OrganizationInitConfig.IAMEnabled {
+		return nil
+	}
+	org := &current.Organization{}
+	if err = network.Client.Get(context.TODO(), types.NamespacedName{Name: instance.GetInitiatorMember().Name, Namespace: instance.GetInitiatorMember().Namespace}, org); err != nil {
+		return err
+	}
+	targetUser := org.Spec.Admin
+	if update.OrdererCreate() {
+		err = user.Reconcile(network.Client, targetUser, org.Name, instance.GetName(), user.ORDERER, user.Add)
+		if err != nil {
+			return err
+		}
+	}
+	if update.OrdererRemove() {
+		err = user.Reconcile(network.Client, targetUser, org.Name, instance.GetName(), user.ORDERER, user.Remove)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

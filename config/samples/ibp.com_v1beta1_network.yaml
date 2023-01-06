@@ -6,9 +6,25 @@ spec:
   license:
     accept: true
   federation: federation-sample
-  consensus:
-    name: org0-consensus
+  orderSpec:
+    secret:
+      enrollment:
+        tls:
+          enrolltoken: <enrolltoken>
+        component:
+          enrolltoken: <enrolltoken>
+    license:
+      accept: true
+    images:
+      grpcwebImage: hyperledgerk8s/grpc-web
+      grpcwebTag: latest
+      ordererImage: hyperledgerk8s/fabric-orderer
+      ordererInitImage: hyperledgerk8s/ubi-minimal
+      ordererInitTag: latest
+      ordererTag: 2.4.7
   members:
     - name: org1
-      initiator: true # set by webhook
+      namespace: org1
+      initiator: true
     - name: org2
+      namespace: org2

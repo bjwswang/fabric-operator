@@ -61,10 +61,7 @@ var _ = Describe("ReconcileFederation", func() {
 					{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
 					{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
 				},
-				Consensus: current.NamespacedName{
-					Name:      "ibporderer-org1",
-					Namespace: "org1",
-				},
+				OrderSpec: current.IBPOrdererSpec{},
 			},
 		}
 		client = &mocks.Client{

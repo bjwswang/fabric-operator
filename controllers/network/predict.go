@@ -76,6 +76,7 @@ func (r *ReconcileNetwork) CreateFunc(e event.CreateEvent) bool {
 
 	update.specUpdated = true
 	update.memberUpdated = true
+	update.ordererCreate = true
 
 	r.PushUpdate(network.GetName(), update)
 
@@ -114,6 +115,10 @@ func (r *ReconcileNetwork) DeleteFunc(e event.DeleteEvent) bool {
 	if err != nil {
 		log.Error(err, "failed to sync rbac uppon proposal delete")
 	}
+	update := Update{}
+	update.ordererRemove = true
+	r.PushUpdate(network.GetName(), update)
+	log.Info(fmt.Sprintf("Spec update triggering reconcile on Network custom resource %s: update [ %+v ]", network.Name, update.GetUpdateStackWithTrues()))
 
-	return false
+	return true
 }

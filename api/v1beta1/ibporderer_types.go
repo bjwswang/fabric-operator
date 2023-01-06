@@ -106,7 +106,7 @@ type IBPOrdererSpec struct {
 
 	// FabricVersion (Optional) is fabric version for the orderer
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	FabricVersion string `json:"version"`
+	FabricVersion string `json:"version,omitempty"`
 
 	// NumSecondsWarningPeriod (Optional - default 30 days) is used to define certificate expiry warning period.
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true

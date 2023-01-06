@@ -1,0 +1,8 @@
+apiVersion: ibp.com/v1beta1
+kind: IBPOrderer
+metadata:
+  name: sample
+spec:
+  action:
+    enroll: {}
+    reenroll: {}

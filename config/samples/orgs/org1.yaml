@@ -13,6 +13,8 @@ spec:
   caSpec:
     license:
       accept: true
+    ingress:
+      class: "portal-ingress"
     images:
       caImage: hyperledgerk8s/fabric-ca
       caTag: "1.5.5-iam"

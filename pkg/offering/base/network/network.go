@@ -46,7 +46,6 @@ type Update interface {
 	SpecUpdated() bool
 	MemberUpdated() bool
 	OrdererCreate() bool
-	OrdererRemove() bool
 }
 
 //go:generate counterfeiter -o mocks/override.go -fake-name Override . Override
@@ -209,7 +208,7 @@ func (network *BaseNetwork) GetFederation(instance *current.Network) (*current.F
 
 // ReconcileUser on Network upon Update
 func (network *BaseNetwork) ReconcileUser(instance *current.Network, update Update) (err error) {
-	if !network.Config.OrganizationInitConfig.IAMEnabled {
+	if !network.Config.OrganizationInitConfig.IAMEnabled || !update.OrdererCreate() {
 		return nil
 	}
 	org := &current.Organization{}
@@ -217,17 +216,9 @@ func (network *BaseNetwork) ReconcileUser(instance *current.Network, update Upda
 		return err
 	}
 	targetUser := org.Spec.Admin
-	if update.OrdererCreate() {
-		err = user.Reconcile(network.Client, targetUser, org.Name, instance.GetName(), user.ORDERER, user.Add)
-		if err != nil {
-			return err
-		}
-	}
-	if update.OrdererRemove() {
-		err = user.Reconcile(network.Client, targetUser, org.Name, instance.GetName(), user.ORDERER, user.Remove)
-		if err != nil {
-			return err
-		}
+	err = user.Reconcile(network.Client, targetUser, org.Name, instance.GetName(), user.ORDERER, user.Add)
+	if err != nil {
+		return err
 	}
 	return nil
 }

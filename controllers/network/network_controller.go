@@ -57,7 +57,8 @@ import (
 )
 
 const (
-	KIND = "Network"
+	KIND                    = "Network"
+	NETWORK_INITIATOR_LABEL = "bestchains.network.initiator"
 )
 
 var log = logf.Log.WithName("controller_network")
@@ -179,6 +180,21 @@ func (r *ReconcileNetwork) Reconcile(ctx context.Context, request reconcile.Requ
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if instance.Labels == nil {
+		instance.Labels = make(map[string]string)
+	}
+
+	if _, ok := instance.Labels[NETWORK_INITIATOR_LABEL]; !ok {
+		for _, member := range instance.Spec.Members {
+			if member.Initiator {
+				instance.Labels[NETWORK_INITIATOR_LABEL] = member.Name
+				break
+			}
+		}
+		err = r.client.Update(context.TODO(), instance)
+		return reconcile.Result{Requeue: true}, err
 	}
 
 	update := r.GetUpdateStatus(instance)

@@ -56,6 +56,10 @@ import (
 
 var log = logf.Log.WithName("controller_proposal")
 
+const (
+	PROPOSAL_TYPE = "bestchains.proposal.type"
+)
+
 // Add creates a new Proposal Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager, config *config.Config) error {
@@ -168,6 +172,16 @@ func (r *ReconcileProposal) Reconcile(ctx context.Context, request reconcile.Req
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if instance.Labels == nil {
+		instance.Labels = make(map[string]string)
+	}
+	proposalType := instance.SelfType()
+	if v, ok := instance.Labels[PROPOSAL_TYPE]; !ok || proposalType != v {
+		instance.Labels[PROPOSAL_TYPE] = proposalType
+		err = r.client.Update(context.TODO(), instance)
+		return reconcile.Result{Requeue: true}, err
 	}
 
 	result, err := r.Offering.Reconcile(instance)

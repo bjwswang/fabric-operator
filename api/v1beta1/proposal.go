@@ -69,3 +69,19 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 	}
 	return orgs, nil
 }
+
+func (p *Proposal) SelfType() string {
+	if p.Spec.AddMember != nil {
+		return "AddMemberProposal"
+	}
+	if p.Spec.CreateFederation != nil {
+		return "CreateFederationProposal"
+	}
+	if p.Spec.DeleteMember != nil {
+		return "DeleteMemberProposal"
+	}
+	if p.Spec.DissolveFederation != nil {
+		return "DissolveFederationProposal"
+	}
+	return ""
+}

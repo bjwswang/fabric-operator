@@ -49,6 +49,7 @@ var log = logf.Log.WithName("base_organization")
 type Update interface {
 	SpecUpdated() bool
 	AdminUpdated() bool
+	TokenUpdated() bool
 	AdminTransfered() string
 	ClientsUpdated() bool
 	ClientsRemoved() string

@@ -145,7 +145,9 @@ func enroll(client CAClient) (*config.Response, error) {
 		}
 		enrollReq.Headers["iam-user"] = req.EnrollUser
 		enrollReq.Headers["iam-token"] = req.EnrollToken
-		enrollReq.Headers["iam-peer-order-id"] = req.EnrollID
+		if req.EnrollUser != req.EnrollID {
+			enrollReq.Headers["iam-peer-order-id"] = req.EnrollID
+		}
 	}
 	if req.CSR != nil && len(req.CSR.Hosts) > 0 {
 		enrollReq.CSR = &api.CSRInfo{

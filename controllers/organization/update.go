@@ -29,6 +29,8 @@ type Update struct {
 	specUpdated bool
 
 	adminUpdated bool
+	tokenUpdated bool
+
 	// cache orgigin admin
 	adminTransfered string
 
@@ -57,6 +59,10 @@ func (u *Update) ClientsRemoved() string {
 	return u.clientsRemoved
 }
 
+func (u *Update) TokenUpdated() bool {
+	return u.tokenUpdated
+}
+
 // GetUpdateStackWithTrues is a helper method to print updates that have been detected
 func (u *Update) GetUpdateStackWithTrues() string {
 	stack := ""
@@ -67,6 +73,10 @@ func (u *Update) GetUpdateStackWithTrues() string {
 
 	if u.AdminUpdated() {
 		stack += "adminUpdated "
+	}
+
+	if u.TokenUpdated() {
+		stack += "tokenUpdated "
 	}
 
 	if u.AdminTransfered() != "" {
@@ -98,13 +108,13 @@ func (r *ReconcileOrganization) GetUpdateStatusAtElement(instance *current.Organ
 	defer r.mutex.Unlock()
 
 	update := Update{}
-	_, ok := r.update[instance.Name]
+	v, ok := r.update[instance.Name]
 	if !ok {
 		return &update
 	}
 
-	if len(r.update[instance.Name]) >= 1 {
-		update = r.update[instance.Name][index]
+	if len(v) >= 1 {
+		update = v[index]
 	}
 
 	return &update

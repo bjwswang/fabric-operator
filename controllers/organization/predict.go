@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -81,6 +82,23 @@ func (r *ReconcileOrganization) PredictOrganizationCreate(organization *current.
 			update.adminTransfered = existingOrg.Spec.Admin
 		}
 
+		// https://github.com/bestchains/fabric-operator/issues/14#issuecomment-1371948917
+		if organization.Spec.AdminToken != existingOrg.Spec.AdminToken && organization.Spec.AdminToken != "" {
+			update.tokenUpdated = update.adminUpdated
+			if !update.tokenUpdated {
+				secretNotExist := false
+				secret := corev1.Secret{}
+				if err = r.client.Get(context.TODO(), types.NamespacedName{Name: existingOrg.GetName() + "-msg-crypto",
+					Namespace: existingOrg.GetName()}, &secret); err != nil {
+					log.Error(err, fmt.Sprintf("get secret %s error", existingOrg.GetName()+"-msg-crypto"))
+					if k8serrors.IsNotFound(err) {
+						secretNotExist = true
+					}
+				}
+				update.tokenUpdated = secretNotExist
+			}
+		}
+
 		added, removed := current.DifferClients(existingOrg.Spec.Clients, organization.Spec.Clients)
 		if len(added) != 0 || len(removed) != 0 {
 			update.clientsUpdated = true
@@ -94,6 +112,9 @@ func (r *ReconcileOrganization) PredictOrganizationCreate(organization *current.
 	update.specUpdated = true
 	update.adminUpdated = true
 	update.clientsUpdated = true
+	if organization.Spec.AdminToken != "" {
+		update.tokenUpdated = true
+	}
 
 	r.PushUpdate(organization.GetName(), update)
 	return true
@@ -117,6 +138,23 @@ func (r *ReconcileOrganization) PredictOrganizationUpdate(oldOrg *current.Organi
 	if oldOrg.Spec.Admin != newOrg.Spec.Admin {
 		update.adminUpdated = true
 		update.adminTransfered = oldOrg.Spec.Admin
+	}
+
+	// https://github.com/bestchains/fabric-operator/issues/14#issuecomment-1371948917
+	if oldOrg.Spec.AdminToken != newOrg.Spec.AdminToken && newOrg.Spec.AdminToken != "" {
+		update.tokenUpdated = update.adminUpdated
+		if !update.tokenUpdated {
+			secretNotExist := false
+			secret := corev1.Secret{}
+			if err := r.client.Get(context.TODO(), types.NamespacedName{Name: oldOrg.GetName() + "-msg-crypto",
+				Namespace: oldOrg.GetName()}, &secret); err != nil {
+				log.Error(err, fmt.Sprintf("get secret %s error", oldOrg.GetName()+"-msg-crypto"))
+				if k8serrors.IsNotFound(err) {
+					secretNotExist = true
+				}
+			}
+			update.tokenUpdated = secretNotExist
+		}
 	}
 
 	added, removed := current.DifferClients(oldOrg.Spec.Clients, newOrg.Spec.Clients)

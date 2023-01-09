@@ -36,16 +36,15 @@ func (fake *Override) Orderer(arg1 v1.Object, arg2 *v1beta1.IBPOrderer, arg3 res
 		arg2 *v1beta1.IBPOrderer
 		arg3 resources.Action
 	}{arg1, arg2, arg3})
-	stub := fake.OrdererStub
-	fakeReturns := fake.ordererReturns
 	fake.recordInvocation("Orderer", []interface{}{arg1, arg2, arg3})
 	fake.ordererMutex.Unlock()
-	if stub != nil {
-		return stub(arg1, arg2, arg3)
+	if fake.OrdererStub != nil {
+		return fake.OrdererStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
 	}
+	fakeReturns := fake.ordererReturns
 	return fakeReturns.result1
 }
 

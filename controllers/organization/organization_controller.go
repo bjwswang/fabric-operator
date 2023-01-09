@@ -231,9 +231,9 @@ func (r *ReconcileOrganization) Reconcile(ctx context.Context, request reconcile
 
 	// If the stack still has items that require processing, keep reconciling
 	// until the stack has been cleared
-	_, found := r.update[instance.GetName()]
+	v, found := r.update[instance.GetName()]
 	if found {
-		if len(r.update[instance.GetName()]) > 0 {
+		if len(v) > 0 {
 			return reconcile.Result{
 				Requeue: true,
 			}, nil

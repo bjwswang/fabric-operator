@@ -1,12 +1,16 @@
 apiVersion: ibp.com/v1beta1
 kind: Network
 metadata:
-  name: network-sample
+  name: network-sample3
 spec:
   license:
     accept: true
   federation: federation-sample
   initialToken: <enrolltoken>
+  orderSpec:
+    license:
+      accept: true
+    clusterSize: 3
   members:
     - name: org1
       namespace: org1

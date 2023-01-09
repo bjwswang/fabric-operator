@@ -34,10 +34,6 @@ func (o *Override) CreateOrUpdateOrderer(instance *current.Network, orderer *cur
 
 	orderer.Spec.Domain = o.IngressDomain
 	orderer.Spec.MSPID = instance.Name
-	if orderer.Spec.NodeNumber == nil {
-		n := 1
-		orderer.Spec.NodeNumber = &n
-	}
 	if orderer.Spec.UseChannelLess == nil {
 		orderer.Spec.UseChannelLess = pointer.True()
 	}
@@ -90,75 +86,89 @@ func (o *Override) updateEnrollment(instance *current.Network, orderer *current.
 	if err != nil {
 		return err
 	}
-	if orderer.Spec.Secret == nil {
-		orderer.Spec.Secret = &current.SecretSpec{}
+	if orderer.Spec.ClusterSecret == nil {
+		orderer.Spec.ClusterSecret = make([]*current.SecretSpec, instance.Spec.OrderSpec.ClusterSize)
 	}
-	if orderer.Spec.Secret.Enrollment == nil {
-		orderer.Spec.Secret.Enrollment = &current.EnrollmentSpec{}
+	for i := range orderer.Spec.ClusterSecret {
+		if orderer.Spec.ClusterSecret[i] == nil {
+			orderer.Spec.ClusterSecret[i] = &current.SecretSpec{}
+		}
+		v := orderer.Spec.ClusterSecret[i]
+		enrollID := fmt.Sprintf("%s%d", instance.Name, i)
+		if v.Enrollment == nil {
+			v.Enrollment = &current.EnrollmentSpec{}
+		}
+		if v.Enrollment.Component == nil {
+			v.Enrollment.Component = &current.Enrollment{}
+		}
+		if v.Enrollment.Component.CAHost == "" {
+			v.Enrollment.Component.CAHost = host
+		}
+		if v.Enrollment.Component.CAPort == "" {
+			v.Enrollment.Component.CAPort = caURL.Port()
+		}
+		if v.Enrollment.Component.CAName == "" {
+			v.Enrollment.Component.CAName = "ca"
+		}
+		if v.Enrollment.Component.CATLS == nil {
+			v.Enrollment.Component.CATLS = &current.CATLS{CACert: profile.TLS.Cert}
+		}
+		if v.Enrollment.Component.EnrollID == "" {
+			v.Enrollment.Component.EnrollID = enrollID
+		}
+		if v.Enrollment.Component.EnrollToken == "" {
+			v.Enrollment.Component.EnrollToken = instance.Spec.InitialToken
+		}
+		if v.Enrollment.Component.EnrollSecret == "" {
+			v.Enrollment.Component.EnrollSecret = enrollID
+		}
+		if v.Enrollment.Component.EnrollUser == "" {
+			v.Enrollment.Component.EnrollUser = user
+		}
+
+		if v.Enrollment.TLS == nil {
+			v.Enrollment.TLS = &current.Enrollment{}
+		}
+		if v.Enrollment.TLS.CAHost == "" {
+			v.Enrollment.TLS.CAHost = host
+		}
+		if v.Enrollment.TLS.CAPort == "" {
+			v.Enrollment.TLS.CAPort = caURL.Port()
+		}
+		if v.Enrollment.TLS.CAName == "" {
+			v.Enrollment.TLS.CAName = "ca"
+		}
+		if v.Enrollment.TLS.CATLS == nil {
+			v.Enrollment.TLS.CATLS = &current.CATLS{CACert: profile.TLS.Cert}
+		}
+		if v.Enrollment.TLS.EnrollID == "" {
+			v.Enrollment.TLS.EnrollID = enrollID
+		}
+		if v.Enrollment.TLS.EnrollToken == "" {
+			v.Enrollment.TLS.EnrollToken = instance.Spec.InitialToken
+		}
+		if v.Enrollment.TLS.EnrollSecret == "" {
+			v.Enrollment.TLS.EnrollSecret = enrollID
+		}
+		if v.Enrollment.TLS.EnrollUser == "" {
+			v.Enrollment.TLS.EnrollUser = user
+		}
+		if v.Enrollment.TLS.CSR == nil {
+			v.Enrollment.TLS.CSR = &current.CSR{Hosts: make([]string, 0)}
+		}
+		clusterHosts := []string{
+			instance.GetInitiatorMember().Name,
+			instance.GetInitiatorMember().Name + "." + instance.GetInitiatorMember().Namespace,
+			instance.GetInitiatorMember().Name + "." + instance.GetInitiatorMember().Namespace + ".svc.cluster.local",
+		}
+		hosts := v.Enrollment.TLS.CSR.Hosts
+		for _, h := range clusterHosts {
+			hosts = util.AppendStringIfMissing(hosts, h)
+		}
+		v.Enrollment.TLS.CSR.Hosts = hosts
+		orderer.Spec.ClusterSecret[i] = v
 	}
 
-	if orderer.Spec.Secret.Enrollment.Component == nil {
-		orderer.Spec.Secret.Enrollment.Component = &current.Enrollment{}
-	}
-	if orderer.Spec.Secret.Enrollment.Component.CAHost == "" {
-		orderer.Spec.Secret.Enrollment.Component.CAHost = host
-	}
-	if orderer.Spec.Secret.Enrollment.Component.CAPort == "" {
-		orderer.Spec.Secret.Enrollment.Component.CAPort = caURL.Port()
-	}
-	if orderer.Spec.Secret.Enrollment.Component.CAName == "" {
-		orderer.Spec.Secret.Enrollment.Component.CAName = "ca"
-	}
-	if orderer.Spec.Secret.Enrollment.Component.CATLS == nil {
-		orderer.Spec.Secret.Enrollment.Component.CATLS = &current.CATLS{CACert: profile.TLS.Cert}
-	}
-	if orderer.Spec.Secret.Enrollment.Component.EnrollID == "" {
-		orderer.Spec.Secret.Enrollment.Component.EnrollID = instance.Name
-	}
-	if orderer.Spec.Secret.Enrollment.Component.EnrollSecret == "" {
-		orderer.Spec.Secret.Enrollment.Component.EnrollSecret = instance.GetInitiatorMember().Name
-	}
-	if orderer.Spec.Secret.Enrollment.Component.EnrollUser == "" {
-		orderer.Spec.Secret.Enrollment.Component.EnrollUser = user
-	}
-
-	if orderer.Spec.Secret.Enrollment.TLS == nil {
-		orderer.Spec.Secret.Enrollment.TLS = &current.Enrollment{}
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.CAHost == "" {
-		orderer.Spec.Secret.Enrollment.TLS.CAHost = host
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.CAPort == "" {
-		orderer.Spec.Secret.Enrollment.TLS.CAPort = caURL.Port()
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.CAName == "" {
-		orderer.Spec.Secret.Enrollment.TLS.CAName = "ca"
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.CATLS == nil {
-		orderer.Spec.Secret.Enrollment.TLS.CATLS = &current.CATLS{CACert: profile.TLS.Cert}
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.EnrollID == "" {
-		orderer.Spec.Secret.Enrollment.TLS.EnrollID = instance.Name
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.EnrollSecret == "" {
-		orderer.Spec.Secret.Enrollment.TLS.EnrollSecret = instance.GetInitiatorMember().Name
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.EnrollUser == "" {
-		orderer.Spec.Secret.Enrollment.TLS.EnrollUser = user
-	}
-	if orderer.Spec.Secret.Enrollment.TLS.CSR == nil {
-		orderer.Spec.Secret.Enrollment.TLS.CSR = &current.CSR{Hosts: make([]string, 0)}
-	}
-	clusterHosts := []string{
-		instance.GetInitiatorMember().Name,
-		instance.GetInitiatorMember().Name + "." + instance.GetInitiatorMember().Namespace,
-		instance.GetInitiatorMember().Name + "." + instance.GetInitiatorMember().Namespace + ".svc.cluster.local",
-	}
-	hosts := orderer.Spec.Secret.Enrollment.TLS.CSR.Hosts
-	for _, h := range clusterHosts {
-		hosts = util.AppendStringIfMissing(hosts, h)
-	}
-	orderer.Spec.Secret.Enrollment.TLS.CSR.Hosts = hosts
 	return nil
 }
 

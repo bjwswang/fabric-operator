@@ -20,7 +20,7 @@ $ kubectl apply -f config/rbac/admin_cluster_role.yaml
 
 ## 用户注册
 
-### 1. 创建5个用户
+### 1. 创建 5 个用户
 
 ```bash
 kubectl apply -f config/samples/users
@@ -36,7 +36,7 @@ kubectl apply -f config/samples/users
 
 ## 组织用户管理
 
-### 1. 创建3个组织
+### 1. 创建 3 个组织
 
 ```bash
 kubectl apply -f config/samples/orgs
@@ -367,13 +367,14 @@ spec:
   phone: "18890901212"
   role: admin
 ```
+
 </details>
 
-### 2. 更新组织的client用户
+### 2. 更新组织的 client 用户
 
-1. 新增client用户
+1. 新增 client 用户
 
-通过更新`spec.clients`字段
+通过更新 `spec.clients` 字段
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_organization_add_client.yaml
@@ -468,9 +469,9 @@ spec:
 
 </details>
 
-2. 从组织中删除client用户
+2. 从组织中删除 client 用户
 
-通过更新`spec.clients`字段
+通过更新 `spec.clients` 字段
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_organization_remove_client.yaml
@@ -565,9 +566,9 @@ spec:
 
 </details>
 
-### 3.  转移组织Admin权限
+### 3.  转移组织 Admin 权限
 
-通过更新`spec.admin`字段
+通过更新 `spec.admin` 字段
 
 ```bash
 kubectl apply -f config/samples/ibp.com_v1beta1_organization_transfer_admin.yaml
@@ -620,14 +621,16 @@ spec:
     version: 1.5.5
 
 ```
+
 </details>
 
 <details>
 <summary>原Admin用户</summary>
 
 总结：
-- annotations去除了`bestchains.list.org1`
-- labels去除了 `bestchains.organization.org1:admin` 
+
+- annotations 去除了 `bestchains.list.org1`
+- labels 去除了 `bestchains.organization.org1:admin`
 
 ```yaml
 apiVersion: iam.tenxcloud.com/v1alpha1
@@ -666,8 +669,9 @@ spec:
 <summary>新Admin用户</summary>
 
 总结：
-- annotations增加了`bestchains.list.org1`
-- labels增加了 `bestchains.organization.org1:admin`
+
+- annotations 增加了 `bestchains.list.org1`
+- labels 增加了 `bestchains.organization.org1:admin`
 
 ```yaml
 apiVersion: iam.tenxcloud.com/v1alpha1
@@ -1995,6 +1999,720 @@ status:
   lastHeartbeatTime: 2022-12-08 14:00:04.395943 +0800 CST m=+302.039719659
   status: "True"
   type: FederationDissolved
+
+```
+
+</details>
+
+## 网络管理
+
+### 1. 创建网络
+
+要想创建一个网络 (Network)，需要按以下步骤：
+
+1. 创建一个网络 (Network) 资源。
+
+#### 1.1 创建单 orderer 网络 Network 的 CR
+
+需要先将 yaml 中的 `<enrolltoken>` 替换为 发起者 initiator 组织 admin 用户的 token。
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_network.yaml
+```
+
+<details>
+
+<summary>详细yaml为:</summary>
+
+```bash
+$ kubectl get network  -oyaml
+```
+
+```yaml
+apiVersion: v1
+items:
+  - apiVersion: ibp.com/v1beta1
+    kind: Network
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/last-applied-configuration: |
+          {"apiVersion":"ibp.com/v1beta1","kind":"Network","metadata":{"annotations":{},"name":"network-sample"},"spec":{"federation":"federation-sample","initialToken":"eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA","license":{"accept":true},"members":[{"initiator":true,"name":"org1","namespace":"org1"},{"name":"org2","namespace":"org2"}]}}
+      creationTimestamp: "2023-01-10T06:18:09Z"
+      generation: 1
+      name: network-sample
+      resourceVersion: "7533"
+      uid: 24b0acee-f1cf-466d-b42f-f7d704fa8c0f
+    spec:
+      federation: federation-sample
+      initialToken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+      license:
+        accept: true
+      members:
+        - initiator: true
+          name: org1
+          namespace: org1
+        - name: org2
+          namespace: org2
+      orderSpec:
+        action:
+          enroll: {}
+          reenroll: {}
+        clusterSize: 1
+        customNames:
+          pvc: {}
+        ingress: {}
+        license:
+          accept: true
+        ordererType: etcdraft
+    status:
+      lastHeartbeatTime: 2023-01-10 06:35:10.090086501 +0000 UTC m=+1.405550566
+      status: "True"
+      type: Created
+kind: List
+metadata:
+  resourceVersion: ""
+
+```
+
+</details>
+
+<details>
+
+<summary>orderer 详情为:</summary>
+
+```bash
+$ kubectl get ibporderer -n org1 -o yaml
+```
+
+```yaml
+apiVersion: v1
+items:
+- apiVersion: ibp.com/v1beta1
+  kind: IBPOrderer
+  metadata:
+    creationTimestamp: "2023-01-10T06:35:10Z"
+    generation: 1
+    labels:
+      app: network-sample
+      app.kubernetes.io/instance: fabricnetwork
+      app.kubernetes.io/managed-by: fabric-operator
+      app.kubernetes.io/name: fabric
+      creator: fabric
+      helm.sh/chart: ibm-fabric
+      release: operator
+    name: network-sample
+    namespace: org1
+    ownerReferences:
+    - apiVersion: ibp.com/v1beta1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Network
+      name: network-sample
+      uid: 24b0acee-f1cf-466d-b42f-f7d704fa8c0f
+    resourceVersion: "9784"
+    uid: dcf13d87-305d-45b3-a535-fa20ec1ebdee
+  spec:
+    action:
+      enroll: {}
+      reenroll: {}
+    clusterSize: 1
+    clustersecret:
+    - enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample0
+          enrollsecret: network-sample0
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample0
+          enrollsecret: network-sample0
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    customNames:
+      pvc: {}
+    domain: 172.22.0.2.nip.io
+    ingress: {}
+    license:
+      accept: true
+    mspID: network-sample
+    ordererType: etcdraft
+    orgName: org1
+    systemChannelName: network-sample
+    useChannelLess: true
+    version: 2.4.7
+  status:
+    lastHeartbeatTime: 2023-01-10 06:45:35.369558997 +0000 UTC m=+626.685023050
+    reason: All nodes are deployed
+    status: "True"
+    type: Deployed
+    version: 1.0.0
+    versions:
+      reconciled: ""
+- apiVersion: ibp.com/v1beta1
+  kind: IBPOrderer
+  metadata:
+    creationTimestamp: "2023-01-10T06:35:10Z"
+    generation: 2
+    labels:
+      app: network-samplenode1
+      app.kubernetes.io/instance: fabricorderer
+      app.kubernetes.io/managed-by: fabric-operator
+      app.kubernetes.io/name: fabric
+      creator: fabric
+      parent: network-sample
+    name: network-samplenode1
+    namespace: org1
+    resourceVersion: "9783"
+    uid: 20ab9cf7-4e5e-4357-81ca-8fd04f77048e
+  spec:
+    action:
+      enroll: {}
+      reenroll: {}
+    clusterSize: 1
+    customNames:
+      pvc: {}
+    domain: 172.22.0.2.nip.io
+    externalAddress: org1-network-samplenode1-orderer.172.22.0.2.nip.io:443
+    images:
+      grpcwebImage: hyperledgerk8s/grpc-web
+      grpcwebTag: latest
+      ordererImage: hyperledgerk8s/fabric-orderer
+      ordererInitImage: hyperledgerk8s/ubi-minimal
+      ordererInitTag: latest
+      ordererTag: 2.4.7
+    ingress: {}
+    license:
+      accept: true
+    mspID: network-sample
+    number: 1
+    ordererType: etcdraft
+    orgName: org1
+    replicas: 1
+    secret:
+      enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample0
+          enrollsecret: network-sample0
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1-network-samplenode1-orderer.172.22.0.2.nip.io
+            - org1-network-samplenode1-operations.172.22.0.2.nip.io
+            - org1-network-samplenode1-grpcweb.172.22.0.2.nip.io
+            - org1-network-samplenode1-admin.172.22.0.2.nip.io
+            - 127.0.0.1
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample0
+          enrollsecret: network-sample0
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    systemChannelName: network-sample
+    useChannelLess: true
+    version: 2.4.7-1
+  status:
+    lastHeartbeatTime: 2023-01-10 06:45:35.358822706 +0000 UTC m=+626.674286766
+    message: allPodsRunning
+    reason: allPodsRunning
+    status: "True"
+    type: Deployed
+    version: 1.0.0
+    versions:
+      reconciled: 2.4.7-1
+kind: List
+metadata:
+  resourceVersion: ""
+
+```
+
+</details>
+
+#### 1.2 创建三 orderer 网络 Network 的 CR
+
+需要先将 yaml 中的 `<enrolltoken>` 替换为 发起者 initiator 组织 admin 用户的 token。
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_network_size_3.yaml
+```
+
+<details>
+
+<summary>详细yaml为:</summary>
+
+```bash
+$ kubectl get network -o yaml
+```
+
+```yaml
+apiVersion: v1
+items:
+- apiVersion: ibp.com/v1beta1
+  kind: Network
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {"apiVersion":"ibp.com/v1beta1","kind":"Network","metadata":{"annotations":{},"name":"network-sample3"},"spec":{"federation":"federation-sample","initialToken":"eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA","license":{"accept":true},"members":[{"initiator":true,"name":"org1","namespace":"org1"},{"name":"org2","namespace":"org2"}],"orderSpec":{"clusterSize":3,"license":{"accept":true}}}}
+    creationTimestamp: "2023-01-10T06:57:06Z"
+    generation: 1
+    name: network-sample3
+    resourceVersion: "11866"
+    uid: 05539cd0-c92d-4633-8755-4444919bde9d
+  spec:
+    federation: federation-sample
+    initialToken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+    license:
+      accept: true
+    members:
+    - initiator: true
+      name: org1
+      namespace: org1
+    - name: org2
+      namespace: org2
+    orderSpec:
+      action:
+        enroll: {}
+        reenroll: {}
+      clusterSize: 3
+      customNames:
+        pvc: {}
+      ingress: {}
+      license:
+        accept: true
+      ordererType: etcdraft
+  status:
+    lastHeartbeatTime: 2023-01-10 06:57:06.14278582 +0000 UTC m=+1317.458249887
+    status: "True"
+    type: Created
+kind: List
+metadata:
+  resourceVersion: ""
+
+```
+
+</details>
+
+<details>
+
+<summary>orderer 详情为:</summary>
+
+```bash
+$ kubectl get ibporderer -norg1 -o yaml
+```
+
+```yaml
+apiVersion: v1
+items:
+- apiVersion: ibp.com/v1beta1
+  kind: IBPOrderer
+  metadata:
+    creationTimestamp: "2023-01-10T06:57:06Z"
+    generation: 1
+    labels:
+      app: network-sample3
+      app.kubernetes.io/instance: fabricnetwork
+      app.kubernetes.io/managed-by: fabric-operator
+      app.kubernetes.io/name: fabric
+      creator: fabric
+      helm.sh/chart: ibm-fabric
+      release: operator
+    name: network-sample3
+    namespace: org1
+    ownerReferences:
+    - apiVersion: ibp.com/v1beta1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Network
+      name: network-sample3
+      uid: 05539cd0-c92d-4633-8755-4444919bde9d
+    resourceVersion: "12329"
+    uid: eda4aa96-6eca-4d05-9fec-8836e324baff
+  spec:
+    action:
+      enroll: {}
+      reenroll: {}
+    clusterSize: 3
+    clustersecret:
+    - enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample30
+          enrollsecret: network-sample30
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample30
+          enrollsecret: network-sample30
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    - enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample31
+          enrollsecret: network-sample31
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample31
+          enrollsecret: network-sample31
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    - enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample32
+          enrollsecret: network-sample32
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample32
+          enrollsecret: network-sample32
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    customNames:
+      pvc: {}
+    domain: 172.22.0.2.nip.io
+    ingress: {}
+    license:
+      accept: true
+    mspID: network-sample3
+    ordererType: etcdraft
+    orgName: org1
+    systemChannelName: network-sample3
+    useChannelLess: true
+    version: 2.4.7
+  status:
+    lastHeartbeatTime: 2023-01-10 06:58:04.886683429 +0000 UTC m=+1376.202147482
+    reason: All nodes are deployed
+    status: "True"
+    type: Deployed
+    version: 1.0.0
+    versions:
+      reconciled: ""
+- apiVersion: ibp.com/v1beta1
+  kind: IBPOrderer
+  metadata:
+    creationTimestamp: "2023-01-10T06:57:06Z"
+    generation: 2
+    labels:
+      app: network-sample3node1
+      app.kubernetes.io/instance: fabricorderer
+      app.kubernetes.io/managed-by: fabric-operator
+      app.kubernetes.io/name: fabric
+      creator: fabric
+      parent: network-sample3
+    name: network-sample3node1
+    namespace: org1
+    resourceVersion: "12282"
+    uid: 866677ee-3b40-4a9f-a9f7-417422463df3
+  spec:
+    action:
+      enroll: {}
+      reenroll: {}
+    clusterSize: 1
+    customNames:
+      pvc: {}
+    domain: 172.22.0.2.nip.io
+    externalAddress: org1-network-sample3node1-orderer.172.22.0.2.nip.io:443
+    images:
+      grpcwebImage: hyperledgerk8s/grpc-web
+      grpcwebTag: latest
+      ordererImage: hyperledgerk8s/fabric-orderer
+      ordererInitImage: hyperledgerk8s/ubi-minimal
+      ordererInitTag: latest
+      ordererTag: 2.4.7
+    ingress: {}
+    license:
+      accept: true
+    mspID: network-sample3
+    number: 1
+    ordererType: etcdraft
+    orgName: org1
+    replicas: 1
+    secret:
+      enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample30
+          enrollsecret: network-sample30
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1-network-sample3node1-orderer.172.22.0.2.nip.io
+            - org1-network-sample3node1-operations.172.22.0.2.nip.io
+            - org1-network-sample3node1-grpcweb.172.22.0.2.nip.io
+            - org1-network-sample3node1-admin.172.22.0.2.nip.io
+            - 127.0.0.1
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample30
+          enrollsecret: network-sample30
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    systemChannelName: network-sample3
+    useChannelLess: true
+    version: 2.4.7-1
+  status:
+    lastHeartbeatTime: 2023-01-10 06:57:55.598828339 +0000 UTC m=+1366.914292397
+    message: allPodsRunning
+    reason: allPodsRunning
+    status: "True"
+    type: Deployed
+    version: 1.0.0
+    versions:
+      reconciled: 2.4.7-1
+- apiVersion: ibp.com/v1beta1
+  kind: IBPOrderer
+  metadata:
+    creationTimestamp: "2023-01-10T06:57:06Z"
+    generation: 2
+    labels:
+      app: network-sample3node2
+      app.kubernetes.io/instance: fabricorderer
+      app.kubernetes.io/managed-by: fabric-operator
+      app.kubernetes.io/name: fabric
+      creator: fabric
+      parent: network-sample3
+    name: network-sample3node2
+    namespace: org1
+    resourceVersion: "12328"
+    uid: ced9cdee-1f44-4c8c-86fc-6be1f447f61b
+  spec:
+    action:
+      enroll: {}
+      reenroll: {}
+    clusterSize: 1
+    customNames:
+      pvc: {}
+    domain: 172.22.0.2.nip.io
+    externalAddress: org1-network-sample3node2-orderer.172.22.0.2.nip.io:443
+    images:
+      grpcwebImage: hyperledgerk8s/grpc-web
+      grpcwebTag: latest
+      ordererImage: hyperledgerk8s/fabric-orderer
+      ordererInitImage: hyperledgerk8s/ubi-minimal
+      ordererInitTag: latest
+      ordererTag: 2.4.7
+    ingress: {}
+    license:
+      accept: true
+    mspID: network-sample3
+    number: 2
+    ordererType: etcdraft
+    orgName: org1
+    replicas: 1
+    secret:
+      enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample31
+          enrollsecret: network-sample31
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1-network-sample3node2-orderer.172.22.0.2.nip.io
+            - org1-network-sample3node2-operations.172.22.0.2.nip.io
+            - org1-network-sample3node2-grpcweb.172.22.0.2.nip.io
+            - org1-network-sample3node2-admin.172.22.0.2.nip.io
+            - 127.0.0.1
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample31
+          enrollsecret: network-sample31
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    systemChannelName: network-sample3
+    useChannelLess: true
+    version: 2.4.7-1
+  status:
+    lastHeartbeatTime: 2023-01-10 06:58:04.875963798 +0000 UTC m=+1376.191427856
+    message: allPodsRunning
+    reason: allPodsRunning
+    status: "True"
+    type: Deployed
+    version: 1.0.0
+    versions:
+      reconciled: 2.4.7-1
+- apiVersion: ibp.com/v1beta1
+  kind: IBPOrderer
+  metadata:
+    creationTimestamp: "2023-01-10T06:57:06Z"
+    generation: 2
+    labels:
+      app: network-sample3node3
+      app.kubernetes.io/instance: fabricorderer
+      app.kubernetes.io/managed-by: fabric-operator
+      app.kubernetes.io/name: fabric
+      creator: fabric
+      parent: network-sample3
+    name: network-sample3node3
+    namespace: org1
+    resourceVersion: "12319"
+    uid: 4caa1b14-ba5d-4324-97d6-2290d9293c9c
+  spec:
+    action:
+      enroll: {}
+      reenroll: {}
+    clusterSize: 1
+    customNames:
+      pvc: {}
+    domain: 172.22.0.2.nip.io
+    externalAddress: org1-network-sample3node3-orderer.172.22.0.2.nip.io:443
+    images:
+      grpcwebImage: hyperledgerk8s/grpc-web
+      grpcwebTag: latest
+      ordererImage: hyperledgerk8s/fabric-orderer
+      ordererInitImage: hyperledgerk8s/ubi-minimal
+      ordererInitTag: latest
+      ordererTag: 2.4.7
+    ingress: {}
+    license:
+      accept: true
+    mspID: network-sample3
+    number: 3
+    ordererType: etcdraft
+    orgName: org1
+    replicas: 1
+    secret:
+      enrollment:
+        component:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          enrollid: network-sample32
+          enrollsecret: network-sample32
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+        tls:
+          cahost: org1-org1-ca.172.22.0.2.nip.io
+          caname: ca
+          caport: "443"
+          catls:
+            cacert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lSQU9XVFIwVGRteXFzRFE4Y3VqRnlBSTh3Q2dZSUtvWkl6ajBFQXdJd2dZTXgKQ3pBSkJnTlZCQVlUQWxWVE1SY3dGUVlEVlFRSUV3NU9iM0owYUNCRFlYSnZiR2x1WVRFUE1BMEdBMVVFQnhNRwpSSFZ5YUdGdE1Rd3dDZ1lEVlFRS0V3TkpRazB4RXpBUkJnTlZCQXNUQ2tKc2IyTnJZMmhoYVc0eEp6QWxCZ05WCkJBTVRIbTl5WnpFdGIzSm5NUzFqWVM0eE56SXVNakl1TUM0eUxtNXBjQzVwYnpBZUZ3MHlNekF4TVRBd05qQTUKTXpoYUZ3MHpNekF4TURjd05qQTVNemhhTUlHRE1Rc3dDUVlEVlFRR0V3SlZVekVYTUJVR0ExVUVDQk1PVG05eQpkR2dnUTJGeWIyeHBibUV4RHpBTkJnTlZCQWNUQmtSMWNtaGhiVEVNTUFvR0ExVUVDaE1EU1VKTk1STXdFUVlEClZRUUxFd3BDYkc5amEyTm9ZV2x1TVNjd0pRWURWUVFERXg1dmNtY3hMVzl5WnpFdFkyRXVNVGN5TGpJeUxqQXUKTWk1dWFYQXVhVzh3V1RBVEJnY3Foa2pPUFFJQkJnZ3Foa2pPUFFNQkJ3TkNBQVIzNzJNeWhUOERuRW1Kb1ZHNwpwcHpBdzJTLzBsZTFvbEpENlUvc01idDhDT3NkbEt1OXdmL29Iai9FMjVyak9HdHFWWHllNmJyQU5TTHk2UUNhCjBCeFNvMVV3VXpCUkJnTlZIUkVFU2pCSWdoNXZjbWN4TFc5eVp6RXRZMkV1TVRjeUxqSXlMakF1TWk1dWFYQXUKYVcrQ0ptOXlaekV0YjNKbk1TMXZjR1Z5WVhScGIyNXpMakUzTWk0eU1pNHdMakl1Ym1sd0xtbHZNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDNE1EU1d6bTVabEZ2MDNvcHJNZkxIMjl4VWxKQTNYK1VacTMxVzRNRVV5QUlnClJSYUY4cnhUWXJibzJoUkoxandjUDBBQWh3VSs4b2F0VU9vdDQ0ZUJFQ3M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+          csr:
+            hosts:
+            - org1-network-sample3node3-orderer.172.22.0.2.nip.io
+            - org1-network-sample3node3-operations.172.22.0.2.nip.io
+            - org1-network-sample3node3-grpcweb.172.22.0.2.nip.io
+            - org1-network-sample3node3-admin.172.22.0.2.nip.io
+            - 127.0.0.1
+            - org1
+            - org1.org1
+            - org1.org1.svc.cluster.local
+          enrollid: network-sample32
+          enrollsecret: network-sample32
+          enrolltoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5N2MyZGEzZDYzZDY2MTA0NmRlZTk3ZjM3MjM0ZWE4ZjU0Yzg4ZjYifQ.eyJpc3MiOiJodHRwczovL3BvcnRhbC4xNzIuMjIuMC4yLm5pcC5pby9vaWRjIiwic3ViIjoiQ2dsdmNtY3hZV1J0YVc0U0JtczRjMk55WkEiLCJhdWQiOiJiZmYtY2xpZW50IiwiZXhwIjoxNjczNDE3NzgxLCJpYXQiOjE2NzMzMzEzODEsImF0X2hhc2giOiJPa0h1cFJIcDQ3N2ZaUHZsNHRwd0lBIiwiY19oYXNoIjoibzJzQUhDWEk3WGdmaldQcGI4ZDROZyIsImVtYWlsIjoib3JnMWFkbWluQHRlbnhjbG91ZC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZ3JvdXBzIjpbIm9ic2VydmFiaWxpdHkiLCJzeXN0ZW06bm9kZXMiLCJzeXN0ZW06bWFzdGVycyIsInJlc291cmNlLXJlYWRlciIsImlhbS50ZW54Y2xvdWQuY29tIiwib2JzZXJ2YWJpbGl0eSJdLCJuYW1lIjoib3JnMWFkbWluIiwicHJlZmVycmVkX3VzZXJuYW1lIjoib3JnMWFkbWluIiwicGhvbmUiOiIiLCJ1c2VyaWQiOiJvcmcxYWRtaW4ifQ.BWhqxQy_p9Ws6gd5HNwltchLzOfFldXW6MaanC3qZmon3Nyj31Kcw4gnv7kTeRTB1RPyfZXmK46eOtm6ADvjOl5X0vN7tLvq0A-BK-5bf9D-hU_BNGShyGD5XMNloDDp3IQwkukFK7HF2-VHv7tioeGVLquaOn4-2vf18jKNtZ1dxeR3lnfeO9tukqwuInSXJN7mvikueJxYtbHwFR98ED7Rb0uMdctS3wQH2m3PxoZ1bt2JaQOVR_Br6bcRuw3H3akXUuPaj38EgfJnVC6DCQwI3Pu7jEZo689BJ3g4dBaRWCepoDRN2Pd6I3bvZE8xCk8UV1Lxz2CUbC6y2PcrtA
+          enrolluser: org1admin
+    systemChannelName: network-sample3
+    useChannelLess: true
+    version: 2.4.7-1
+  status:
+    lastHeartbeatTime: 2023-01-10 06:58:03.635121235 +0000 UTC m=+1374.950585299
+    message: allPodsRunning
+    reason: allPodsRunning
+    status: "True"
+    type: Deployed
+    version: 1.0.0
+    versions:
+      reconciled: 2.4.7-1
+kind: List
+metadata:
+  resourceVersion: ""
 
 ```
 

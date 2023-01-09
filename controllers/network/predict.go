@@ -19,13 +19,16 @@
 package network
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/go-test/deep"
 	"gopkg.in/yaml.v2"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -115,10 +118,18 @@ func (r *ReconcileNetwork) DeleteFunc(e event.DeleteEvent) bool {
 	if err != nil {
 		log.Error(err, "failed to sync rbac uppon proposal delete")
 	}
-	update := Update{}
-	update.ordererRemove = true
-	r.PushUpdate(network.GetName(), update)
-	log.Info(fmt.Sprintf("Spec update triggering reconcile on Network custom resource %s: update [ %+v ]", network.Name, update.GetUpdateStackWithTrues()))
-
-	return true
+	if !r.Config.OrganizationInitConfig.IAMEnabled {
+		return false
+	}
+	org := &current.Organization{}
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: network.GetInitiatorMember().Name, Namespace: network.GetInitiatorMember().Namespace}, org); err != nil {
+		log.Error(err, "failed to get org when network delete")
+		return false
+	}
+	targetUser := org.Spec.Admin
+	err = user.Reconcile(r.client, targetUser, org.Name, network.GetName(), user.ORDERER, user.Remove)
+	if err != nil {
+		log.Error(err, "failed to reconcile user when network delete")
+	}
+	return false
 }

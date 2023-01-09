@@ -98,6 +98,8 @@ type ProposalSource struct {
 	DeleteMember *DeleteMember `json:"deleteMember,omitempty"`
 	// +optional
 	DissolveFederation *DissolveFederation `json:"dissolveFederation,omitempty"`
+	// +optional
+	DissolveNetwork *DissolveNetwork `json:"dissolveNetwork,omitempty"`
 }
 
 type AddMember struct {
@@ -107,7 +109,12 @@ type AddMember struct {
 type DeleteMember struct {
 	Member NamespacedName `json:"member"`
 }
+
 type DissolveFederation struct {
+}
+
+type DissolveNetwork struct {
+	Name string `json:"name"`
 }
 
 type CreateFederation struct {

@@ -1,0 +1,13 @@
+---
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  name: dissolve-network-sample
+spec:
+  federation: federation-sample
+  policy: All
+  initiator:
+    namespace: org1
+    name: org1
+  dissolveNetwork:
+    name: network-sample

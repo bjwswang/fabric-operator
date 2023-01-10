@@ -29,7 +29,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -167,73 +167,79 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 
 	if newProposal.Status.Phase == current.ProposalFinished {
 		for _, c := range newProposal.Status.Conditions {
-			if c.Status == metav1.ConditionTrue {
-				if newProposal.Spec.CreateFederation != nil {
-					switch c.Type {
-					case current.ProposalFailed:
-						update.proposalFailed = true
-					case current.ProposalSucceeded:
-						update.proposalActivated = true
+			switch c.Type {
+			case current.ProposalSucceeded:
+				switch newProposal.GetPurpose() {
+				case current.CreateFederationProposal:
+					update.proposalActivated = true
+				case current.AddMemberProposal:
+					fed := &current.Federation{}
+					if err := r.client.Get(context.TODO(), types.NamespacedName{Name: newProposal.Spec.Federation}, fed); err != nil {
+						log.Error(err, fmt.Sprintf("cant find federation %s", newProposal.Spec.Federation))
+						return false
 					}
-				} else if newProposal.Spec.AddMember != nil {
-					if c.Type == current.ProposalSucceeded {
-						fed := &current.Federation{}
-						if err := r.client.Get(context.TODO(), types.NamespacedName{Name: newProposal.Spec.Federation}, fed); err != nil {
-							log.Error(err, fmt.Sprintf("cant find federation %s", newProposal.Spec.Federation))
-							return false
-						}
-						for _, m := range newProposal.Spec.AddMember.Members {
-							fed.Spec.Members = append(fed.Spec.Members, current.Member{
-								NamespacedName: m,
-								Initiator:      false,
-							})
-						}
-						if err := r.client.Update(context.TODO(), fed); err != nil {
-							log.Error(err, fmt.Sprintf("cant update federation %s", newProposal.Spec.Federation))
-							return false
-						}
+					for _, m := range newProposal.Spec.AddMember.Members {
+						fed.Spec.Members = append(fed.Spec.Members, current.Member{
+							NamespacedName: m,
+							Initiator:      false,
+						})
 					}
-				} else if newProposal.Spec.DeleteMember != nil {
-					if c.Type == current.ProposalSucceeded {
-						fed := &current.Federation{}
-						if err := r.client.Get(context.TODO(), types.NamespacedName{Name: newProposal.Spec.Federation}, fed); err != nil {
-							log.Error(err, fmt.Sprintf("cant find federation %s", newProposal.Spec.Federation))
-							return false
-						}
-						newMember := make([]current.Member, 0)
-						for _, m := range fed.Spec.Members {
-							if m.String() == newProposal.Spec.DeleteMember.Member.String() {
-								continue
-							}
-							newMember = append(newMember, m)
-						}
-						fed.Spec.Members = newMember
-						if err := r.client.Update(context.TODO(), fed); err != nil {
-							log.Error(err, fmt.Sprintf("cant update federation %s", newProposal.Spec.Federation))
-							return false
-						}
+					if err := r.client.Update(context.TODO(), fed); err != nil {
+						log.Error(err, fmt.Sprintf("cant update federation %s", newProposal.Spec.Federation))
+						return false
 					}
-				} else if newProposal.Spec.DissolveFederation != nil {
-					if c.Type == current.ProposalSucceeded {
-						update.proposalDissolved = true
-						fed := &current.Federation{}
-						if err := r.client.Get(context.TODO(), types.NamespacedName{Name: newProposal.Spec.Federation}, fed); err != nil {
-							log.Error(err, fmt.Sprintf("cant find federation %s", newProposal.Spec.Federation))
-							return false
-						}
-						newMember := make([]current.Member, 0)
-						for _, m := range fed.Spec.Members {
-							if !m.Initiator {
-								continue
-							}
-							newMember = append(newMember, m)
-						}
-						fed.Spec.Members = newMember
-						if err := r.client.Update(context.TODO(), fed); err != nil {
-							log.Error(err, fmt.Sprintf("cant update federation %s", newProposal.Spec.Federation))
-							return false
-						}
+				case current.DeleteMemberProposal:
+					fed := &current.Federation{}
+					if err := r.client.Get(context.TODO(), types.NamespacedName{Name: newProposal.Spec.Federation}, fed); err != nil {
+						log.Error(err, fmt.Sprintf("cant find federation %s", newProposal.Spec.Federation))
+						return false
 					}
+					newMember := make([]current.Member, 0)
+					for _, m := range fed.Spec.Members {
+						if m.String() == newProposal.Spec.DeleteMember.Member.String() {
+							continue
+						}
+						newMember = append(newMember, m)
+					}
+					fed.Spec.Members = newMember
+					if err := r.client.Update(context.TODO(), fed); err != nil {
+						log.Error(err, fmt.Sprintf("cant update federation %s", newProposal.Spec.Federation))
+						return false
+					}
+				case current.DissolveFederationProposal:
+					update.proposalDissolved = true
+					fed := &current.Federation{}
+					if err := r.client.Get(context.TODO(), types.NamespacedName{Name: newProposal.Spec.Federation}, fed); err != nil {
+						log.Error(err, fmt.Sprintf("cant find federation %s", newProposal.Spec.Federation))
+						return false
+					}
+					newMember := make([]current.Member, 0)
+					for _, m := range fed.Spec.Members {
+						if !m.Initiator {
+							continue
+						}
+						newMember = append(newMember, m)
+					}
+					fed.Spec.Members = newMember
+					if err := r.client.Update(context.TODO(), fed); err != nil {
+						log.Error(err, fmt.Sprintf("cant update federation %s", newProposal.Spec.Federation))
+						return false
+					}
+				case current.DissolveNetworkProposal:
+					network := &current.Network{
+						ObjectMeta: v1.ObjectMeta{
+							Name: newProposal.Spec.DissolveNetwork.Name,
+						},
+					}
+					if err := r.client.Delete(context.TODO(), network); err != nil {
+						log.Error(err, fmt.Sprintf("cant delete network %s", newProposal.Spec.DissolveNetwork.Name))
+						return false
+					}
+				}
+			case current.ProposalFailed:
+				switch newProposal.GetPurpose() {
+				case current.CreateFederationProposal:
+					update.proposalFailed = true
 				}
 			}
 		}

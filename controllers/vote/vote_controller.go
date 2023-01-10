@@ -87,13 +87,8 @@ var (
 			if vote.Labels == nil {
 				vote.Labels = make(map[string]string)
 			}
-			if proposal.Spec.AddMember != nil ||
-				proposal.Spec.CreateFederation != nil ||
-				proposal.Spec.DissolveFederation != nil ||
-				proposal.Spec.DeleteMember != nil {
-				if v, ok := vote.Labels[VOTE_FEDERATION_LABEL]; !ok || v != proposal.Spec.Federation {
-					vote.Labels[VOTE_FEDERATION_LABEL] = proposal.Spec.Federation
-				}
+			if v, ok := vote.Labels[VOTE_FEDERATION_LABEL]; !ok || v != proposal.Spec.Federation {
+				vote.Labels[VOTE_FEDERATION_LABEL] = proposal.Spec.Federation
 				return true
 			}
 			return false

@@ -2717,3 +2717,66 @@ metadata:
 ```
 
 </details>
+
+#### 1.3 删除网络
+
+删除网络需要创建提案 Proposal, 根据提案的 policy, 各参与组织同意后，才会自动删除。
+
+```bash
+kubectl apply -f ibp.com_v1beta1_proposal_dissolve_network.yaml
+```
+
+<details>
+
+<summary>详细yaml为:</summary>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ibp.com/v1beta1","kind":"Proposal","metadata":{"annotations":{},"name":"dissolve-network-sample"},"spec":{"dissolveNetwork":{"name":"network-sample"},"federation":"federation-sample","initiator":{"name":"org1","namespace":"org1"},"policy":"All"}}
+  creationTimestamp: "2023-01-10T08:39:09Z"
+  generation: 1
+  labels:
+    bestchains.proposal.type: DissolveNetworkProposal
+  name: dissolve-network-sample
+  resourceVersion: "15337"
+  uid: edc94532-9101-4170-be3c-23b9ba738d39
+spec:
+  deprecated: false
+  dissolveNetwork:
+    name: network-sample
+  endAt: "2023-01-11T08:39:09Z"
+  federation: federation-sample
+  initiator:
+    name: org1
+    namespace: org1
+  policy: All
+  startAt: "2023-01-10T08:39:09Z"
+status:
+  phase: Voting
+  votes:
+  - description: ""
+    organization:
+      name: org2
+      namespace: org2
+  - decision: true
+    description: ""
+    organization:
+      name: org1
+      namespace: org1
+    phase: Voted
+    startTime: "2023-01-10T08:39:09Z"
+```
+
+</details>
+
+org2 投同意票可以用以下命令：
+
+```bash
+kubectl patch vote -n org2 vote-org2-dissolve-network-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
+```
+
+稍后，operator 会自动删除 network。网络删除完成。

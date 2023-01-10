@@ -6,6 +6,7 @@ import (
 	"os"
 
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -36,14 +37,15 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 		return nil, err
 	}
 	orgs := make([]NamespacedName, 0)
-	if p.Spec.CreateFederation != nil || p.Spec.DissolveFederation != nil {
+	switch p.GetPurpose() {
+	case CreateFederationProposal, DissolveFederationProposal:
 		for _, o := range federation.Spec.Members {
 			orgs = append(orgs, NamespacedName{
 				Name:      o.Name,
 				Namespace: o.Namespace,
 			})
 		}
-	} else if p.Spec.AddMember != nil {
+	case AddMemberProposal:
 		for _, o := range federation.Spec.Members {
 			orgs = append(orgs, NamespacedName{
 				Name:      o.Name,
@@ -56,7 +58,7 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 				Namespace: o.Namespace,
 			})
 		}
-	} else if p.Spec.DeleteMember != nil {
+	case DeleteMemberProposal:
 		for _, o := range federation.Spec.Members {
 			if o.Name == p.Spec.DeleteMember.Member.Name && o.Namespace == p.Spec.DeleteMember.Member.Namespace {
 				continue
@@ -66,22 +68,69 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 				Namespace: o.Namespace,
 			})
 		}
+	case DissolveNetworkProposal:
+		if exist := util.ContainsValue(p.Spec.DissolveNetwork.Name, federation.Status.Networks); !exist {
+			return orgs, nil
+		}
+		network := &Network{}
+		if err := client.Get(ctx, types.NamespacedName{Name: p.Spec.DissolveNetwork.Name}, network); err != nil {
+			return nil, err
+		}
+		for _, o := range network.Spec.Members {
+			orgs = append(orgs, NamespacedName{
+				Name:      o.Name,
+				Namespace: o.Namespace,
+			})
+		}
 	}
 	return orgs, nil
 }
 
-func (p *Proposal) SelfType() string {
-	if p.Spec.AddMember != nil {
-		return "AddMemberProposal"
-	}
+const (
+	CreateFederationProposal = 1 << iota
+	AddMemberProposal
+	DeleteMemberProposal
+	DissolveFederationProposal
+	DissolveNetworkProposal
+)
+
+func (p *Proposal) GetPurpose() uint {
+	var t uint = 0
 	if p.Spec.CreateFederation != nil {
-		return "CreateFederationProposal"
+		t = t | CreateFederationProposal
+	}
+	if p.Spec.AddMember != nil {
+		t = t | AddMemberProposal
 	}
 	if p.Spec.DeleteMember != nil {
-		return "DeleteMemberProposal"
+		t = t | DeleteMemberProposal
 	}
 	if p.Spec.DissolveFederation != nil {
-		return "DissolveFederationProposal"
+		t = t | DissolveFederationProposal
 	}
-	return ""
+	if p.Spec.DissolveNetwork != nil {
+		t = t | DissolveNetworkProposal
+	}
+	return t
+}
+
+func (p *Proposal) IsPurpose(purpose uint) bool {
+	return (p.GetPurpose() & purpose) != 0
+}
+
+func (p *Proposal) SelfType() string {
+	switch p.GetPurpose() {
+	case AddMemberProposal:
+		return "AddMemberProposal"
+	case CreateFederationProposal:
+		return "CreateFederationProposal"
+	case DeleteMemberProposal:
+		return "DeleteMemberProposal"
+	case DissolveFederationProposal:
+		return "DissolveFederationProposal"
+	case DissolveNetworkProposal:
+		return "DissolveNetworkProposal"
+	default:
+		return ""
+	}
 }

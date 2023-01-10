@@ -32,6 +32,7 @@ import (
 var (
 	ErrChangeProposalPurpose = errors.New("the purpose of the proposal cannot be changed")
 	ErrNullProposalPurpose   = errors.New("the proposal should have a purpose")
+	ErrMoreProposalPurpose   = errors.New("the proposal should have only one purpose")
 )
 
 // log is for logging in this package.
@@ -65,9 +66,12 @@ var _ webhook.Validator = &Proposal{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Proposal) ValidateCreate() error {
 	proposallog.Info("validate create", "name", r.Name)
-	if r.Spec.CreateFederation == nil && r.Spec.DissolveFederation == nil &&
-		r.Spec.AddMember == nil && r.Spec.DeleteMember == nil {
+	purpose := r.GetPurpose()
+	if purpose == 0 {
 		return ErrNullProposalPurpose
+	}
+	if purpose&(purpose-1) != 0 {
+		return ErrMoreProposalPurpose
 	}
 	return nil
 }
@@ -76,11 +80,7 @@ func (r *Proposal) ValidateCreate() error {
 func (r *Proposal) ValidateUpdate(old runtime.Object) error {
 	proposallog.Info("validate update", "name", r.Name)
 	oldProposal := old.(*Proposal)
-
-	if (oldProposal.Spec.CreateFederation != nil && r.Spec.CreateFederation == nil) ||
-		(oldProposal.Spec.DissolveFederation != nil && r.Spec.DissolveFederation == nil) ||
-		(oldProposal.Spec.AddMember != nil && r.Spec.AddMember == nil) ||
-		(oldProposal.Spec.DeleteMember != nil && r.Spec.DeleteMember == nil) {
+	if oldProposal.GetPurpose() != r.GetPurpose() {
 		return ErrChangeProposalPurpose
 	}
 

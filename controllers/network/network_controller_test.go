@@ -71,6 +71,9 @@ var _ = Describe("ReconcileFederation", func() {
 					obj.Name = network.Name
 					obj.Namespace = network.Namespace
 					obj.Spec = network.Spec
+					obj.Labels = map[string]string{
+						NETWORK_INITIATOR_LABEL: "org1",
+					}
 				}
 				return nil
 			},

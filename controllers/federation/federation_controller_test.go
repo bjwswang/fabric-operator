@@ -68,6 +68,9 @@ var _ = Describe("ReconcileFederation", func() {
 				case *current.Federation:
 					obj.Name = federation.Name
 					obj.Namespace = federation.Namespace
+					obj.Labels = map[string]string{
+						FEDERATION_INITIATOR_LABEL: "org1",
+					}
 				}
 				return nil
 			},

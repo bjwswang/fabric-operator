@@ -60,7 +60,12 @@ var _ = Describe("ReconcileOrganization", func() {
 			case *current.Organization:
 				obj.Kind = KIND
 				obj.Name = instance.Name
-
+				if obj.Labels == nil {
+					obj.Labels = map[string]string{
+						CRADMINLABEL: "orgadmin",
+					}
+				}
+				obj.Spec.Admin = "orgadmin"
 				instance.Status = obj.Status
 			}
 			return nil

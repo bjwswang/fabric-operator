@@ -49,7 +49,66 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_vote")
+const (
+	VOTE_PROPOSAL_LABEL      = "bestchains.vote.proposal"
+	VOTE_PROPOSAL_TYPE_LABEL = "bestchains.vote.proposal.type"
+	VOTE_FEDERATION_LABEL    = "bestchains.vote.federation"
+	VOTE_NETWORK_LABEL       = "bestchains.vote.network"
+	VOTE_CHANNEL_LABEL       = "bestchains.vote.channel"
+	VOTE_CHAINCODE_LABEL     = "bestchains.vote.chaincode"
+)
+
+var (
+	log         = logf.Log.WithName("controller_vote")
+	checkLabels = map[string]func(*current.Vote, *current.Proposal) bool{
+		VOTE_PROPOSAL_LABEL: func(vote *current.Vote, proposal *current.Proposal) bool {
+			if vote.Labels == nil {
+				vote.Labels = make(map[string]string)
+			}
+			if _, ok := vote.Labels[VOTE_PROPOSAL_LABEL]; !ok {
+				vote.Labels[VOTE_PROPOSAL_LABEL] = proposal.GetName()
+				return true
+			}
+			return false
+		},
+		VOTE_PROPOSAL_TYPE_LABEL: func(vote *current.Vote, proposal *current.Proposal) bool {
+			if vote.Labels == nil {
+				vote.Labels = make(map[string]string)
+			}
+
+			proposalType := proposal.SelfType()
+			if v, ok := vote.Labels[VOTE_PROPOSAL_TYPE_LABEL]; !ok || v != proposalType {
+				vote.Labels[VOTE_PROPOSAL_TYPE_LABEL] = proposalType
+				return true
+			}
+			return false
+		},
+		VOTE_FEDERATION_LABEL: func(vote *current.Vote, proposal *current.Proposal) bool {
+			if vote.Labels == nil {
+				vote.Labels = make(map[string]string)
+			}
+			if proposal.Spec.AddMember != nil ||
+				proposal.Spec.CreateFederation != nil ||
+				proposal.Spec.DissolveFederation != nil ||
+				proposal.Spec.DeleteMember != nil {
+				if v, ok := vote.Labels[VOTE_FEDERATION_LABEL]; !ok || v != proposal.Spec.Federation {
+					vote.Labels[VOTE_FEDERATION_LABEL] = proposal.Spec.Federation
+				}
+				return true
+			}
+			return false
+		},
+		VOTE_NETWORK_LABEL: func(vote *current.Vote, proposal *current.Proposal) bool {
+			return false
+		},
+		VOTE_CHANNEL_LABEL: func(vote *current.Vote, proposal *current.Proposal) bool {
+			return false
+		},
+		VOTE_CHAINCODE_LABEL: func(vote *current.Vote, proposal *current.Proposal) bool {
+			return false
+		},
+	}
+)
 
 // Add creates a new Vote Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -157,6 +216,24 @@ func (r *ReconcileVote) Reconcile(ctx context.Context, request reconcile.Request
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	if len(instance.OwnerReferences) > 0 && instance.OwnerReferences[0].Kind == "Proposal" {
+		log.Info("found vote's proposal, start to check labels..\n")
+		proposal := current.Proposal{}
+		if err = r.client.Get(context.TODO(), types.NamespacedName{Namespace: "", Name: instance.OwnerReferences[0].Name}, &proposal); err != nil {
+			log.Error(err, fmt.Sprintf("get proposal %s error: %s\n", instance.OwnerReferences[0].Name, err))
+			return reconcile.Result{}, err
+		}
+		update := false
+		for _, f := range checkLabels {
+			update = update || f(instance, &proposal)
+		}
+		if update {
+			err = r.client.Update(context.TODO(), instance)
+			log.Info(fmt.Sprintf("update vote %s labels", instance.GetName()))
+			return reconcile.Result{Requeue: true}, err
+		}
 	}
 
 	result, err := r.Offering.Reconcile(instance)

@@ -55,7 +55,8 @@ import (
 )
 
 const (
-	KIND = "Organization"
+	KIND         = "Organization"
+	CRADMINLABEL = "bestchains.organization.admin"
 )
 
 var log = logf.Log.WithName("controller_organization")
@@ -205,6 +206,14 @@ func (r *ReconcileOrganization) Reconcile(ctx context.Context, request reconcile
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+	if instance.Labels == nil {
+		instance.Labels = make(map[string]string)
+	}
+	if v, ok := instance.Labels[CRADMINLABEL]; !ok || v != instance.Spec.Admin {
+		instance.Labels[CRADMINLABEL] = instance.Spec.Admin
+		err = r.client.Update(context.TODO(), instance)
+		return reconcile.Result{Requeue: true}, err
 	}
 
 	update := r.GetUpdateStatus(instance)

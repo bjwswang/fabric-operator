@@ -43,6 +43,9 @@ func (r *Network) Default() {
 	networklog.Info("default", "name", r.Name)
 	r.Spec.OrderSpec.License.Accept = true
 	r.Spec.OrderSpec.OrdererType = "etcdraft"
+	if r.Spec.OrderSpec.ClusterSize == 0 {
+		r.Spec.OrderSpec.ClusterSize = 1
+	}
 }
 
 //+kubebuilder:webhook:path=/validate-ibp-com-v1beta1-network,mutating=false,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=networks,verbs=create;update;delete,versions=v1beta1,name=network.validate.webhook,admissionReviewVersions=v1

@@ -247,8 +247,8 @@ func (r *ReconcileProposal) SetStatus(ctx context.Context, instance *current.Pro
 			return err
 		}
 		var proposalSuccess *bool
-		switch instance.Spec.Policy {
-		case current.OneVoteVeto, current.ALL: // todo 一票否决 和 全部人都同意 的区别是？
+		switch instance.Spec.Policy.String() {
+		case current.OneVoteVeto.String(), current.ALL.String(): // todo 一票否决 和 全部人都同意 的区别是？
 			for index, i := range res {
 				if i.Decision != nil && !*i.Decision {
 					proposalSuccess = pointer.Bool(false)
@@ -260,7 +260,7 @@ func (r *ReconcileProposal) SetStatus(ctx context.Context, instance *current.Pro
 					proposalSuccess = pointer.Bool(true)
 				}
 			}
-		case current.Majority:
+		case current.Majority.String():
 			sum := len(res)
 			agree := 0
 			for _, i := range res {
@@ -422,8 +422,9 @@ func (r *ReconcileProposal) VoteCreateFunc(e event.CreateEvent) bool {
 	// todo check other phase should not occur.
 
 	voteResult := current.VoteResult{
-		Organization: vote.GetOrganization(),
-		Phase:        vote.Status.Phase,
+		NamespacedName: vote.GetNamespacedName(),
+		Organization:   vote.GetOrganization(),
+		Phase:          vote.Status.Phase,
 	}
 	r.UpdateVoteResult(vote.OwnerReferences[0].Name, vote.Spec.OrganizationName, voteResult)
 	return true
@@ -457,11 +458,12 @@ func (r *ReconcileProposal) VoteUpdateFunc(e event.UpdateEvent) bool {
 	}
 
 	voteResult := current.VoteResult{
-		Organization: newVote.GetOrganization(), // todo vote -> org name
-		Decision:     newVote.Spec.Decision,
-		Description:  newVote.Spec.Description,
-		Phase:        newVote.Status.Phase,
-		VoteTime:     newVote.Status.VoteTime,
+		NamespacedName: newVote.GetNamespacedName(),
+		Organization:   newVote.GetOrganization(), // todo vote -> org name
+		Decision:       newVote.Spec.Decision,
+		Description:    newVote.Spec.Description,
+		Phase:          newVote.Status.Phase,
+		VoteTime:       newVote.Status.VoteTime,
 	}
 	r.UpdateVoteResult(newVote.OwnerReferences[0].Name, newVote.Spec.OrganizationName, voteResult)
 	log.Info("voted will update proposal")

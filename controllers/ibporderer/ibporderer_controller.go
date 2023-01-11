@@ -25,7 +25,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	commoncontroller "github.com/IBM-Blockchain/fabric-operator/controllers/common"
@@ -49,6 +48,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -310,7 +310,7 @@ func (r *ReconcileIBPOrderer) SetStatus(instance *current.IBPOrderer, result *co
 		status.Status = current.True
 		status.Reason = "errorOccurredDuringReconcile"
 		status.Message = reconcileErr.Error()
-		status.LastHeartbeatTime = time.Now().String()
+		status.LastHeartbeatTime = v1.Now()
 		status.ErrorCode = operatorerrors.GetErrorCode(reconcileErr)
 
 		instance.Status = current.IBPOrdererStatus{
@@ -380,7 +380,7 @@ func (r *ReconcileIBPOrderer) SetStatus(instance *current.IBPOrderer, result *co
 				status.Status = current.True
 				status.Reason = reconcileStatus.Reason
 				status.Message = reconcileStatus.Message
-				status.LastHeartbeatTime = time.Now().String()
+				status.LastHeartbeatTime = v1.Now()
 
 				if result.OverrideUpdateStatus {
 					instance.Status = current.IBPOrdererStatus{
@@ -438,7 +438,7 @@ func (r *ReconcileIBPOrderer) SetStatus(instance *current.IBPOrderer, result *co
 
 	// Only update status if status is different from current status
 	if status.Type != "" && (instance.Status.Type != status.Type || instance.Status.Reason != status.Reason || instance.Status.Message != status.Message) {
-		status.LastHeartbeatTime = time.Now().String()
+		status.LastHeartbeatTime = v1.Now()
 		log.Info(fmt.Sprintf("Updating status of IBPOrderer custom resource (%s) from %s to %s phase", instance.GetName(), instance.Status.Type, status.Type))
 
 		instance.Status = current.IBPOrdererStatus{

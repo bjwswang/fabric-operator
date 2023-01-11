@@ -20,6 +20,7 @@ package v1beta1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Service is the overrides to be used for Service of the component
@@ -172,7 +173,7 @@ type CRStatus struct {
 
 	// LastHeartbeatTime is when the controller reconciled this component
 	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
-	LastHeartbeatTime string `json:"lastHeartbeatTime,omitempty"`
+	LastHeartbeatTime metav1.Time `json:"lastHeartbeatTime,omitempty"`
 
 	// Version is the product (IBP) version of the component
 	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true

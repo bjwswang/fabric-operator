@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	iam "github.com/IBM-Blockchain/fabric-operator/api/iam/v1alpha1"
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
@@ -34,6 +33,7 @@ import (
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -341,7 +341,7 @@ func (r *ReconcileOrganization) UpdateStatus(organization current.NamespacedName
 	status.Type = newStatus.Type
 	status.Status = current.True
 	status.Reason = newStatus.Reason
-	status.LastHeartbeatTime = time.Now().String()
+	status.LastHeartbeatTime = metav1.Now()
 
 	org.Status = current.OrganizationStatus{
 		CRStatus: status,

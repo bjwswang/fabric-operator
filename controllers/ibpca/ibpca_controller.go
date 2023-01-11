@@ -25,7 +25,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	commoncontroller "github.com/IBM-Blockchain/fabric-operator/controllers/common"
@@ -42,13 +41,13 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	"github.com/go-test/deep"
 	"github.com/pkg/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	yaml "sigs.k8s.io/yaml"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -279,7 +278,7 @@ func (r *ReconcileIBPCA) SetStatus(instance *current.IBPCA, reconcileStatus *cur
 		status.Status = current.True
 		status.Reason = "errorOccurredDuringReconcile"
 		status.Message = reconcileErr.Error()
-		status.LastHeartbeatTime = time.Now().String()
+		status.LastHeartbeatTime = v1.Now()
 		status.ErrorCode = operatorerrors.GetErrorCode(reconcileErr)
 
 		instance.Status = current.IBPCAStatus{
@@ -311,7 +310,7 @@ func (r *ReconcileIBPCA) SetStatus(instance *current.IBPCA, reconcileStatus *cur
 			status.Status = current.True
 			status.Reason = reconcileStatus.Reason
 			status.Message = reconcileStatus.Message
-			status.LastHeartbeatTime = time.Now().String()
+			status.LastHeartbeatTime = v1.Now()
 
 			instance.Status = current.IBPCAStatus{
 				CRStatus: status,
@@ -359,7 +358,7 @@ func (r *ReconcileIBPCA) SetStatus(instance *current.IBPCA, reconcileStatus *cur
 	instance.Status = current.IBPCAStatus{
 		CRStatus: status,
 	}
-	instance.Status.LastHeartbeatTime = time.Now().String()
+	instance.Status.LastHeartbeatTime = v1.Now()
 	log.Info(fmt.Sprintf("Updating status of IBPCA custom resource to %s phase", instance.Status.Type))
 	err = r.client.PatchStatus(context.TODO(), instance, nil, k8sclient.PatchOption{
 		Resilient: &k8sclient.ResilientPatch{

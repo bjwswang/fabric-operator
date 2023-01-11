@@ -121,12 +121,13 @@ type CreateFederation struct {
 }
 
 type VoteResult struct {
-	Organization NamespacedName `json:"organization"`
+	NamespacedName `json:",inline"`
+	Organization   NamespacedName `json:"organization"`
 	// +optional
 	Decision    *bool       `json:"decision"`
 	Description string      `json:"description"`
 	Phase       VotePhase   `json:"phase,omitempty"`
-	VoteTime    metav1.Time `json:"startTime,omitempty"`
+	VoteTime    metav1.Time `json:"voteTime,omitempty"`
 }
 
 type ProposalStatus struct {

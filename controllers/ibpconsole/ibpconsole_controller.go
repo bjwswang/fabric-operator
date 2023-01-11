@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"time"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	commoncontroller "github.com/IBM-Blockchain/fabric-operator/controllers/common"
@@ -202,7 +201,7 @@ func (r *ReconcileIBPConsole) SetStatus(instance *current.IBPConsole, reconcileE
 		status.Status = current.True
 		status.Reason = "errorOccurredDuringReconcile"
 		status.Message = reconcileErr.Error()
-		status.LastHeartbeatTime = time.Now().String()
+		status.LastHeartbeatTime = v1.Now()
 		status.ErrorCode = operatorerrors.GetErrorCode(reconcileErr)
 
 		instance.Status = current.IBPConsoleStatus{
@@ -250,7 +249,7 @@ func (r *ReconcileIBPConsole) SetStatus(instance *current.IBPConsole, reconcileE
 	instance.Status = current.IBPConsoleStatus{
 		CRStatus: status,
 	}
-	instance.Status.LastHeartbeatTime = time.Now().String()
+	instance.Status.LastHeartbeatTime = v1.Now()
 	log.Info(fmt.Sprintf("Updating status of IBPConsole custom resource to %s phase", instance.Status.Type))
 	err = r.client.PatchStatus(context.TODO(), instance, nil, k8sclient.PatchOption{
 		Resilient: &k8sclient.ResilientPatch{

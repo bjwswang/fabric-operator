@@ -24,7 +24,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -687,8 +686,8 @@ var _ = Describe("ReconcileIBPOrderer", func() {
 		})
 
 		It("does not set StatusUpdate flag if only heartbeat has changed", func() {
-			oldOrderer.Status.LastHeartbeatTime = time.Now().String()
-			newOrderer.Status.LastHeartbeatTime = time.Now().String()
+			oldOrderer.Status.LastHeartbeatTime = metav1.Now()
+			newOrderer.Status.LastHeartbeatTime = metav1.Now()
 
 			Expect(reconciler.UpdateFunc(e)).To(Equal(false))
 			Expect(reconciler.GetUpdateStatus(instance).StatusUpdated()).To(Equal(false))

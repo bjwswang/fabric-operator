@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -275,7 +274,7 @@ func (r *ReconcileOrganization) SetStatus(instance *current.Organization, reconc
 			status.Status = current.True
 			status.Reason = reconcileStatus.Reason
 			status.Message = reconcileStatus.Message
-			status.LastHeartbeatTime = time.Now().String()
+			status.LastHeartbeatTime = metav1.Now()
 
 			instance.Status = current.OrganizationStatus{
 				CRStatus: status,
@@ -314,7 +313,7 @@ func (r *ReconcileOrganization) SetErrorStatus(instance *current.Organization, r
 	status.Status = current.True
 	status.Reason = "errorOccurredDuringReconcile"
 	status.Message = reconcileErr.Error()
-	status.LastHeartbeatTime = time.Now().String()
+	status.LastHeartbeatTime = metav1.Now()
 	status.ErrorCode = operatorerrors.GetErrorCode(reconcileErr)
 
 	instance.Status = current.OrganizationStatus{

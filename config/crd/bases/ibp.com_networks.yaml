@@ -56,6 +56,14 @@ spec:
                   properties:
                     initiator:
                       type: boolean
+                    joinedAt:
+                      description: JoinedAt is the proposal succ time
+                      format: date-time
+                      type: string
+                    joinedBy:
+                      description: JoinedBy is the proposal name which joins this
+                        member into federation
+                      type: string
                     name:
                       type: string
                     namespace:
@@ -962,6 +970,7 @@ spec:
               lastHeartbeatTime:
                 description: LastHeartbeatTime is when the controller reconciled this
                   component
+                format: date-time
                 type: string
               message:
                 description: Message provides a message for the status to be shown

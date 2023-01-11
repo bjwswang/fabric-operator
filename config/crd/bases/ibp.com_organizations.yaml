@@ -388,6 +388,7 @@ spec:
               lastHeartbeatTime:
                 description: LastHeartbeatTime is when the controller reconciled this
                   component
+                format: date-time
                 type: string
               message:
                 description: Message provides a message for the status to be shown

@@ -25,7 +25,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	commoncontroller "github.com/IBM-Blockchain/fabric-operator/controllers/common"
@@ -312,7 +311,7 @@ func (r *ReconcileIBPPeer) SetStatus(instance *current.IBPPeer, reconcileStatus 
 		status.Status = current.True
 		status.Reason = "errorOccurredDuringReconcile"
 		status.Message = reconcileErr.Error()
-		status.LastHeartbeatTime = time.Now().String()
+		status.LastHeartbeatTime = v1.Now()
 		status.ErrorCode = operatorerrors.GetErrorCode(reconcileErr)
 
 		instance.Status = current.IBPPeerStatus{
@@ -344,7 +343,7 @@ func (r *ReconcileIBPPeer) SetStatus(instance *current.IBPPeer, reconcileStatus 
 			status.Status = current.True
 			status.Reason = reconcileStatus.Reason
 			status.Message = reconcileStatus.Message
-			status.LastHeartbeatTime = time.Now().String()
+			status.LastHeartbeatTime = v1.Now()
 
 			instance.Status = current.IBPPeerStatus{
 				CRStatus: status,
@@ -390,7 +389,7 @@ func (r *ReconcileIBPPeer) SetStatus(instance *current.IBPPeer, reconcileStatus 
 	instance.Status = current.IBPPeerStatus{
 		CRStatus: status,
 	}
-	instance.Status.LastHeartbeatTime = time.Now().String()
+	instance.Status.LastHeartbeatTime = v1.Now()
 	log.Info(fmt.Sprintf("Updating status of IBPPeer custom resource to %s phase", instance.Status.Type))
 	err = r.client.PatchStatus(context.TODO(), instance, nil, controllerclient.PatchOption{
 		Resilient: &controllerclient.ResilientPatch{

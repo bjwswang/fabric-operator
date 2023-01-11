@@ -148,6 +148,10 @@ spec:
                       type: boolean
                     description:
                       type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
                     organization:
                       properties:
                         name:
@@ -159,7 +163,7 @@ spec:
                       description: VotePhase is a label for the condition of a vote
                         at the current time.
                       type: string
-                    startTime:
+                    voteTime:
                       format: date-time
                       type: string
                   required:

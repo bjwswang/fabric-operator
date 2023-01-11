@@ -1178,7 +1178,7 @@ func (n *Node) UpdateParentStatus(instance *current.IBPOrderer) error {
 		parentInstance.Status.Type = returnStatus
 		parentInstance.Status.Status = current.True
 		parentInstance.Status.Reason = reason
-		parentInstance.Status.LastHeartbeatTime = time.Now().String()
+		parentInstance.Status.LastHeartbeatTime = v1.Now()
 
 		log.Info(fmt.Sprintf("Setting parent status to: %+v", parentInstance.Status))
 		err = n.Client.UpdateStatus(context.TODO(), parentInstance)

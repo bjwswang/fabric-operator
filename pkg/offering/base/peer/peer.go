@@ -1756,7 +1756,7 @@ func (p *Peer) UpdateCRStatus(instance *current.IBPPeer) error {
 	updatedInstance.Status.Reason = status.Reason
 	updatedInstance.Status.Message = status.Message
 	updatedInstance.Status.Status = current.True
-	updatedInstance.Status.LastHeartbeatTime = time.Now().String()
+	updatedInstance.Status.LastHeartbeatTime = v1.Now()
 
 	log.Info(fmt.Sprintf("Updating status of IBPPeer custom resource %s to %s phase", instance.Name, status.Type))
 	err = p.Client.UpdateStatus(context.TODO(), updatedInstance)

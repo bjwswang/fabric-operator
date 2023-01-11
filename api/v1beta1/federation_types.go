@@ -49,6 +49,10 @@ type FederationSpec struct {
 type Member struct {
 	NamespacedName `json:",inline"`
 	Initiator      bool `json:"initiator,omitempty"`
+	// JoinedBy is the proposal name which joins this member into federation
+	JoinedBy string `json:"joinedBy,omitempty"`
+	// JoinedAt is the proposal succ time
+	JoinedAt metav1.Time `json:"joinedAt,omitempty"`
 }
 
 // FederationStatus defines the observed state of Federation

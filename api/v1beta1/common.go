@@ -21,6 +21,7 @@ package v1beta1
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 )
@@ -60,4 +61,8 @@ func (e *Enrollment) GetCATLSBytes() ([]byte, error) {
 
 func (nsn NamespacedName) String() string {
 	return nsn.Namespace + "-" + nsn.Name
+}
+
+func (policy Policy) String() string {
+	return strings.ToLower(string(policy))
 }

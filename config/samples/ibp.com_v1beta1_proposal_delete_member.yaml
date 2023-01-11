@@ -6,10 +6,6 @@ metadata:
 spec:
   federation: federation-sample
   policy: All
-  initiator:
-    namespace: org1
-    name: org1
+  initiatorOrganization: org1
   deleteMember:
-    member:
-      namespace: org2
-      name: org2
+    member: org2

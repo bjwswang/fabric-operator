@@ -27,13 +27,13 @@ func (network *Network) GetMembers() []Member {
 	return network.Spec.Members
 }
 
-func (network *Network) GetInitiatorMember() NamespacedName {
+func (network *Network) GetInitiatorMember() string {
 	for _, m := range network.GetMembers() {
 		if m.Initiator {
-			return m.NamespacedName
+			return m.Name
 		}
 	}
-	return NamespacedName{}
+	return ""
 }
 
 func (network *Network) HasFederation() bool {

@@ -139,9 +139,11 @@ func federation2organizationMap(object client.Object) []reconcile.Request {
 	federation := object.(*current.Federation)
 	res := make([]reconcile.Request, len(federation.Spec.Members))
 	for i, mem := range federation.Spec.Members {
+		org := &current.Organization{ObjectMeta: metav1.ObjectMeta{Name: mem.Name}}
+		orgNamespace := org.GetUserNamespace()
 		res[i] = reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Namespace: mem.Namespace,
+				Namespace: orgNamespace,
 				Name:      mem.Name,
 			},
 		}

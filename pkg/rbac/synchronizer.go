@@ -27,6 +27,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -97,8 +98,8 @@ func SyncProposal(c controllerclient.Client, o v1.Object, ra ResourceAction) err
 	}
 
 	for _, candidate := range candidates {
-		organization := &current.Organization{}
-		err = c.Get(context.TODO(), types.NamespacedName{Name: candidate.Name}, organization)
+		organization := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: candidate}}
+		err = c.Get(context.TODO(), client.ObjectKeyFromObject(organization), organization)
 		if err != nil {
 			return err
 		}

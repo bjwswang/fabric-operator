@@ -990,3 +990,26 @@ func pemToX509Certs(pemCerts []byte) ([]*x509.Certificate, error) {
 
 	return certs, nil
 }
+
+const inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+
+func GetNamespace() (string, error) {
+	// Check whether the namespace file exists.
+	// If not, we are not running in cluster so can't guess the namespace.
+	if _, err := os.Stat(inClusterNamespacePath); os.IsNotExist(err) {
+		operatorNamespace := os.Getenv("OPERATOR_NAMESPACE")
+		if operatorNamespace == "" {
+			return "", fmt.Errorf("not in cluster and env OPERATOR_NAMESPACE not found")
+		}
+		return operatorNamespace, nil
+	} else if err != nil {
+		return "", fmt.Errorf("error checking namespace file: %w", err)
+	}
+
+	// Load the namespace file and return its content
+	namespace, err := os.ReadFile(inClusterNamespacePath)
+	if err != nil {
+		return "", fmt.Errorf("error reading namespace file: %w", err)
+	}
+	return string(namespace), nil
+}

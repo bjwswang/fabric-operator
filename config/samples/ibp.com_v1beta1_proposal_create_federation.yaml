@@ -6,7 +6,5 @@ metadata:
 spec:
   federation: federation-sample
   policy: All
-  initiator:
-    name: org1
-    namespace: org1
+  initiatorOrganization: org1
   createFederation: {}

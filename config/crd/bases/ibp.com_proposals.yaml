@@ -41,12 +41,7 @@ spec:
                 properties:
                   members:
                     items:
-                      properties:
-                        name:
-                          type: string
-                        namespace:
-                          type: string
-                      type: object
+                      type: string
                     type: array
                 required:
                 - members
@@ -56,12 +51,7 @@ spec:
               deleteMember:
                 properties:
                   member:
-                    properties:
-                      name:
-                        type: string
-                      namespace:
-                        type: string
-                    type: object
+                    type: string
                 required:
                 - member
                 type: object
@@ -82,13 +72,8 @@ spec:
                 type: string
               federation:
                 type: string
-              initiator:
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                type: object
+              initiatorOrganization:
+                type: string
               policy:
                 description: Policy defines the Proposal-Vote policy  to indicate
                   when a proposal is successful
@@ -98,7 +83,7 @@ spec:
                 type: string
             required:
             - federation
-            - initiator
+            - initiatorOrganization
             - policy
             type: object
           status:

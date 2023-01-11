@@ -53,7 +53,7 @@ spec:
                 type: object
               members:
                 description: Members list all organization in this federation True
-                  for Initiator; False for normal organizaiton namespace-name
+                  for Initiator; False for normal organization namespace-name
                 items:
                   description: Member in a Fedeartion
                   properties:
@@ -68,8 +68,6 @@ spec:
                         member into federation
                       type: string
                     name:
-                      type: string
-                    namespace:
                       type: string
                   type: object
                 type: array

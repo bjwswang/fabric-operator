@@ -76,8 +76,8 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 					},
 					Federation: "federation-sample",
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org3", Namespace: "org3"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org3", Initiator: false},
 					},
 				},
 			}
@@ -111,8 +111,8 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 		})
 		It("failed due to network contains members which are not  in federation", func() {
 			fedMembers := []current.Member{
-				{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: false},
-				{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+				{Name: "org1", Initiator: false},
+				{Name: "org2", Initiator: false},
 			}
 
 			client.GetStub = func(ctx context.Context, nn types.NamespacedName, o k8sclient.Object) error {
@@ -130,7 +130,7 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 
 			added, _ := current.DifferMembers(fedMembers, instance.GetMembers())
 			Expect(len(added)).To(Equal(1))
-			Expect(added[0].String()).To(Equal("org3-org3"))
+			Expect(added[0].GetName()).To(Equal("org3"))
 		})
 
 	})

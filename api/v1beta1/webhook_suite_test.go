@@ -99,13 +99,21 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&Vote{}).SetupWebhookWithManager(mgr)
+	fakeOperatorUser := "null"
+
+	err = registerCustomWebhook(mgr, &Vote{}, fakeOperatorUser)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&Proposal{}).SetupWebhookWithManager(mgr)
+	err = registerCustomWebhook(mgr, &Proposal{}, fakeOperatorUser)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&Network{}).SetupWebhookWithManager(mgr)
+	err = registerCustomWebhook(mgr, &Network{}, fakeOperatorUser)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = registerCustomWebhook(mgr, &Organization{}, fakeOperatorUser)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = registerCustomWebhook(mgr, &Federation{}, fakeOperatorUser)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:webhook

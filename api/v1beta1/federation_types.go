@@ -35,7 +35,7 @@ type FederationSpec struct {
 	Description string `json:"description,omitempty"`
 
 	// Members list all organization in this federation
-	// True for Initiator; False for normal organizaiton
+	// True for Initiator; False for normal organization
 	// namespace-name
 	Members []Member `json:"members,omitempty"`
 
@@ -47,8 +47,8 @@ type FederationSpec struct {
 // Member in a Fedeartion
 // +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 type Member struct {
-	NamespacedName `json:",inline"`
-	Initiator      bool `json:"initiator,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Initiator bool   `json:"initiator,omitempty"`
 	// JoinedBy is the proposal name which joins this member into federation
 	JoinedBy string `json:"joinedBy,omitempty"`
 	// JoinedAt is the proposal succ time

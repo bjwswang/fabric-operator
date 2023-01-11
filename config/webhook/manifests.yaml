@@ -11,6 +11,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-ibp-com-v1beta1-federation
+  failurePolicy: Fail
+  name: federation.mutate.webhook
+  rules:
+  - apiGroups:
+    - ibp.com
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - federations
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-ibp-com-v1beta1-network
   failurePolicy: Fail
   name: network.mutate.webhook
@@ -24,6 +44,26 @@ webhooks:
     - UPDATE
     resources:
     - networks
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-ibp-com-v1beta1-organization
+  failurePolicy: Fail
+  name: organization.mutate.webhook
+  rules:
+  - apiGroups:
+    - ibp.com
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - organizations
   sideEffects: None
 - admissionReviewVersions:
   - v1
@@ -78,6 +118,27 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-ibp-com-v1beta1-federation
+  failurePolicy: Fail
+  name: federation.validate.webhook
+  rules:
+  - apiGroups:
+    - ibp.ibp.com
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - federations
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-ibp-com-v1beta1-network
   failurePolicy: Fail
   name: network.validate.webhook
@@ -92,6 +153,27 @@ webhooks:
     - DELETE
     resources:
     - networks
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-ibp-com-v1beta1-organization
+  failurePolicy: Fail
+  name: organization.validate.webhook
+  rules:
+  - apiGroups:
+    - ibp.com
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - organizations
   sideEffects: None
 - admissionReviewVersions:
   - v1

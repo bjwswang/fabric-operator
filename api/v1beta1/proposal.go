@@ -31,42 +31,28 @@ func (p *Proposal) GetVoteLabel() map[string]string {
 	}
 }
 
-func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclient.Client) ([]NamespacedName, error) {
+func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclient.Client) ([]string, error) {
 	federation := &Federation{}
 	if err := client.Get(ctx, types.NamespacedName{Name: p.Spec.Federation}, federation); err != nil {
 		return nil, err
 	}
-	orgs := make([]NamespacedName, 0)
+	orgs := make([]string, 0)
 	switch p.GetPurpose() {
 	case CreateFederationProposal, DissolveFederationProposal:
 		for _, o := range federation.Spec.Members {
-			orgs = append(orgs, NamespacedName{
-				Name:      o.Name,
-				Namespace: o.Namespace,
-			})
+			orgs = append(orgs, o.Name)
 		}
 	case AddMemberProposal:
 		for _, o := range federation.Spec.Members {
-			orgs = append(orgs, NamespacedName{
-				Name:      o.Name,
-				Namespace: o.Namespace,
-			})
+			orgs = append(orgs, o.Name)
 		}
-		for _, o := range p.Spec.AddMember.Members {
-			orgs = append(orgs, NamespacedName{
-				Name:      o.Name,
-				Namespace: o.Namespace,
-			})
-		}
+		orgs = append(orgs, p.Spec.AddMember.Members...)
 	case DeleteMemberProposal:
 		for _, o := range federation.Spec.Members {
-			if o.Name == p.Spec.DeleteMember.Member.Name && o.Namespace == p.Spec.DeleteMember.Member.Namespace {
+			if o.Name == p.Spec.DeleteMember.Member {
 				continue
 			}
-			orgs = append(orgs, NamespacedName{
-				Name:      o.Name,
-				Namespace: o.Namespace,
-			})
+			orgs = append(orgs, o.Name)
 		}
 	case DissolveNetworkProposal:
 		if exist := util.ContainsValue(p.Spec.DissolveNetwork.Name, federation.Status.Networks); !exist {
@@ -77,10 +63,7 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 			return nil, err
 		}
 		for _, o := range network.Spec.Members {
-			orgs = append(orgs, NamespacedName{
-				Name:      o.Name,
-				Namespace: o.Namespace,
-			})
+			orgs = append(orgs, o.Name)
 		}
 	}
 	return orgs, nil

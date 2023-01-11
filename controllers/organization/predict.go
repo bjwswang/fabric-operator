@@ -217,7 +217,7 @@ func (r *ReconcileOrganization) FederationCreateFunc(e event.CreateEvent) bool {
 	for _, m := range federation.Spec.Members {
 		err = r.AddFed(m, federation)
 		if err != nil {
-			log.Error(err, fmt.Sprintf("Member %s in Federation %s", m.GetNamespacedName(), federation.GetName()))
+			log.Error(err, fmt.Sprintf("Member %s in Federation %s", m.GetName(), federation.GetName()))
 		}
 	}
 
@@ -239,14 +239,14 @@ func (r *ReconcileOrganization) FederationUpdateFunc(e event.UpdateEvent) bool {
 	for _, am := range added {
 		err = r.AddFed(am, newFed)
 		if err != nil {
-			log.Error(err, fmt.Sprintf("Member %s in Federation %s", am.GetNamespacedName(), newFed.GetName()))
+			log.Error(err, fmt.Sprintf("Member %s in Federation %s", am.GetName(), newFed.GetName()))
 		}
 	}
 
 	for _, rm := range removed {
 		err = r.DeleteFed(rm, newFed)
 		if err != nil {
-			log.Error(err, fmt.Sprintf("Member %s in Federation %s", rm.GetNamespacedName(), newFed.GetName()))
+			log.Error(err, fmt.Sprintf("Member %s in Federation %s", rm.GetName(), newFed.GetName()))
 		}
 	}
 
@@ -262,7 +262,7 @@ func (r *ReconcileOrganization) FederationDeleteFunc(e event.DeleteEvent) bool {
 	for _, m := range federation.Spec.Members {
 		err = r.DeleteFed(m, federation)
 		if err != nil {
-			log.Error(err, fmt.Sprintf("Member %s in Federation %s", m.GetNamespacedName(), federation.GetName()))
+			log.Error(err, fmt.Sprintf("Member %s in Federation %s", m.GetName(), federation.GetName()))
 		}
 	}
 	return false
@@ -270,11 +270,8 @@ func (r *ReconcileOrganization) FederationDeleteFunc(e event.DeleteEvent) bool {
 
 func (r *ReconcileOrganization) AddFed(m current.Member, federation *current.Federation) error {
 	var err error
-	organization := &current.Organization{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{
-		Name:      m.Name,
-		Namespace: m.Namespace,
-	}, organization)
+	organization := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: m.Name}}
+	err = r.client.Get(context.TODO(), client.ObjectKeyFromObject(organization), organization)
 	if err != nil {
 		return err
 	}
@@ -285,7 +282,7 @@ func (r *ReconcileOrganization) AddFed(m current.Member, federation *current.Fed
 	})
 	// conflict detected,do not need to PatchStatus
 	if conflict {
-		return errors.Errorf("federation %s already exist in organization %s", federation.GetName(), m.GetNamespacedName())
+		return errors.Errorf("federation %s already exist in organization %s", federation.GetName(), m.GetName())
 	}
 
 	err = r.client.PatchStatus(context.TODO(), organization, nil, k8sclient.PatchOption{
@@ -329,8 +326,8 @@ func (r *ReconcileOrganization) CAUpdateFunc(e event.UpdateEvent) bool {
 
 func (r *ReconcileOrganization) UpdateStatus(organization current.NamespacedName, newStatus current.CRStatus) error {
 	var err error
-	org := &current.Organization{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: organization.Name}, org)
+	org := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: organization.Name}}
+	err = r.client.Get(context.TODO(), client.ObjectKeyFromObject(org), org)
 	if err != nil {
 		return err
 	}
@@ -362,11 +359,8 @@ func (r *ReconcileOrganization) UpdateStatus(organization current.NamespacedName
 func (r *ReconcileOrganization) DeleteFed(m current.Member, federation *current.Federation) error {
 	var err error
 
-	organization := &current.Organization{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{
-		Name:      m.Name,
-		Namespace: m.Namespace,
-	}, organization)
+	organization := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: m.Name}}
+	err = r.client.Get(context.TODO(), client.ObjectKeyFromObject(organization), organization)
 	if err != nil {
 		return err
 	}
@@ -378,7 +372,7 @@ func (r *ReconcileOrganization) DeleteFed(m current.Member, federation *current.
 
 	// federation do not exist in this organization ,do not need to PatchStatus
 	if !exist {
-		return errors.Errorf("federation %s not exist in organization %s", federation.GetName(), m.GetNamespacedName())
+		return errors.Errorf("federation %s not exist in organization %s", federation.GetName(), m.GetName())
 	}
 
 	err = r.client.PatchStatus(context.TODO(), organization, nil, k8sclient.PatchOption{

@@ -32,7 +32,6 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	k8sruntime "sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -153,14 +152,15 @@ func (c *BaseProposal) CreateVoteIfNotExists(ctx context.Context, instance *curr
 	wg := sync.WaitGroup{}
 	for _, org := range organizations {
 		wg.Add(1)
-		go func(org current.NamespacedName) {
+		go func(orgName string) {
 			defer func() {
 				wg.Done()
 			}()
+			org := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: orgName}}
 			vote := &current.Vote{
 				ObjectMeta: v1.ObjectMeta{
 					Name:      instance.GetVoteName(org.Name),
-					Namespace: org.Namespace,
+					Namespace: org.GetUserNamespace(),
 					Labels:    instance.GetVoteLabel(),
 				},
 				Spec: current.VoteSpec{
@@ -170,21 +170,18 @@ func (c *BaseProposal) CreateVoteIfNotExists(ctx context.Context, instance *curr
 					Description:      "",
 				},
 			}
-			if err = c.Client.Get(ctx, types.NamespacedName{Namespace: org.Namespace, Name: instance.GetVoteName(org.Name)}, vote); err != nil {
+			if err = c.Client.Get(ctx, k8sruntime.ObjectKeyFromObject(vote), vote); err != nil {
 				if k8sruntime.IgnoreNotFound(err) == nil {
-					log.Info(fmt.Sprintf("not find vote in org:%s, crate now.", org))
+					log.Info(fmt.Sprintf("not find vote in org:%s, crate now.", orgName))
 					if err = c.Client.Create(ctx, vote, k8sclient.CreateOption{Owner: instance, Scheme: c.Scheme}); err != nil {
 						log.Error(err, "Error create vote")
 					}
 				} else {
-					log.Error(err, fmt.Sprintf("Error getting vote in org:%s", org))
+					log.Error(err, fmt.Sprintf("Error getting vote in org:%s", orgName))
 					// todo return error
 				}
 			} else {
-				if org.Name == instance.Spec.Initiator.Name && org.Namespace == instance.Spec.Initiator.Namespace {
-					//if err = c.Client.Get(ctx, types.NamespacedName{Namespace: org.Namespace, Name: instance.GetVoteName(org.Name)}, vote); err != nil {
-					//	log.Error(err, "Error get vote")
-					//}
+				if org.Name == instance.Spec.InitiatorOrganization {
 					if pointer.BoolDeref(vote.Spec.Decision, false) {
 						return
 					}

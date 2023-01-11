@@ -395,3 +395,9 @@ const (
 	Majority    Policy = "Majority"
 	ALL         Policy = "All"
 )
+
+var PolicyMap = map[string]bool{
+	OneVoteVeto.String(): true,
+	Majority.String():    true,
+	ALL.String():         true,
+}

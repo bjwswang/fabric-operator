@@ -69,8 +69,8 @@ var _ = Describe("Predict federation events", func() {
 				},
 				Spec: current.FederationSpec{
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}
@@ -81,8 +81,8 @@ var _ = Describe("Predict federation events", func() {
 				},
 				Spec: current.FederationSpec{
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 				// status detected
@@ -123,8 +123,8 @@ var _ = Describe("Predict federation events", func() {
 				},
 				Spec: current.FederationSpec{
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}
@@ -146,8 +146,8 @@ var _ = Describe("Predict federation events", func() {
 				},
 				Spec: current.FederationSpec{
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}
@@ -159,8 +159,8 @@ var _ = Describe("Predict federation events", func() {
 				},
 				Spec: current.FederationSpec{
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}
@@ -179,8 +179,8 @@ var _ = Describe("Predict federation events", func() {
 				Spec: current.FederationSpec{
 					Description: "federation for two",
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}
@@ -193,8 +193,8 @@ var _ = Describe("Predict federation events", func() {
 				Spec: current.FederationSpec{
 					Description: "Federation for test",
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}
@@ -215,8 +215,8 @@ var _ = Describe("Predict federation events", func() {
 				Spec: current.FederationSpec{
 					Description: "federation for two",
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}
@@ -229,8 +229,8 @@ var _ = Describe("Predict federation events", func() {
 				Spec: current.FederationSpec{
 					Description: "Federation for test",
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org3", Namespace: "org3"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org3", Initiator: false},
 					},
 				},
 			}
@@ -255,8 +255,8 @@ var _ = Describe("Predict federation events", func() {
 				Spec: current.FederationSpec{
 					Description: "federation for two",
 					Members: []current.Member{
-						{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: true},
-						{NamespacedName: current.NamespacedName{Name: "org2", Namespace: "org2"}, Initiator: false},
+						{Name: "org1", Initiator: true},
+						{Name: "org2", Initiator: false},
 					},
 				},
 			}

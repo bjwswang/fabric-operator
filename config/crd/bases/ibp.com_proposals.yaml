@@ -70,6 +70,13 @@ spec:
                 type: boolean
               dissolveFederation:
                 type: object
+              dissolveNetwork:
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
               endAt:
                 format: date-time
                 type: string

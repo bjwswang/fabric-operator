@@ -38,6 +38,9 @@ spec:
               federation:
                 description: Federation which this network belongs to
                 type: string
+              initialToken:
+                description: InitialToken is the default value of the OrderSpec.ClusterSecret.[].Enrollment.TLS/Component.EnrollToken
+                type: string
               license:
                 description: License should be accepted by the user to be able to
                   setup console
@@ -959,6 +962,7 @@ spec:
                 - license
                 type: object
             required:
+            - initialToken
             - license
             type: object
           status:

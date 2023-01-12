@@ -181,7 +181,7 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 					update.proposalActivated = true
 					for _, m := range fed.Spec.Members {
 						m.JoinedBy = newProposal.GetName()
-						m.JoinedAt = now
+						m.JoinedAt = &now
 						newMember = append(newMember, m)
 					}
 				case current.AddMemberProposal:
@@ -191,7 +191,7 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 							NamespacedName: m,
 							Initiator:      false,
 							JoinedBy:       newProposal.GetName(),
-							JoinedAt:       now,
+							JoinedAt:       &now,
 						})
 					}
 				case current.DeleteMemberProposal:

@@ -10,6 +10,7 @@ spec:
   orderSpec:
     license:
       accept: true
+    ordererType: "etcdraft"
     clusterSize: 3
   members:
     - name: org1

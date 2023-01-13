@@ -69,10 +69,6 @@ type Override interface {
 	CertificateAuthority(v1.Object, *current.IBPCA, resources.Action) error
 }
 
-//go:generate counterfeiter -o mocks/initializer.go -fake-name InitializerOrganization . InitializerOrganization
-
-type InitializerOrganization interface{}
-
 type Organization interface {
 	PreReconcileChecks(instance *current.Organization, update Update) error
 	Initialize(instance *current.Organization, update Update) error
@@ -93,7 +89,7 @@ type BaseOrganization struct {
 
 	Config *config.Config
 
-	Initializer InitializerOrganization
+	Initializer *Initializer
 
 	Override Override
 
@@ -162,7 +158,6 @@ func (organization *BaseOrganization) Reconcile(instance *current.Organization, 
 		return common.Result{}, operatorerrors.Wrap(err, operatorerrors.OrganizationInitilizationFailed, "failed to initialize organization")
 	}
 
-	// TODO: define managers
 	if err = organization.ReconcileManagers(instance, update); err != nil {
 		return common.Result{}, errors.Wrap(err, "failed to reconcile managers")
 	}
@@ -210,6 +205,12 @@ func (organization *BaseOrganization) ReconcileManagers(instance *current.Organi
 	err = organization.ReconcileUsers(instance, update)
 	if err != nil {
 		return err
+	}
+
+	if update.TokenUpdated() {
+		if err = organization.Initializer.ReconcileCrypto(instance); err != nil {
+			return err
+		}
 	}
 
 	return nil

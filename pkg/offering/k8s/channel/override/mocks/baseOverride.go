@@ -3,16 +3,14 @@ package mocks
 
 import (
 	"sync"
-
-	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/organization"
 )
 
-type InitializerOrganization struct {
+type BaseOverride struct {
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *InitializerOrganization) Invocations() map[string][][]interface{} {
+func (fake *BaseOverride) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
@@ -22,7 +20,7 @@ func (fake *InitializerOrganization) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *InitializerOrganization) recordInvocation(key string, args []interface{}) {
+func (fake *BaseOverride) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -33,5 +31,3 @@ func (fake *InitializerOrganization) recordInvocation(key string, args []interfa
 	}
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
-
-var _ organization.InitializerOrganization = new(InitializerOrganization)

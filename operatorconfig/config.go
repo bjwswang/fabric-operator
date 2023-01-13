@@ -20,6 +20,7 @@ package operatorconfig
 
 import (
 	cainit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
+	chaninit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/channel"
 	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
 	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
 	ordererinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer"
@@ -39,6 +40,7 @@ type Config struct {
 	OrganizationInitConfig *orginit.Config
 	FederationInitConfig   *fedinit.Config
 	NetworkInitConfig      *netinit.Config
+	ChannelInitConfig      *chaninit.Config
 	Offering               offering.Type
 	Operator               Operator
 	Logger                 *logr.Logger

@@ -16,16 +16,11 @@
  * limitations under the License.
  */
 
-package organization
+package override
 
-type Config struct {
-	IAMEnabled             bool
-	AdminRoleFile          string
-	ClientRoleFile         string
-	RoleBindingFile        string
-	ClusterRoleFile        string
-	ClusterRoleBindingFile string
-	CAFile                 string
-	NodeOUConfigFile       string
-	StoragePath            string
+//go:generate counterfeiter -o mocks/baseOverride.go -fake-name BaseOverride . baseOverride
+type baseOverride interface{}
+
+type Override struct {
+	BaseOverride baseOverride
 }

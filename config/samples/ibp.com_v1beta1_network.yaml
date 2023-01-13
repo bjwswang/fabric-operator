@@ -7,6 +7,11 @@ spec:
     accept: true
   federation: federation-sample
   initialToken: <enrolltoken>
+  orderSpec:
+    license:
+      accept: true
+    ordererType: "etcdraft"
+    clusterSize: 1
   members:
     - name: org1
       namespace: org1

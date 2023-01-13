@@ -88,9 +88,8 @@ func (r *ReconcileOrganization) PredictOrganizationCreate(organization *current.
 			if !update.tokenUpdated {
 				secretNotExist := false
 				secret := corev1.Secret{}
-				if err = r.client.Get(context.TODO(), types.NamespacedName{Name: existingOrg.GetName() + "-msg-crypto",
-					Namespace: existingOrg.GetName()}, &secret); err != nil {
-					log.Error(err, fmt.Sprintf("get secret %s error", existingOrg.GetName()+"-msg-crypto"))
+				if err = r.client.Get(context.TODO(), existingOrg.GetMSPCrypto(), &secret); err != nil {
+					log.Error(err, fmt.Sprintf("get secret %s error", existingOrg.GetMSPCrypto().String()))
 					if k8serrors.IsNotFound(err) {
 						secretNotExist = true
 					}
@@ -146,9 +145,8 @@ func (r *ReconcileOrganization) PredictOrganizationUpdate(oldOrg *current.Organi
 		if !update.tokenUpdated {
 			secretNotExist := false
 			secret := corev1.Secret{}
-			if err := r.client.Get(context.TODO(), types.NamespacedName{Name: oldOrg.GetName() + "-msg-crypto",
-				Namespace: oldOrg.GetName()}, &secret); err != nil {
-				log.Error(err, fmt.Sprintf("get secret %s error", oldOrg.GetName()+"-msg-crypto"))
+			if err := r.client.Get(context.TODO(), oldOrg.GetMSPCrypto(), &secret); err != nil {
+				log.Error(err, fmt.Sprintf("get secret %s error", oldOrg.GetName()+"-msps-crypto"))
 				if k8serrors.IsNotFound(err) {
 					secretNotExist = true
 				}

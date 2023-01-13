@@ -16,16 +16,11 @@
  * limitations under the License.
  */
 
-package organization
+package controllers
 
-type Config struct {
-	IAMEnabled             bool
-	AdminRoleFile          string
-	ClientRoleFile         string
-	RoleBindingFile        string
-	ClusterRoleFile        string
-	ClusterRoleBindingFile string
-	CAFile                 string
-	NodeOUConfigFile       string
-	StoragePath            string
+import "github.com/IBM-Blockchain/fabric-operator/controllers/channel"
+
+func init() {
+	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
+	AddToManagerFuncs = append(AddToManagerFuncs, channel.Add)
 }

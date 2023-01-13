@@ -96,6 +96,28 @@ func GetGenesisDefaults() *TopLevel {
 						Rule: "MAJORITY Admins",
 					},
 				},
+				Application: &Application{
+					Organizations: make([]*Organization, 0),
+					Capabilities: map[string]bool{
+						"V1_4_3": true,
+					},
+					Resources: &Resources{},
+					Policies: map[string]*Policy{
+						"Readers": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Readers",
+						},
+						"Writers": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Writers",
+						},
+						"Admins": {
+							Type: "ImplicitMeta",
+							Rule: "MAJORITY Admins",
+						},
+					},
+					ACLs: make(map[string]string),
+				},
 			},
 		},
 	}

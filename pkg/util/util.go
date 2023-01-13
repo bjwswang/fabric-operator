@@ -715,6 +715,10 @@ func GetCertificateFromPEMBytes(bytes []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
+func ReadFile(file string) ([]byte, error) {
+	return ioutil.ReadFile(file)
+}
+
 func WriteFile(file string, buf []byte, perm os.FileMode) error {
 	dir := path.Dir(file)
 	// Create the directory if it doesn't exist
@@ -951,4 +955,38 @@ func GetNamespacedName(namespacedName string) types.NamespacedName {
 		Namespace: strs[0],
 		Name:      strs[1],
 	}
+}
+
+func LoadToCertPool(pemCerts []byte) (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	certs, err := pemToX509Certs(pemCerts)
+	if err != nil {
+		return nil, err
+	}
+	for _, cert := range certs {
+		pool.AddCert(cert)
+	}
+	return pool, nil
+}
+
+func pemToX509Certs(pemCerts []byte) ([]*x509.Certificate, error) {
+	var certs []*x509.Certificate
+
+	// it's possible that multiple certs are encoded
+	for len(pemCerts) > 0 {
+		var block *pem.Block
+		block, pemCerts = pem.Decode(pemCerts)
+		if block == nil {
+			break
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		certs = append(certs, cert)
+	}
+
+	return certs, nil
 }

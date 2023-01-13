@@ -149,6 +149,14 @@ const (
 	// NetworkDissoleved means network been dissolved by `Proposal-Vote`
 	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
 	NetworkDissoleved IBPCRStatusType = "NetworkDissolved"
+
+	// ChannelCreated means channel created by a network initiator
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	ChannelCreated IBPCRStatusType = "ChannelCreated"
+
+	// ChannelDissoleved means channel been dissolved by `Proposal-Vote`
+	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
+	ChannelDissoleved IBPCRStatusType = "ChannelDissolved"
 )
 
 // +k8s:deepcopy-gen=true

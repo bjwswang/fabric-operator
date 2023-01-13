@@ -26,6 +26,7 @@ import (
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/command"
 	cainit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
+	chaninit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/channel"
 	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
 	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
 	ordererinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer"
@@ -83,6 +84,7 @@ func main() {
 	setDefaultFederationDefinitions(operatorCfg)
 	setDefaultVoteDefinitions(operatorCfg)
 	setDefaultNetworkDefinitions(operatorCfg)
+	setDefaultChannelDefinitions(operatorCfg)
 
 	operatorCfg.Operator.SetDefaults()
 
@@ -222,6 +224,7 @@ func setDefaultOrganizationDefinitions(cfg *config.Config) {
 		ClusterRoleFile:        filepath.Join(defaultOrganizationDef, "cluster_role.yaml"),
 		ClusterRoleBindingFile: filepath.Join(defaultOrganizationDef, "cluster_role_binding.yaml"),
 		CAFile:                 filepath.Join(defaultOrganizationDef, "ca.yaml"),
+		NodeOUConfigFile:       filepath.Join(defaultOrganizationDef, "ou_config.yaml"),
 		StoragePath:            "/tmp/orginit",
 	}
 }
@@ -241,5 +244,11 @@ func setDefaultVoteDefinitions(cfg *config.Config) {
 func setDefaultNetworkDefinitions(cfg *config.Config) {
 	cfg.NetworkInitConfig = &netinit.Config{
 		OrdererFile: filepath.Join(defaultNetworkDef, "orderer.yaml"),
+	}
+}
+
+func setDefaultChannelDefinitions(cfg *config.Config) {
+	cfg.ChannelInitConfig = &chaninit.Config{
+		StoragePath: "/tmp/chaninit",
 	}
 }

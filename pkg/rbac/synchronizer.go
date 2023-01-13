@@ -43,6 +43,7 @@ func init() {
 	defaultSynchronizers[Federation] = SyncFederation
 	defaultSynchronizers[Proposal] = SyncProposal
 	defaultSynchronizers[Network] = SyncNetwork
+	defaultSynchronizers[Channel] = SyncChannel
 }
 
 func EmptySynchronizer(c controllerclient.Client, o v1.Object, ra ResourceAction) error {
@@ -78,7 +79,7 @@ func SyncFederation(c controllerclient.Client, o v1.Object, ra ResourceAction) e
 	return nil
 }
 
-// SyncFederation triggers synchronization uppon Proposal's action(create/update/delete)
+// SyncFederation triggers synchronization upon Proposal's action(create/update/delete)
 func SyncProposal(c controllerclient.Client, o v1.Object, ra ResourceAction) error {
 	var err error
 
@@ -111,7 +112,7 @@ func SyncProposal(c controllerclient.Client, o v1.Object, ra ResourceAction) err
 	return nil
 }
 
-// SyncNetwork triggers synchronization uppon Network's action(create/update/delete)
+// SyncNetwork triggers synchronization upon Network's action(create/update/delete)
 func SyncNetwork(c controllerclient.Client, o v1.Object, ra ResourceAction) error {
 	var err error
 
@@ -123,6 +124,33 @@ func SyncNetwork(c controllerclient.Client, o v1.Object, ra ResourceAction) erro
 	targetRule := PolicyRule(Network, []v1.Object{o}, []Verb{Get})
 	// Make sure each organization sync on above rule
 	for _, member := range network.GetMembers() {
+		organization := &current.Organization{}
+		err = c.Get(context.TODO(), types.NamespacedName{Name: member.Name}, organization)
+		if err != nil {
+			return err
+		}
+		key := GetClusterRole(organization.GetNamespaced(), Admin)
+		err = SyncClusterRole(c, key, targetRule, ra)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// SyncChannel triggers synchronization upon Channel's action(create/update/delete)
+func SyncChannel(c controllerclient.Client, o v1.Object, ra ResourceAction) error {
+	var err error
+
+	channel, ok := o.(*current.Channel)
+	if !ok {
+		return ErrBadSynchronizer
+	}
+	// PolicyRule which should be appended/removed from role's rules
+	targetRule := PolicyRule(Channel, []v1.Object{o}, []Verb{Get})
+	// Make sure each organization sync on above rule
+	for _, member := range channel.GetMembers() {
 		organization := &current.Organization{}
 		err = c.Get(context.TODO(), types.NamespacedName{Name: member.Name}, organization)
 		if err != nil {

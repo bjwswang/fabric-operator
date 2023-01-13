@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"fmt"
 	"os"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -32,6 +33,13 @@ func (organization *Organization) GetNamespaced() types.NamespacedName {
 
 func (organization *Organization) GetUserNamespace() string {
 	return organization.GetName()
+}
+
+func (organization *Organization) GetCAConnectinProfile() types.NamespacedName {
+	return types.NamespacedName{Namespace: organization.GetUserNamespace(), Name: organization.GetName() + "-connection-profile"}
+}
+func (organization *Organization) GetMSPCrypto() types.NamespacedName {
+	return types.NamespacedName{Namespace: organization.GetUserNamespace(), Name: fmt.Sprintf("%s-msp-crypto", organization.GetName())}
 }
 
 func (organization *Organization) GetCA() NamespacedName {

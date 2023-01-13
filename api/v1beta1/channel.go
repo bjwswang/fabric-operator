@@ -16,16 +16,28 @@
  * limitations under the License.
  */
 
-package organization
+package v1beta1
 
-type Config struct {
-	IAMEnabled             bool
-	AdminRoleFile          string
-	ClientRoleFile         string
-	RoleBindingFile        string
-	ClusterRoleFile        string
-	ClusterRoleBindingFile string
-	CAFile                 string
-	NodeOUConfigFile       string
-	StoragePath            string
+func init() {
+	SchemeBuilder.Register(&Channel{}, &ChannelList{})
+}
+
+func (channel *Channel) GetChannelID() string {
+	return channel.GetName()
+}
+
+func (channel *Channel) GetMembers() []Member {
+	return channel.Spec.Members
+}
+
+func (channel *Channel) HasType() bool {
+	return channel.Status.CRStatus.Type != ""
+}
+
+func (channel *Channel) HasNetwork() bool {
+	return channel.Spec.Network != ""
+}
+
+func (channel *Channel) HashMembers() bool {
+	return len(channel.Spec.Members) > 0
 }

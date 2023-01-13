@@ -28,7 +28,8 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/go-test/deep"
 	"gopkg.in/yaml.v2"
-	"k8s.io/apimachinery/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -121,8 +122,8 @@ func (r *ReconcileNetwork) DeleteFunc(e event.DeleteEvent) bool {
 	if !r.Config.OrganizationInitConfig.IAMEnabled {
 		return false
 	}
-	org := &current.Organization{}
-	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: network.GetInitiatorMember().Name, Namespace: network.GetInitiatorMember().Namespace}, org); err != nil {
+	org := &current.Organization{ObjectMeta: metav1.ObjectMeta{Name: network.GetInitiatorMember()}}
+	if err = r.client.Get(context.TODO(), client.ObjectKeyFromObject(org), org); err != nil {
 		log.Error(err, "failed to get org when network delete")
 		return false
 	}

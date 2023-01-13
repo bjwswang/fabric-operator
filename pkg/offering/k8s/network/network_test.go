@@ -58,8 +58,8 @@ var _ = Describe("K8s Network Reconcile Logic", func() {
 				OrderSpec:  current.IBPOrdererSpec{},
 				Federation: "federation-sample",
 				Members: []current.Member{
-					{NamespacedName: current.NamespacedName{Name: "org1", Namespace: "org1"}, Initiator: false},
-					{NamespacedName: current.NamespacedName{Name: "org3", Namespace: "org3"}, Initiator: false},
+					{Name: "org1", Initiator: false},
+					{Name: "org3", Initiator: false},
 				},
 			},
 		}

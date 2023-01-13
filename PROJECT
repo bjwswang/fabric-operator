@@ -39,6 +39,10 @@ resources:
   kind: Organization
   path: github.com/IBM-Blockchain/fabric-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -48,6 +52,10 @@ resources:
   kind: Federation
   path: github.com/IBM-Blockchain/fabric-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true

@@ -35,6 +35,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -211,8 +212,8 @@ func (network *BaseNetwork) ReconcileUser(instance *current.Network, update Upda
 	if !network.Config.OrganizationInitConfig.IAMEnabled || !update.OrdererCreate() {
 		return nil
 	}
-	org := &current.Organization{}
-	if err = network.Client.Get(context.TODO(), types.NamespacedName{Name: instance.GetInitiatorMember().Name, Namespace: instance.GetInitiatorMember().Namespace}, org); err != nil {
+	org := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: instance.GetInitiatorMember()}}
+	if err = network.Client.Get(context.TODO(), client.ObjectKeyFromObject(org), org); err != nil {
 		return err
 	}
 	targetUser := org.Spec.Admin

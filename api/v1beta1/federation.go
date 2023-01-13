@@ -70,8 +70,8 @@ func (federation *Federation) HasMembers() bool {
 	return len(federation.Spec.Members) != 0
 }
 
-func (m *Member) GetNamespacedName() string {
-	return m.Namespace + "-" + m.Name
+func (m *Member) GetName() string {
+	return m.Name
 }
 
 func DifferMembers(old []Member, new []Member) (added []Member, removed []Member) {

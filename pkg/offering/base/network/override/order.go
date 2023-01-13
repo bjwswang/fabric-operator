@@ -28,12 +28,14 @@ func (o *Override) Orderer(object v1.Object, orderer *current.IBPOrderer, action
 }
 
 func (o *Override) CreateOrUpdateOrderer(instance *current.Network, orderer *current.IBPOrderer) (err error) {
-	orderer.Namespace = instance.GetInitiatorMember().Namespace
+	initiatorOrg := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: instance.GetInitiatorMember()}}
+	initiatorNamespace := initiatorOrg.GetUserNamespace()
+	orderer.Namespace = initiatorNamespace
 	orderer.Name = instance.Name
 	orderer.Spec = instance.Spec.OrderSpec
 
 	orderer.Spec.Domain = o.IngressDomain
-	orderer.Spec.MSPID = instance.Name
+	orderer.Spec.MSPID = instance.GetInitiatorMember()
 	if orderer.Spec.UseChannelLess == nil {
 		orderer.Spec.UseChannelLess = pointer.True()
 	}
@@ -50,7 +52,7 @@ func (o *Override) CreateOrUpdateOrderer(instance *current.Network, orderer *cur
 	if orderer.Spec.SystemChannelName == "" {
 		orderer.Spec.SystemChannelName = instance.Name
 	}
-	orderer.Spec.OrgName = instance.GetInitiatorMember().Name
+	orderer.Spec.OrgName = instance.GetInitiatorMember()
 
 	err = o.updateEnrollment(instance, orderer)
 	if err != nil {
@@ -69,12 +71,14 @@ func (o *Override) CreateOrUpdateOrderer(instance *current.Network, orderer *cur
 }
 
 func (o *Override) updateEnrollment(instance *current.Network, orderer *current.IBPOrderer) (err error) {
-	profile, err := o.getCAConnectionProfileData(instance.GetInitiatorMember().Namespace, instance.GetInitiatorMember().Name)
+	initiatorOrg := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: instance.GetInitiatorMember()}}
+	initiatorNamespace := initiatorOrg.GetUserNamespace()
+	profile, err := o.getCAConnectionProfileData(initiatorNamespace, instance.GetInitiatorMember())
 	if err != nil {
 		return errors.Wrap(err, "failed to get ca cm connection-profile")
 	}
 
-	user, err := o.getEnrollUser(instance.GetInitiatorMember().Namespace, instance.GetInitiatorMember().Name)
+	user, err := o.getEnrollUser(initiatorNamespace, instance.GetInitiatorMember())
 	if err != nil {
 		return errors.Wrap(err, "failed to get enroll user")
 	}
@@ -156,10 +160,12 @@ func (o *Override) updateEnrollment(instance *current.Network, orderer *current.
 		if v.Enrollment.TLS.CSR == nil {
 			v.Enrollment.TLS.CSR = &current.CSR{Hosts: make([]string, 0)}
 		}
+		initiatorOrg := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: instance.GetInitiatorMember()}}
+		initiatorNamespace := initiatorOrg.GetUserNamespace()
 		clusterHosts := []string{
-			instance.GetInitiatorMember().Name,
-			instance.GetInitiatorMember().Name + "." + instance.GetInitiatorMember().Namespace,
-			instance.GetInitiatorMember().Name + "." + instance.GetInitiatorMember().Namespace + ".svc.cluster.local",
+			instance.GetInitiatorMember(),
+			instance.GetInitiatorMember() + "." + initiatorNamespace,
+			instance.GetInitiatorMember() + "." + initiatorNamespace + ".svc.cluster.local",
 		}
 		hosts := v.Enrollment.TLS.CSR.Hosts
 		for _, h := range clusterHosts {

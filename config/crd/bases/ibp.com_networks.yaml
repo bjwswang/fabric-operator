@@ -69,8 +69,6 @@ spec:
                       type: string
                     name:
                       type: string
-                    namespace:
-                      type: string
                   type: object
                 type: array
               orderSpec:
@@ -962,8 +960,10 @@ spec:
                 - license
                 type: object
             required:
+            - federation
             - initialToken
             - license
+            - members
             type: object
           status:
             description: NetworkStatus defines the observed state of Network

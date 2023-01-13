@@ -30,7 +30,7 @@ type NetworkSpec struct {
 
 	// Federation which this network belongs to
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Federation string `json:"federation,omitempty"`
+	Federation string `json:"federation"`
 
 	// InitialToken is the default value of the OrderSpec.ClusterSecret.[].Enrollment.TLS/Component.EnrollToken
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
@@ -38,7 +38,7 @@ type NetworkSpec struct {
 	// Members which this network contains
 	// (DO NOT EDIT)Cloned automatically from Federation.Spec.Members
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Members []Member `json:"members,omitempty"`
+	Members []Member `json:"members"`
 
 	// OrderSpec is the configurations of network's related Order
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true

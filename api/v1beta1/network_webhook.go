@@ -19,28 +19,33 @@
 package v1beta1
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+
+	authenticationv1 "k8s.io/api/authentication/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+)
+
+var (
+	errNoFederation          = errors.New("cant find federation")
+	errMemberNotInFederation = errors.New("some member not belongs to this federation")
 )
 
 // log is for logging in this package.
 var networklog = logf.Log.WithName("network-resource")
 
-func (r *Network) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
-		Complete()
-}
-
 //+kubebuilder:webhook:path=/mutate-ibp-com-v1beta1-network,mutating=true,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=networks,verbs=create;update,versions=v1beta1,name=network.mutate.webhook,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &Network{}
+var _ defaulter = &Network{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Network) Default() {
-	networklog.Info("default", "name", r.Name)
+func (r *Network) Default(ctx context.Context, client client.Client, user authenticationv1.UserInfo) {
+	networklog.Info("default", "name", r.Name, "user", user.String())
 	r.Spec.OrderSpec.License.Accept = true
 	r.Spec.OrderSpec.OrdererType = "etcdraft"
 	if r.Spec.OrderSpec.ClusterSize == 0 {
@@ -50,25 +55,68 @@ func (r *Network) Default() {
 
 //+kubebuilder:webhook:path=/validate-ibp-com-v1beta1-network,mutating=false,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=networks,verbs=create;update;delete,versions=v1beta1,name=network.validate.webhook,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Network{}
+var _ validator = &Network{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Network) ValidateCreate() error {
-	networklog.Info("validate create", "name", r.Name)
+func (r *Network) ValidateCreate(ctx context.Context, client client.Client, user authenticationv1.UserInfo) error {
+	networklog.Info("validate create", "name", r.Name, "user", user.String())
+
+	if err := validateMemberInFederation(ctx, client, r.Spec.Federation, r.Spec.Members); err != nil {
+		return err
+	}
+
+	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Network) ValidateUpdate(old runtime.Object) error {
-	networklog.Info("validate update", "name", r.Name)
+func (r *Network) ValidateUpdate(ctx context.Context, client client.Client, old runtime.Object, user authenticationv1.UserInfo) error {
+	networklog.Info("validate update", "name", r.Name, "user", user.String())
+
+	if isSuperUser(ctx, user) {
+		return nil
+	}
+
+	if err := validateMemberInFederation(ctx, client, r.Spec.Federation, r.Spec.Members); err != nil {
+		return err
+	}
+
+	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Network) ValidateDelete() error {
-	networklog.Info("validate delete", "name", r.Name)
+func (r *Network) ValidateDelete(ctx context.Context, client client.Client, user authenticationv1.UserInfo) error {
+	networklog.Info("validate delete", "name", r.Name, "user", user.String())
+	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
+		return err
+	}
+	return nil
+}
 
+func validateMemberInFederation(ctx context.Context, c client.Client, fedName string, members []Member) error {
+	fed := &Federation{}
+	fed.Name = fedName
+	if err := c.Get(ctx, client.ObjectKeyFromObject(fed), fed); err != nil {
+		if apierrors.IsNotFound(err) {
+			return errNoFederation
+		}
+		return errors.Wrap(err, "failed to get federation")
+	}
+	allMembers := make(map[string]bool, len(fed.Spec.Members))
+	for _, m := range fed.Spec.Members {
+		allMembers[m.Name] = true
+	}
+	for _, m := range members {
+		if ok := allMembers[m.Name]; !ok {
+			return fmt.Errorf("allMembers:%#v, members:%#v", allMembers, members)
+		}
+	}
 	return nil
 }

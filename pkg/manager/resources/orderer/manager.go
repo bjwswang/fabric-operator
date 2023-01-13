@@ -62,11 +62,13 @@ func (m *Manager) GetName(instance v1.Object) string {
 func (m *Manager) Reconcile(instance v1.Object, update bool) error {
 	network := instance.(*current.Network)
 	initiator := network.GetInitiatorMember()
-	if initiator.Namespace == "" {
-		return fmt.Errorf("network:%s initiator no namespace setting", network.Name)
+	if initiator == "" {
+		return fmt.Errorf("network:%s initiator no name setting", network.Name)
 	}
+	initiatorOrg := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: initiator}}
+	initiatorNamespace := initiatorOrg.GetUserNamespace()
 	orderer := &current.IBPOrderer{}
-	err := m.Client.Get(context.TODO(), types.NamespacedName{Name: network.Name, Namespace: initiator.Namespace}, orderer)
+	err := m.Client.Get(context.TODO(), types.NamespacedName{Name: network.Name, Namespace: initiatorNamespace}, orderer)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			log.Info(fmt.Sprintf("Creating orderer '%s'", network.Name))

@@ -77,10 +77,10 @@ type ProposalList struct {
 }
 
 type ProposalSpec struct {
-	Federation     string         `json:"federation"`
-	Policy         Policy         `json:"policy"`
-	Initiator      NamespacedName `json:"initiator"`
-	ProposalSource `json:",inline"`
+	Federation            string `json:"federation"`
+	Policy                Policy `json:"policy"`
+	InitiatorOrganization string `json:"initiatorOrganization"`
+	ProposalSource        `json:",inline"`
 	// +optional
 	StartAt metav1.Time `json:"startAt,omitempty"`
 	// +optional
@@ -103,11 +103,11 @@ type ProposalSource struct {
 }
 
 type AddMember struct {
-	Members []NamespacedName `json:"members"`
+	Members []string `json:"members"`
 }
 
 type DeleteMember struct {
-	Member NamespacedName `json:"member"`
+	Member string `json:"member"`
 }
 
 type DissolveFederation struct {

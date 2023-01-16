@@ -165,6 +165,7 @@ rules:
       - proposals.ibp.com
       - votes.ibp.com
       - networks.ibp.com
+      - channels.ibp.com
       - ibpcas
       - ibppeers
       - ibporderers
@@ -174,6 +175,7 @@ rules:
       - proposals
       - votes
       - networks
+      - channels
       - ibpcas/finalizers
       - ibppeers/finalizers
       - ibporderers/finalizers
@@ -183,6 +185,7 @@ rules:
       - proposals/finalizers
       - votes/finalizers
       - networks/finalizers
+      - channels/finalizers
       - ibpcas/status
       - ibppeers/status
       - ibporderers/status
@@ -192,6 +195,7 @@ rules:
       - proposals/status
       - votes/status
       - networks/status
+      - channels/status
     verbs:
       - get
       - list

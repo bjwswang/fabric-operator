@@ -41,6 +41,8 @@ context STORAGE_CLASS             standard
 context KUSTOMIZE_BUILD           "kubectl kustomize"
 context STAGE_DOCKER_IMAGES       true
 context FABRIC_CONTAINER_REGISTRY hyperledgerk8s
+context BUILD_OPERATOR_IMAGE      true
+context IMAGE_PULL_POLICY         IfNotPresent
 
 context NAME                      test-network
 context NS                        $NAME
@@ -79,7 +81,7 @@ context ORDERER_IMAGE_LABEL       ${FABRIC_VERSION}
 context TOOLS_IMAGE               ${FABRIC_CONTAINER_REGISTRY}/fabric-tools
 context TOOLS_IMAGE_LABEL         ${FABRIC_VERSION}
 context OPERATOR_IMAGE            ${FABRIC_CONTAINER_REGISTRY}/fabric-operator
-context OPERATOR_IMAGE_LABEL      latest-amd64
+context OPERATOR_IMAGE_LABEL      latest
 context INIT_IMAGE                ${FABRIC_CONTAINER_REGISTRY}/ubi-minimal
 context INIT_IMAGE_LABEL          latest
 context GRPCWEB_IMAGE             ${FABRIC_CONTAINER_REGISTRY}/grpc-web

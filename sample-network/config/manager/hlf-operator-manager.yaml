@@ -96,6 +96,8 @@ spec:
             timeoutSeconds: 5
             periodSeconds: 5
           env:
+            - name: WEBHOOK_DISABLED
+              value: "true"
             - name: OPERATOR_NAMESPACE
               value: "test-network"
             - name: POD_NAME
@@ -103,7 +105,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "fabric-operator"
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: CLUSTERTYPE
               value: K8S
           resources:

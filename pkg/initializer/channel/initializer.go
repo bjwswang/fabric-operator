@@ -21,6 +21,7 @@ package channel
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"path/filepath"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
@@ -33,11 +34,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
 	NODE = "node"
 )
+
+var log = logf.Log.WithName("base_channel_initializer")
 
 type Config struct {
 	ConfigtxFile string
@@ -99,12 +103,15 @@ func (i *Initializer) CreateOrUpdateChannel(instance *current.Channel) error {
 		return err
 	}
 
-	var exist bool
-	_, err = osn.Query(clusterNodes.Items[0].GetName(), instance.GetName())
-	if err == nil {
-		exist = true
+	var exist = true
+	resp, err := osn.Query(clusterNodes.Items[0].GetName(), instance.GetName())
+	if err != nil {
+		return err
 	}
-	// DO NOT SUPPORT UPDATE
+	if resp.StatusCode == http.StatusNotFound {
+		exist = false
+	}
+	// DO NOT SUPPORT UPDATE FOR NOW
 	if exist {
 		return nil
 	}
@@ -114,6 +121,7 @@ func (i *Initializer) CreateOrUpdateChannel(instance *current.Channel) error {
 		return err
 	}
 
+	// Join all cluster nodes into this channel
 	for _, target := range clusterNodes.Items {
 		err = osn.Join(target.GetName(), block)
 		if err != nil {

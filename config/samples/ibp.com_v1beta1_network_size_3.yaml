@@ -12,6 +12,8 @@ spec:
       accept: true
     ordererType: "etcdraft"
     clusterSize: 3
+    ingress:
+      class: "portal-ingress"
   members:
     - name: org1
       initiator: true

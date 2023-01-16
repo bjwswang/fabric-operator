@@ -24,7 +24,6 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer/configtx"
-	"github.com/cloudflare/cfssl/log"
 	"github.com/gogo/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-protos-go/orderer/etcdraft"
@@ -38,20 +37,6 @@ import (
 
 func (i *Initializer) ConfigureOrderer(instance *current.Channel, profile *configtx.Profile, ordererorg string, parentOrderer *current.IBPOrderer, clusterNodes *current.IBPOrdererList) (map[string]*msp.MSPConfig, error) {
 	var err error
-
-	org := &configtx.Organization{
-		Name:           ordererorg,
-		ID:             ordererorg,
-		MSPType:        "bccsp",
-		MSPDir:         i.GetOrgMSPDir(instance, ordererorg),
-		AdminPrincipal: "Role.MEMBER",
-	}
-
-	err = profile.AddOrgToOrderer(org)
-	if err != nil {
-		return nil, err
-	}
-
 	err = i.AddHostPortToProfile(profile, parentOrderer, clusterNodes)
 	if err != nil {
 		return nil, err
@@ -61,10 +46,9 @@ func (i *Initializer) ConfigureOrderer(instance *current.Channel, profile *confi
 	mspConfigs := map[string]*msp.MSPConfig{}
 	// only one orderer organization for now
 	for _, org := range conf.Organizations {
-		var err error
 		mspConfigs[org.Name], err = i.GetOrdererMSPConfig(parentOrderer, org.ID)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create orderer org")
+			return nil, err
 		}
 	}
 	return mspConfigs, nil

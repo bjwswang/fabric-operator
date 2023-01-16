@@ -96,7 +96,7 @@ func (osn *OSNAdmin) AddTarget(orderermsp *corev1.Secret, targetOrderer *current
 		return err
 	}
 	url := connProfile.Endpoints.Admin
-	tlsServerCert := connProfile.TLS.CACerts[0]
+	tlsServerCert := connProfile.TLS.SignCerts
 
 	// load orderering service's server tls cert
 	tlsServerCertPem, err := base64.StdEncoding.DecodeString(tlsServerCert)
@@ -192,7 +192,7 @@ func (osn *OSNAdmin) Join(target string, blockBytes []byte) error {
 		return err
 	}
 	if !checkJoinResponse(res) {
-		return errors.New("Join failed")
+		return errors.Errorf("Join failed: %s", res.Body)
 	}
 	return nil
 }
@@ -249,7 +249,11 @@ func (osn *OSNAdmin) Query(target string, channelID string) (*http.Response, err
 		return nil, err
 	}
 	url := fmt.Sprintf(QueryChannelAPI, instance.URL, channelID)
-	return instance.Client.Get(url)
+	resp, err := instance.Client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
 }
 
 // ChainReady checks whether channel is ready

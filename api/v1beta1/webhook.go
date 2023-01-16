@@ -282,7 +282,7 @@ type defaulter interface {
 
 func isSuperUser(ctx context.Context, user authenticationv1.UserInfo) bool {
 	operatorUser, _ := operatorUserFromContext(ctx)
-	return operatorUser == user.Username || util.ContainsValue("system:masters", user.Groups)
+	return operatorUser == user.Username || util.ContainsValue("system:masters", user.Groups) || util.ContainsValue("system:serviceaccounts:kube-system", user.Groups)
 }
 
 type operatorUserContextKey struct{}

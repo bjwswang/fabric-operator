@@ -99,9 +99,10 @@ func (p *Profile) GenerateBlock(channelID string, mspConfigs map[string]*msp.MSP
 		return nil, errors.Errorf("refusing to generate block which is missing orderer section")
 	}
 
-	if p.Consortiums == nil {
-		return nil, errors.New("Genesis block does not contain a consortiums group definition.  This block cannot be used for orderer bootstrap.")
-	}
+	// Application channel do not need Consortiums(we do not use system channel now)
+	// if p.Consortiums == nil {
+	// 	return nil, errors.New("Genesis block does not contain a consortiums group definition.  This block cannot be used for orderer bootstrap.")
+	// }
 
 	cg, err := p.NewChannelConfigGroup(mspConfigs)
 	if err != nil {

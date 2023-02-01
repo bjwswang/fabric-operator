@@ -54,7 +54,7 @@ func GetGenesisDefaults() *TopLevel {
 						},
 					},
 					Capabilities: map[string]bool{
-						"V1_4_2": true,
+						"V2_0": true,
 					},
 					Policies: map[string]*Policy{
 						"Readers": {
@@ -80,7 +80,7 @@ func GetGenesisDefaults() *TopLevel {
 					"SampleConsortium": {},
 				},
 				Capabilities: map[string]bool{
-					"V1_4_3": true,
+					"V2_0": true,
 				},
 				Policies: map[string]*Policy{
 					"Readers": {
@@ -99,7 +99,90 @@ func GetGenesisDefaults() *TopLevel {
 				Application: &Application{
 					Organizations: make([]*Organization, 0),
 					Capabilities: map[string]bool{
-						"V1_4_3": true,
+						"V2_0": true,
+					},
+					Resources: &Resources{},
+					Policies: map[string]*Policy{
+						"Readers": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Readers",
+						},
+						"Writers": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Writers",
+						},
+						"Admins": {
+							Type: "ImplicitMeta",
+							Rule: "MAJORITY Admins",
+						},
+					},
+					ACLs: make(map[string]string),
+				},
+			},
+			"Application": {
+				Orderer: &Orderer{
+					Organizations: []*Organization{},
+					OrdererType:   "etcdraft",
+					Addresses:     []string{},
+					BatchTimeout:  2 * time.Second,
+					BatchSize: BatchSize{
+						MaxMessageCount:   500,
+						AbsoluteMaxBytes:  10 * 1024 * 1024,
+						PreferredMaxBytes: 2 * 1024 * 1024,
+					},
+					EtcdRaft: &etcdraft.ConfigMetadata{
+						Consenters: []*etcdraft.Consenter{},
+						Options: &etcdraft.Options{
+							TickInterval:         "500ms",
+							ElectionTick:         10,
+							HeartbeatTick:        1,
+							MaxInflightBlocks:    5,
+							SnapshotIntervalSize: 20 * 1024 * 1024, // 20 MB
+						},
+					},
+					Capabilities: map[string]bool{
+						"V2_0": true,
+					},
+					Policies: map[string]*Policy{
+						"Readers": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Readers",
+						},
+						"Writers": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Writers",
+						},
+						"Admins": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Admins",
+						},
+						"BlockValidation": {
+							Type: "ImplicitMeta",
+							Rule: "ANY Writers",
+						},
+					},
+				},
+				Capabilities: map[string]bool{
+					"V2_0": true,
+				},
+				Policies: map[string]*Policy{
+					"Readers": {
+						Type: "ImplicitMeta",
+						Rule: "ANY Readers",
+					},
+					"Writers": {
+						Type: "ImplicitMeta",
+						Rule: "ANY Writers",
+					},
+					"Admins": {
+						Type: "ImplicitMeta",
+						Rule: "MAJORITY Admins",
+					},
+				},
+				Application: &Application{
+					Organizations: make([]*Organization, 0),
+					Capabilities: map[string]bool{
+						"V2_0": true,
 					},
 					Resources: &Resources{},
 					Policies: map[string]*Policy{

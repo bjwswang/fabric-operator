@@ -147,7 +147,7 @@ func (i *Initializer) WaitForCA(instance *current.Organization) error {
 	caDeploy := appsv1.Deployment{}
 	deployment := instance.GetNamespaced()
 	err = wait.Poll(10*time.Second, 10*maxRetryCount*time.Second, func() (bool, error) {
-		log.Info(fmt.Sprintf("WatForCA: poll deployment %s status", deployment.String()))
+		log.Info(fmt.Sprintf("WaitForCA: poll deployment %s status", deployment.String()))
 		err := i.Client.Get(context.TODO(), deployment, &caDeploy)
 		if err != nil {
 			if !k8serrors.IsNotFound(err) {

@@ -36,23 +36,44 @@ type ChannelSpec struct {
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	Members []Member `json:"members"`
 
+	// Peers list all fabric peers joined at this channel
+	Peers []NamespacedName `json:"peers,omitempty"`
+
 	// Description for this Channel
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	Description string `json:"description,omitempty"`
 }
 
+type PeerConditionType string
+
+const (
+	PeerJoined PeerConditionType = "PeerJoined"
+	PeerError  PeerConditionType = "PeerError"
+)
+
 // ChannelPeer is the IBPPeer which joins this channel
-type ChannelPeer struct {
+type PeerCondition struct {
 	NamespacedName `json:",inline"`
-	JoinedTime     metav1.Time `json:"joinedTime,omitempty"`
+	// Type is the type of the condition.
+	Type PeerConditionType `json:"type"`
+	// Status is the status of the condition.
+	// Can be True, False, Unknown.
+	Status metav1.ConditionStatus `json:"status"`
+	// Last time the condition transitioned from one status to another.
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
+	// Unique, one-word, CamelCase reason for the condition's last transition.
+	// +optional
+	Reason string `json:"reason,omitempty"`
+	// Human-readable message indicating details about last transition.
+	// +optional
+	Message string `json:"message,omitempty"`
 }
 
 // ChannelStatus defines the observed state of Channel
 type ChannelStatus struct {
-	CRStatus `json:",inline"`
-
-	// Peers has been joined into this channel
-	Peers []ChannelPeer `json:"peers,omitempty"`
+	CRStatus       `json:",inline"`
+	PeerConditions []PeerCondition `json:"peerConditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true

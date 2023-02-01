@@ -42,6 +42,13 @@ func (i *Initializer) ConfigureOrderer(instance *current.Channel, profile *confi
 		return nil, err
 	}
 
+	org := configtx.DefaultOrganization(ordererorg)
+	org.MSPDir = i.GetOrgMSPDir(instance, ordererorg)
+	err = profile.AddOrgToOrderer(org)
+	if err != nil {
+		return nil, err
+	}
+
 	conf := profile.Orderer
 	mspConfigs := map[string]*msp.MSPConfig{}
 	// only one orderer organization for now

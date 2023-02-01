@@ -51,3 +51,41 @@ func (network *Network) HasType() bool {
 func (network *Network) HasMembers() bool {
 	return len(network.Spec.Members) != 0
 }
+
+func (networkStatus *NetworkStatus) AddChannel(channel string) bool {
+	var conflict bool
+
+	for _, f := range networkStatus.Channels {
+		if f == channel {
+			conflict = true
+			break
+		}
+	}
+
+	if !conflict {
+		networkStatus.Channels = append(networkStatus.Channels, channel)
+	}
+
+	return conflict
+}
+
+func (networkStatus *NetworkStatus) DeleteChannel(channel string) bool {
+	var exist bool
+	var index int
+
+	channels := networkStatus.Channels
+
+	for curr, f := range channels {
+		if f == channel {
+			exist = true
+			index = curr
+			break
+		}
+	}
+
+	if exist {
+		networkStatus.Channels = append(channels[:index], channels[index+1:]...)
+	}
+
+	return exist
+}

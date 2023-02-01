@@ -7,7 +7,7 @@ spec:
     accept: true
   displayName: "test organization"
   admin: org3admin
-  admintoken: <token>
+  admintoken: <org3AdminToken>
   clients:
     - client
   description: "test org3"
@@ -18,7 +18,7 @@ spec:
       class: "portal-ingress"
     images:
       caImage: hyperledgerk8s/fabric-ca
-      caTag: "1.5.5-iam"
+      caTag: "iam-20230131"
       caInitImage: hyperledgerk8s/ubi-minimal
       caInitTag: latest
     resources:

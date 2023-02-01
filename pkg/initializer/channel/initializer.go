@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/common/secretmanager"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer/configtx"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
@@ -41,19 +40,22 @@ const (
 	NODE = "node"
 )
 
+var (
+	ErrChannelAlreadyExist = errors.New("channel already exist in target node")
+)
+
 var log = logf.Log.WithName("base_channel_initializer")
 
 type Config struct {
-	ConfigtxFile string
-	StoragePath  string
+	StoragePath string
 }
 
+// Initializer is for channel initialization
 type Initializer struct {
 	Config *Config
+
 	Scheme *runtime.Scheme
 	Client k8sclient.Client
-
-	SecretManager *secretmanager.SecretManager
 }
 
 func New(client controllerclient.Client, scheme *runtime.Scheme, cfg *Config) *Initializer {
@@ -63,20 +65,13 @@ func New(client controllerclient.Client, scheme *runtime.Scheme, cfg *Config) *I
 		Config: cfg,
 	}
 
-	initializer.SecretManager = secretmanager.New(client, scheme, nil)
-
 	return initializer
 }
 
-func (i *Initializer) GetStoragePath(instance *current.Channel) string {
-	return filepath.Join("/", i.Config.StoragePath, instance.GetName())
-}
-
-func (i *Initializer) GetOrgMSPDir(instance *current.Channel, orgMSPID string) string {
-	return filepath.Join(i.GetStoragePath(instance), orgMSPID, "msp")
-}
-
-func (i *Initializer) CreateOrUpdateChannel(instance *current.Channel) error {
+// CreateChannel used to help create a channel within network,including:
+// 	- create a genesis block for channel
+// 	- join all orderer nodes into channel
+func (i *Initializer) CreateChannel(instance *current.Channel) error {
 	var err error
 
 	network := &current.Network{}
@@ -86,6 +81,8 @@ func (i *Initializer) CreateOrUpdateChannel(instance *current.Channel) error {
 	}
 
 	ordererorg := network.Labels["bestchains.network.initiator"]
+
+	// get network's orderer nodes
 	parentOrderer, err := i.GetParentNode(ordererorg, network.GetName())
 	if err != nil {
 		return err
@@ -98,31 +95,27 @@ func (i *Initializer) CreateOrUpdateChannel(instance *current.Channel) error {
 		return err
 	}
 
-	osn, err := NewOSNAdmin(i.Client, ordererorg, clusterNodes.Items...)
-	if err != nil {
-		return err
-	}
-
-	var exist = true
-	resp, err := osn.Query(clusterNodes.Items[0].GetName(), instance.GetName())
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode == http.StatusNotFound {
-		exist = false
-	}
-	// DO NOT SUPPORT UPDATE FOR NOW
-	if exist {
-		return nil
-	}
-
+	// create genesis block for channel
 	block, err := i.CreateGenesisBlock(instance, ordererorg, parentOrderer, clusterNodes)
 	if err != nil {
 		return err
 	}
 
 	// Join all cluster nodes into this channel
+	osn, err := NewOSNAdmin(i.Client, ordererorg, clusterNodes.Items...)
+	if err != nil {
+		return err
+	}
 	for _, target := range clusterNodes.Items {
+		// make sure orderer not joined yet
+		resp, err := osn.Query(target.GetName(), instance.GetName())
+		if err != nil {
+			return err
+		}
+		// continue if current orderer node already joins
+		if resp.StatusCode != http.StatusNotFound {
+			continue
+		}
 		err = osn.Join(target.GetName(), block)
 		if err != nil {
 			return err
@@ -132,18 +125,25 @@ func (i *Initializer) CreateOrUpdateChannel(instance *current.Channel) error {
 	return nil
 }
 
+// CreateGenesisBlock configures and generate a genesis block for channel startup.Here we have these limitations:
+// - system channel not supported
+// - Capability use `V2_0`
 func (i *Initializer) CreateGenesisBlock(instance *current.Channel, ordererorg string, parentOrderer *current.IBPOrderer, clusterNodes *current.IBPOrdererList) ([]byte, error) {
 	configTx := configtx.New()
-	profile, err := configTx.GetProfile("Initial")
+
+	// `Application` defines a application channel
+	profile, err := configTx.GetProfile("Application")
 	if err != nil {
 		return nil, err
 	}
 
+	// add orderer settings into profile
 	mspConfigs, err := i.ConfigureOrderer(instance, profile, ordererorg, parentOrderer, clusterNodes)
 	if err != nil {
 		return nil, err
 	}
 
+	// add application settings into profile
 	isUsingChannelLess := true
 	if !isUsingChannelLess {
 		return nil, errors.New("system channel not supported yet")
@@ -153,6 +153,7 @@ func (i *Initializer) CreateGenesisBlock(instance *current.Channel, ordererorg s
 			return nil, err
 		}
 	}
+
 	channelID := instance.GetName()
 	block, err := profile.GenerateBlock(channelID, mspConfigs)
 	if err != nil {
@@ -162,6 +163,7 @@ func (i *Initializer) CreateGenesisBlock(instance *current.Channel, ordererorg s
 	return block, nil
 }
 
+// GetParentNode returns the IBPOrderer which acts as the parent in consenus cluster
 func (i *Initializer) GetParentNode(namespace string, parentNode string) (*current.IBPOrderer, error) {
 	orderer := &current.IBPOrderer{}
 	err := i.Client.Get(context.TODO(), types.NamespacedName{Namespace: namespace, Name: parentNode}, orderer)
@@ -171,6 +173,7 @@ func (i *Initializer) GetParentNode(namespace string, parentNode string) (*curre
 	return orderer, nil
 }
 
+// GetClusterNodes returns the IBPOrderers which acts as the real consensus node
 func (i *Initializer) GetClusterNodes(namespace string, parentNode string) (*current.IBPOrdererList, error) {
 	ordererList := &current.IBPOrdererList{}
 
@@ -190,4 +193,14 @@ func (i *Initializer) GetClusterNodes(namespace string, parentNode string) (*cur
 	}
 
 	return ordererList, nil
+}
+
+// GetStoragePath in formart `/chaninit/{channel_name}`
+func (i *Initializer) GetStoragePath(instance *current.Channel) string {
+	return filepath.Join("/", i.Config.StoragePath, instance.GetName())
+}
+
+// GetOrgMSPDir returns channel organization's msp directory which will be used for genesis block generation
+func (i *Initializer) GetOrgMSPDir(instance *current.Channel, orgMSPID string) string {
+	return filepath.Join(i.GetStoragePath(instance), orgMSPID, "msp")
 }

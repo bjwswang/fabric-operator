@@ -26,6 +26,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util/image"
 	"github.com/IBM-Blockchain/fabric-operator/version"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // +kubebuilder:object:generate=false
@@ -308,6 +309,20 @@ func (i *PeerImages) Override(requested *PeerImages, registryURL string, arch st
 	i.NodeEnvTag = image.GetTag(arch, i.NodeEnvTag, requested.NodeEnvTag)
 	i.HSMTag = image.GetTag(arch, i.HSMTag, requested.HSMTag)
 	i.EnrollerTag = image.GetTag(arch, i.EnrollerTag, requested.EnrollerTag)
+}
+
+func (p *IBPPeer) GetNamespacedName() types.NamespacedName {
+	return types.NamespacedName{Namespace: p.Namespace, Name: p.Name}
+}
+
+/* Enrollment when IAM Enabled*/
+
+func (p *IBPPeer) GetEnrollUser() string {
+	return p.Spec.Secret.Enrollment.Component.EnrollUser
+}
+
+func (p *IBPPeer) GetEnrollToken() string {
+	return p.Spec.Secret.Enrollment.Component.EnrollToken
 }
 
 func init() {

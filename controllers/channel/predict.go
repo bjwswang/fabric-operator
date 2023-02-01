@@ -60,7 +60,7 @@ func (r *ReconcileChannel) CreateFunc(e event.CreateEvent) bool {
 			update.specUpdated = true
 		}
 
-		added, removed := current.DifferMembers(channel.Spec.Members, existingChannel.Spec.Members)
+		added, removed := current.DifferMembers(existingChannel.Spec.Members, channel.Spec.Members)
 		if len(added) != 0 || len(removed) != 0 {
 			log.Info(fmt.Sprintf("Channel '%s' members was updated while operator was down", channel.GetName()))
 			log.Info(fmt.Sprintf("Difference detected: added members %v", added))
@@ -68,9 +68,21 @@ func (r *ReconcileChannel) CreateFunc(e event.CreateEvent) bool {
 			update.memberUpdated = true
 		}
 
+		addedPeers, removedPeers := current.DifferChannelPeers(existingChannel.Spec.Peers, channel.Spec.Peers)
+		if len(addedPeers) != 0 || len(removedPeers) != 0 {
+			log.Info(fmt.Sprintf("Channel '%s' peers was updated while operator was down", channel.GetName()))
+			log.Info(fmt.Sprintf("Difference detected: added peers %v", addedPeers))
+			log.Info(fmt.Sprintf("Difference detected: removed peers %v", removedPeers))
+			update.peerUpdated = true
+		}
+
 		log.Info(fmt.Sprintf("Create event triggering reconcile for updating Channel '%s'", channel.GetName()))
 		r.PushUpdate(channel.GetName(), update)
 		return true
+	}
+
+	if len(channel.Spec.Peers) != 0 {
+		update.peerUpdated = true
 	}
 
 	update.specUpdated = true
@@ -100,21 +112,16 @@ func (r *ReconcileChannel) UpdateFunc(e event.UpdateEvent) bool {
 		update.memberUpdated = true
 	}
 
+	addedPeers, removedPeers := current.DifferChannelPeers(oldChan.Spec.Peers, newChan.Spec.Peers)
+	if len(addedPeers) != 0 || len(removedPeers) != 0 {
+		log.Info(fmt.Sprintf("Difference detected: added peers %v", addedPeers))
+		log.Info(fmt.Sprintf("Difference detected: removed peers %v", removedPeers))
+		update.peerUpdated = true
+	}
+
 	r.PushUpdate(oldChan.GetName(), update)
 
 	log.Info(fmt.Sprintf("Spec update triggering reconcile on Channel custom resource %s: update [ %+v ]", oldChan.Name, update.GetUpdateStackWithTrues()))
 
 	return true
-}
-
-func (r *ReconcileChannel) PeerCreateFunc(e event.CreateEvent) bool {
-	return false
-}
-
-func (r *ReconcileChannel) PeerUpdateFunc(e event.UpdateEvent) bool {
-	return false
-}
-
-func (r *ReconcileChannel) PeerDeleteFunc(e event.DeleteEvent) bool {
-	return false
 }

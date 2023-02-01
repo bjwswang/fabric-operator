@@ -51,12 +51,14 @@ var (
 	ErrTargetNotFound = errors.New("target not found")
 )
 
-// OSNClient orderering service node client
+// OSNAdmin wraps a client to call orderering service's admin api
 type OSNAdmin struct {
-	client  k8sclient.Client
-	targets map[string]*Target
+	client     k8sclient.Client
+	ordererorg string
+	targets    map[string]*Target
 }
 
+// Target wraps connection info of a orderer node
 type Target struct {
 	URL    string
 	Client *http.Client
@@ -64,32 +66,40 @@ type Target struct {
 
 func NewOSNAdmin(client k8sclient.Client, ordererorg string, targetOrderers ...current.IBPOrderer) (*OSNAdmin, error) {
 	var err error
-	osn := &OSNAdmin{
-		client:  client,
-		targets: make(map[string]*Target),
+
+	if ordererorg == "" {
+		return nil, errors.Errorf("osnadmin must have ordererorg configured")
 	}
 
+	// get ordererorg' msp crypto
 	organization := &current.Organization{}
 	err = client.Get(context.TODO(), types.NamespacedName{Name: ordererorg}, organization)
 	if err != nil {
 		return nil, errors.Wrapf(err, "get ordererorg %s", ordererorg)
 	}
-	orgmsp := &corev1.Secret{}
-	err = client.Get(context.TODO(), organization.GetMSPCrypto(), orgmsp)
-	if err != nil {
-		return nil, errors.Wrapf(err, "get ordererorg %s msp crypto", ordererorg)
+
+	osn := &OSNAdmin{
+		client:     client,
+		ordererorg: ordererorg,
+		targets:    make(map[string]*Target),
 	}
 
+	// add all orderers into osn targets
 	for index := range targetOrderers {
-		err = osn.AddTarget(orgmsp, &targetOrderers[index])
+		err = osn.AddTarget(&targetOrderers[index])
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	return osn, nil
 }
 
-func (osn *OSNAdmin) AddTarget(orderermsp *corev1.Secret, targetOrderer *current.IBPOrderer) error {
+/* Target management */
+
+func (osn *OSNAdmin) AddTarget(targetOrderer *current.IBPOrderer) error {
+	var err error
+
 	// get connection profile
 	connProfile, err := GetTargetConnectionProfile(osn.client, targetOrderer)
 	if err != nil {
@@ -108,9 +118,14 @@ func (osn *OSNAdmin) AddTarget(orderermsp *corev1.Secret, targetOrderer *current
 		return err
 	}
 
-	// Load ordererorg's admin user tls key & cert
-	tlsClientKeyPem := orderermsp.Data["admin-tls-keystore"]
-	tlsClientCertPem := orderermsp.Data["admin-tls-signcert"]
+	// Load ordererorg's admin user tls key & cert from orderer org's msp crypto
+	ordererorgMSP := &corev1.Secret{}
+	err = osn.client.Get(context.TODO(), types.NamespacedName{Namespace: osn.ordererorg, Name: fmt.Sprintf("%s-msp-crypto", osn.ordererorg)}, ordererorgMSP)
+	if err != nil {
+		return errors.Wrapf(err, "get ordererorg %s msp crypto", osn.ordererorg)
+	}
+	tlsClientKeyPem := ordererorgMSP.Data["admin-tls-keystore"]
+	tlsClientCertPem := ordererorgMSP.Data["admin-tls-signcert"]
 	tlsCert, err := tls.X509KeyPair(tlsClientCertPem, tlsClientKeyPem)
 	if err != nil {
 		return err
@@ -151,30 +166,7 @@ func (osn *OSNAdmin) DeleteTarget(target string) {
 	delete(osn.targets, target)
 }
 
-func GetTargetConnectionProfile(client k8sclient.Client, orderer *current.IBPOrderer) (*current.OrdererConnectionProfile, error) {
-	var err error
-
-	// consensus connection info
-	cm := &corev1.ConfigMap{}
-	err = client.Get(
-		context.TODO(),
-		types.NamespacedName{
-			Name:      orderer.GetName() + "-connection-profile",
-			Namespace: orderer.GetNamespace(),
-		},
-		cm,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	connectionProfile := &current.OrdererConnectionProfile{}
-	if err := json.Unmarshal(cm.BinaryData["profile.json"], connectionProfile); err != nil {
-		return nil, err
-	}
-
-	return connectionProfile, nil
-}
+/* Channel management */
 
 // Join orderers into channel
 func (osn *OSNAdmin) Join(target string, blockBytes []byte) error {
@@ -232,7 +224,7 @@ func checkJoinResponse(res *http.Response) bool {
 	return false
 }
 
-// List all channels
+// List all channels which target has joined
 func (osn *OSNAdmin) List(target string) (*http.Response, error) {
 	instance, err := osn.GetTarget(target)
 	if err != nil {
@@ -242,7 +234,7 @@ func (osn *OSNAdmin) List(target string) (*http.Response, error) {
 	return instance.Client.Get(url)
 }
 
-// Query a chanenl
+// Query a channel from target
 func (osn *OSNAdmin) Query(target string, channelID string) (*http.Response, error) {
 	instance, err := osn.GetTarget(target)
 	if err != nil {
@@ -256,7 +248,7 @@ func (osn *OSNAdmin) Query(target string, channelID string) (*http.Response, err
 	return resp, err
 }
 
-// ChainReady checks whether channel is ready
+// WaitForChannel wait until channel is ready
 func (osn *OSNAdmin) WaitForChannel(target string, channelID string, duration time.Duration) error {
 	instance, err := osn.GetTarget(target)
 	if err != nil {
@@ -278,4 +270,30 @@ func (osn *OSNAdmin) WaitForChannel(target string, channelID string, duration ti
 			return nil
 		}
 	}
+}
+
+// GetTargetConnectionProfile helps retrived target orderer's connection profile which contains its tls server cert
+func GetTargetConnectionProfile(client k8sclient.Client, orderer *current.IBPOrderer) (*current.OrdererConnectionProfile, error) {
+	var err error
+
+	// consensus connection info
+	cm := &corev1.ConfigMap{}
+	err = client.Get(
+		context.TODO(),
+		types.NamespacedName{
+			Name:      orderer.GetName() + "-connection-profile",
+			Namespace: orderer.GetNamespace(),
+		},
+		cm,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	connectionProfile := &current.OrdererConnectionProfile{}
+	if err := json.Unmarshal(cm.BinaryData["profile.json"], connectionProfile); err != nil {
+		return nil, err
+	}
+
+	return connectionProfile, nil
 }

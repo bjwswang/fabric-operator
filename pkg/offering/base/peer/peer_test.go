@@ -41,6 +41,7 @@ import (
 	commonconfig "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/common/config"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/common/enroller"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/common/mspparser"
+	orginit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/organization"
 	peerinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/peer"
 	pconfig "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/peer/config/v1"
 	managermocks "github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/mocks"
@@ -168,6 +169,9 @@ var _ = Describe("Base Peer", func() {
 			PeerInitConfig: &peerinit.Config{
 				OUFile:       "../../../../defaultconfig/peer/ouconfig.yaml",
 				CorePeerFile: "../../../../defaultconfig/peer/core.yaml",
+			},
+			OrganizationInitConfig: &orginit.Config{
+				IAMEnabled: false,
 			},
 			Operator: config.Operator{
 				Versions: &deployer.Versions{

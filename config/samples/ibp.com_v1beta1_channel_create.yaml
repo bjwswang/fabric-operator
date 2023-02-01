@@ -1,0 +1,12 @@
+apiVersion: ibp.com/v1beta1
+kind: Channel
+metadata:
+  name: channel-sample
+spec:  
+  license:
+    accept: true
+  network: "network-sample3"
+  members:
+    - name: org1
+    - name: org2
+  description: "channel with org1 & org2"

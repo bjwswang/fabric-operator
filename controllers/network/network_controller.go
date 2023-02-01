@@ -117,6 +117,16 @@ func add(mgr manager.Manager, r *ReconcileNetwork) error {
 		return err
 	}
 
+	channelPredictFuncs := predicate.Funcs{
+		CreateFunc: r.ChannelCreateFunc,
+		DeleteFunc: r.ChannelDeleteFunc,
+	}
+
+	err = c.Watch(&source.Kind{Type: &current.Channel{}}, &handler.EnqueueRequestForObject{}, channelPredictFuncs)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

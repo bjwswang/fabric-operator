@@ -968,6 +968,11 @@ spec:
           status:
             description: NetworkStatus defines the observed state of Network
             properties:
+              channels:
+                description: Channels in this network
+                items:
+                  type: string
+                type: array
               errorcode:
                 description: ErrorCode is the code of classification of errors
                 type: integer

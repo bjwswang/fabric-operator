@@ -1013,3 +1013,30 @@ func GetNamespace() (string, error) {
 	}
 	return string(namespace), nil
 }
+
+func DifferArray(old []string, new []string) (added []string, removed []string) {
+	// cache in map
+	oldMapper := make(map[string]struct{}, len(old))
+	for _, c := range old {
+		oldMapper[c] = struct{}{}
+	}
+
+	// calculate differences
+	for _, c := range new {
+
+		// added: in new ,but not in old
+		if _, ok := oldMapper[c]; !ok {
+			added = append(added, c)
+			continue
+		}
+
+		// delete the intersection
+		delete(oldMapper, c)
+	}
+
+	for c := range oldMapper {
+		removed = append(removed, c)
+	}
+
+	return
+}

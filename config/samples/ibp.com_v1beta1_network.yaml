@@ -6,7 +6,7 @@ spec:
   license:
     accept: true
   federation: federation-sample
-  initialToken: <enrolltoken>
+  initialToken: <org1AdminToken>
   orderSpec:
     license:
       accept: true

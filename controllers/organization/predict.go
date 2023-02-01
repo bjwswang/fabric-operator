@@ -28,6 +28,7 @@ import (
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	"github.com/go-test/deep"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -98,7 +99,7 @@ func (r *ReconcileOrganization) PredictOrganizationCreate(organization *current.
 			}
 		}
 
-		added, removed := current.DifferClients(existingOrg.Spec.Clients, organization.Spec.Clients)
+		added, removed := util.DifferArray(existingOrg.Spec.Clients, organization.Spec.Clients)
 		if len(added) != 0 || len(removed) != 0 {
 			update.clientsUpdated = true
 			update.clientsRemoved = strings.Join(removed, ",")
@@ -155,7 +156,7 @@ func (r *ReconcileOrganization) PredictOrganizationUpdate(oldOrg *current.Organi
 		}
 	}
 
-	added, removed := current.DifferClients(oldOrg.Spec.Clients, newOrg.Spec.Clients)
+	added, removed := util.DifferArray(oldOrg.Spec.Clients, newOrg.Spec.Clients)
 	if len(added) != 0 || len(removed) != 0 {
 		update.clientsUpdated = true
 		update.clientsRemoved = strings.Join(removed, ",")

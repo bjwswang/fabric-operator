@@ -25,6 +25,7 @@ import (
 	cmocks "github.com/IBM-Blockchain/fabric-operator/controllers/mocks"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/common/enroller"
+	orginit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/organization"
 	peerinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/peer"
 	managermocks "github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/mocks"
 	basepeer "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/peer"
@@ -133,6 +134,9 @@ var _ = Describe("Openshift Peer", func() {
 				PeerInitConfig: &peerinit.Config{
 					OUFile:       "../../../../defaultconfig/peer/ouconfig.yaml",
 					CorePeerFile: "../../../../defaultconfig/peer/core.yaml",
+				},
+				OrganizationInitConfig: &orginit.Config{
+					IAMEnabled: false,
 				},
 			}
 			initializer := &peermocks.InitializeIBPPeer{}

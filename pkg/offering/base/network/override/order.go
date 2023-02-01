@@ -140,7 +140,7 @@ func (o *Override) updateEnrollment(instance *current.Network, orderer *current.
 			v.Enrollment.TLS.CAPort = caURL.Port()
 		}
 		if v.Enrollment.TLS.CAName == "" {
-			v.Enrollment.TLS.CAName = "ca"
+			v.Enrollment.TLS.CAName = "tlsca"
 		}
 		if v.Enrollment.TLS.CATLS == nil {
 			v.Enrollment.TLS.CATLS = &current.CATLS{CACert: profile.TLS.Cert}

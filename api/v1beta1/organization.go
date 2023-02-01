@@ -58,33 +58,6 @@ func (organization *Organization) HasType() bool {
 	return organization.Status.CRStatus.Type != ""
 }
 
-func DifferClients(old []string, new []string) (added []string, removed []string) {
-	// cache in map
-	oldMapper := make(map[string]struct{}, len(old))
-	for _, c := range old {
-		oldMapper[c] = struct{}{}
-	}
-
-	// calculate differences
-	for _, c := range new {
-
-		// added: in new ,but not in old
-		if _, ok := oldMapper[c]; !ok {
-			added = append(added, c)
-			continue
-		}
-
-		// delete the intersection
-		delete(oldMapper, c)
-	}
-
-	for c := range oldMapper {
-		removed = append(removed, c)
-	}
-
-	return
-}
-
 func (organizationStatus *OrganizationStatus) AddFederation(federation NamespacedName) bool {
 	var conflict bool
 

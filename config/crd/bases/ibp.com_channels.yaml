@@ -73,6 +73,16 @@ spec:
               network:
                 description: Network which this channel belongs to
                 type: string
+              peers:
+                description: Peers list all fabric peers joined at this channel
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  type: object
+                type: array
             required:
             - license
             - members
@@ -93,18 +103,37 @@ spec:
                 description: Message provides a message for the status to be shown
                   to customer
                 type: string
-              peers:
-                description: Peers has been joined into this channel
+              peerConditions:
                 items:
                   description: ChannelPeer is the IBPPeer which joins this channel
                   properties:
-                    joinedTime:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another.
                       format: date-time
+                      type: string
+                    message:
+                      description: Human-readable message indicating details about
+                        last transition.
                       type: string
                     name:
                       type: string
                     namespace:
                       type: string
+                    reason:
+                      description: Unique, one-word, CamelCase reason for the condition's
+                        last transition.
+                      type: string
+                    status:
+                      description: Status is the status of the condition. Can be True,
+                        False, Unknown.
+                      type: string
+                    type:
+                      description: Type is the type of the condition.
+                      type: string
+                  required:
+                  - status
+                  - type
                   type: object
                 type: array
               reason:

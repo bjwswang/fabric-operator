@@ -22,12 +22,27 @@ func init() {
 	SchemeBuilder.Register(&Channel{}, &ChannelList{})
 }
 
+func (channel *Channel) GetConnectionPorfile() string {
+	return "chan-" + channel.GetName() + "-connection-profile"
+}
+
 func (channel *Channel) GetChannelID() string {
 	return channel.GetName()
 }
 
 func (channel *Channel) GetMembers() []Member {
 	return channel.Spec.Members
+}
+
+func (channel *Channel) GetPeerCondition(peer NamespacedName) (int, PeerCondition) {
+	for index, p := range channel.Status.PeerConditions {
+		if p.String() == peer.String() {
+			return index, p
+		}
+	}
+	return -1, PeerCondition{
+		NamespacedName: peer,
+	}
 }
 
 func (channel *Channel) HasType() bool {
@@ -40,4 +55,31 @@ func (channel *Channel) HasNetwork() bool {
 
 func (channel *Channel) HashMembers() bool {
 	return len(channel.Spec.Members) > 0
+}
+
+func DifferChannelPeers(old []NamespacedName, new []NamespacedName) (added []NamespacedName, removed []NamespacedName) {
+	// cache in map
+	oldMapper := make(map[string]NamespacedName, len(old))
+	for _, m := range old {
+		oldMapper[m.Name] = m
+	}
+
+	// calculate differences
+	for _, m := range new {
+
+		// added: in new ,but not in old
+		if _, ok := oldMapper[m.Name]; !ok {
+			added = append(added, m)
+			continue
+		}
+
+		// delete the intersection
+		delete(oldMapper, m.Name)
+	}
+
+	for _, m := range oldMapper {
+		removed = append(removed, m)
+	}
+
+	return
 }

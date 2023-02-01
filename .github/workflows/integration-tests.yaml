@@ -26,6 +26,7 @@ on:
 env:
   KUBECONFIG_PATH: /tmp/kubeconfig.yaml
   OPERATOR_NAMESPACE: inttest
+  OPERATOR_USER_TYPE: sa
   DOCKERCONFIGJSON: ${{ secrets.DOCKERCONFIGJSON }}
   GO_VER: 1.18
 

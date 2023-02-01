@@ -48,6 +48,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common/reconcilechecks"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/restart"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	"github.com/IBM-Blockchain/fabric-operator/version"
 	"github.com/pkg/errors"
@@ -58,6 +59,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -365,6 +367,12 @@ func (p *Peer) Initialize(instance *current.IBPPeer, update Update) error {
 	// two, one should handle initialization during the create event of a CR and the other
 	// should update events
 
+	// ReconcileUser when IAM Enabled
+	err = p.ReconcileUser(instance, update)
+	if err != nil {
+		return err
+	}
+
 	// Service account is required by HSM init job
 	if err := p.ReconcilePeerRBAC(instance); err != nil {
 		return err
@@ -458,6 +466,23 @@ func (p *Peer) Initialize(instance *current.IBPPeer, update Update) error {
 		if err = p.Restart.ForAdminCertUpdate(instance); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// ReconcileUser on IBPPeer upon Update
+func (p *Peer) ReconcileUser(instance *current.IBPPeer, update Update) (err error) {
+	if !p.Config.OrganizationInitConfig.IAMEnabled {
+		return nil
+	}
+	org := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: instance.Spec.MSPID}}
+	if err = p.Client.Get(context.TODO(), client.ObjectKeyFromObject(org), org); err != nil {
+		return err
+	}
+	err = user.Reconcile(p.Client, instance.GetEnrollUser(), org.Name, instance.GetName(), user.PEER, user.Add)
+	if err != nil {
+		return err
 	}
 
 	return nil

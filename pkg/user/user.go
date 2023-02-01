@@ -71,7 +71,9 @@ func ReconcileAdd(u *iam.User, organization, enrollmentID string, idType IDType)
 	var err error
 
 	// add a organization label to targetUser
-	u.Labels[OrganizationLabel.String(organization)] = idType.String()
+	if idType == CLIENT || idType == ADMIN {
+		u.Labels[OrganizationLabel.String(organization)] = idType.String()
+	}
 
 	// set  annotation to current admin User
 	annotationList := NewBlockchainAnnotationList()
@@ -81,7 +83,7 @@ func ReconcileAdd(u *iam.User, organization, enrollmentID string, idType IDType)
 	}
 	var id ID
 	switch idType {
-	case CLIENT:
+	case ADMIN:
 		id = BuildAdminID(u.GetName())
 	case ORDERER:
 		id = BuildOrdererID(enrollmentID)
@@ -120,7 +122,9 @@ func ReconcileRemove(u *iam.User, organization, enrollmentID string, idType IDTy
 	var err error
 
 	// remove organization labels
-	delete(u.Labels, OrganizationLabel.String(organization))
+	if idType == CLIENT || idType == ADMIN {
+		delete(u.Labels, OrganizationLabel.String(organization))
+	}
 
 	// remove annotation under relevant organization
 	annotationList := NewBlockchainAnnotationList()

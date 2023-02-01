@@ -48,6 +48,8 @@ type NetworkSpec struct {
 // NetworkStatus defines the observed state of Network
 type NetworkStatus struct {
 	CRStatus `json:",inline"`
+	// Channels in this network
+	Channels []string `json:"channels,omitempty"`
 }
 
 // +kubebuilder:object:root=true

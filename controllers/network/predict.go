@@ -24,11 +24,14 @@ import (
 	"reflect"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
 	"github.com/go-test/deep"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
@@ -136,4 +139,87 @@ func (r *ReconcileNetwork) DeleteFunc(e event.DeleteEvent) bool {
 		}
 	}
 	return false
+}
+
+func (r *ReconcileNetwork) ChannelCreateFunc(e event.CreateEvent) bool {
+	channel := e.Object.(*current.Channel)
+	log.Info(fmt.Sprintf("Create event detected for channel '%s'", channel.GetName()))
+
+	err := r.AddChannel(channel.Spec.Network, channel.Name)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Channel %s in Network %s", channel.GetName(), channel.Spec.Network))
+	}
+	return false
+}
+
+func (r *ReconcileNetwork) AddChannel(netns string, channs string) error {
+	var err error
+	network := &current.Network{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Name: netns,
+	}, network)
+	if err != nil {
+		return err
+	}
+
+	conflict := network.Status.AddChannel(channs)
+	// conflict detected,do not need to PatchStatus
+	if conflict {
+		return errors.Errorf("channel %s already exist in network %s", channs, netns)
+	}
+
+	err = r.client.PatchStatus(context.TODO(), network, nil, k8sclient.PatchOption{
+		Resilient: &k8sclient.ResilientPatch{
+			Retry:    2,
+			Into:     &current.Network{},
+			Strategy: client.MergeFrom,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ReconcileNetwork) ChannelDeleteFunc(e event.DeleteEvent) bool {
+	channel := e.Object.(*current.Channel)
+	log.Info(fmt.Sprintf("Delete event detected for channel '%s'", channel.GetName()))
+
+	err := r.DeleteChannel(channel.Spec.Network, channel.Name)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Channel %s in Network %s", channel.GetName(), channel.Spec.Network))
+	}
+	return false
+}
+
+func (r *ReconcileNetwork) DeleteChannel(netns, channs string) error {
+	var err error
+	network := &current.Network{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{
+		Name: netns,
+	}, network)
+	if err != nil {
+		return err
+	}
+
+	exist := network.Status.DeleteChannel(channs)
+
+	// channel do not exist in this network ,do not need to PatchStatus
+	if !exist {
+		return errors.Errorf("channel %s not exist in network %s", channs, netns)
+	}
+
+	err = r.client.PatchStatus(context.TODO(), network, nil, k8sclient.PatchOption{
+		Resilient: &k8sclient.ResilientPatch{
+			Retry:    2,
+			Into:     &current.Network{},
+			Strategy: client.MergeFrom,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -112,17 +112,6 @@ func add(mgr manager.Manager, r *ReconcileChannel) error {
 		return err
 	}
 
-	// Watch ibppeer
-	peerPredictFuncs := predicate.Funcs{
-		CreateFunc: r.PeerCreateFunc,
-		UpdateFunc: r.PeerUpdateFunc,
-		DeleteFunc: r.PeerDeleteFunc,
-	}
-	err = c.Watch(&source.Kind{Type: &current.IBPPeer{}}, &handler.EnqueueRequestForObject{}, peerPredictFuncs)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -249,7 +238,8 @@ func (r *ReconcileChannel) SetStatus(instance *current.Channel, reconcileStatus 
 			status.LastHeartbeatTime = metav1.Now()
 
 			instance.Status = current.ChannelStatus{
-				CRStatus: status,
+				CRStatus:       status,
+				PeerConditions: instance.Status.PeerConditions,
 			}
 
 			log.Info(fmt.Sprintf("Updating status of Channel custom resource to %s phase", instance.Status.Type))
@@ -274,6 +264,10 @@ func (r *ReconcileChannel) SetStatus(instance *current.Channel, reconcileStatus 
 func (r *ReconcileChannel) SetErrorStatus(instance *current.Channel, reconcileErr error) error {
 	var err error
 
+	if err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}, instance); err != nil {
+		return err
+	}
+
 	if err = r.SaveSpecState(instance); err != nil {
 		return errors.Wrap(err, "failed to save spec state")
 	}
@@ -289,7 +283,8 @@ func (r *ReconcileChannel) SetErrorStatus(instance *current.Channel, reconcileEr
 	status.ErrorCode = operatorerrors.GetErrorCode(reconcileErr)
 
 	instance.Status = current.ChannelStatus{
-		CRStatus: status,
+		CRStatus:       status,
+		PeerConditions: instance.Status.PeerConditions,
 	}
 
 	log.Info(fmt.Sprintf("Updating status of Channel custom resource to %s phase", instance.Status.Type))

@@ -24,13 +24,14 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/connector"
 	chaninit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/channel"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
-	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
 	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
 	"github.com/IBM-Blockchain/fabric-operator/version"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -44,6 +45,8 @@ var log = logf.Log.WithName("base_channel")
 type Update interface {
 	SpecUpdated() bool
 	MemberUpdated() bool
+	NetworkUpdated() bool
+	PeerUpdated() bool
 }
 
 //go:generate counterfeiter -o mocks/override.go -fake-name Override . Override
@@ -57,7 +60,6 @@ type Channel interface {
 	Initialize(instance *current.Channel, update Update) error
 	ReconcileManagers(instance *current.Channel, update Update) error
 	CheckStates(instance *current.Channel, update Update) (common.Result, error)
-	Reconcile(instance *current.Channel, update Update) (common.Result, error)
 }
 
 var _ Channel = (*BaseChannel)(nil)
@@ -98,25 +100,6 @@ func (channel *BaseChannel) CreateManagers() {
 	channel.RBACManager = bcrbac.NewRBACManager(channel.Client, nil)
 }
 
-// Reconcile on Channel upon Update
-func (channel *BaseChannel) Reconcile(instance *current.Channel, update Update) (common.Result, error) {
-	var err error
-
-	if err = channel.PreReconcileChecks(instance, update); err != nil {
-		return common.Result{}, errors.Wrap(err, "failed on prereconcile checks")
-	}
-
-	if err = channel.Initialize(instance, update); err != nil {
-		return common.Result{}, operatorerrors.Wrap(err, operatorerrors.ChannelInitializationFailed, "failed to initialize channel")
-	}
-
-	if err = channel.ReconcileManagers(instance, update); err != nil {
-		return common.Result{}, errors.Wrap(err, "failed to reconcile managers")
-	}
-
-	return channel.CheckStates(instance, update)
-}
-
 // PreReconcileChecks on Channel upon Update
 func (channel *BaseChannel) PreReconcileChecks(instance *current.Channel, update Update) error {
 	var err error
@@ -155,10 +138,13 @@ func (channel *BaseChannel) PreReconcileChecks(instance *current.Channel, update
 
 // Initialize on Channel upon Update
 func (baseChan *BaseChannel) Initialize(instance *current.Channel, update Update) error {
-	err := baseChan.Initializer.CreateOrUpdateChannel(instance)
+	err := baseChan.Initializer.CreateChannel(instance)
 	if err != nil {
 		return err
 	}
+
+	// Patch status
+
 	return nil
 }
 
@@ -177,7 +163,35 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 	if err != nil {
 		return err
 	}
+
+	// Channel changed or network changed or peer updated
+	if update.SpecUpdated() || update.NetworkUpdated() || update.PeerUpdated() {
+		err = baseChan.ReconcileConnectionProfile(instance, update)
+		if err != nil {
+			return err
+		}
+	}
+
+	if update.PeerUpdated() {
+		for _, p := range instance.Spec.Peers {
+			err = baseChan.ReconcilePeer(instance, p)
+			if err != nil {
+				return errors.Wrap(err, "failed to patch channel status")
+			}
+		}
+	}
+
 	return nil
+}
+
+// CheckStates on Channel(do nothing)
+func (baseChan *BaseChannel) CheckStates(instance *current.Channel, update Update) (common.Result, error) {
+	return common.Result{
+		Status: &current.CRStatus{
+			Type:    current.ChannelCreated,
+			Version: version.Operator,
+		},
+	}, nil
 }
 
 func (baseChan *BaseChannel) SetOwnerReference(instance *current.Channel, update Update) error {
@@ -220,14 +234,119 @@ func (baseChan *BaseChannel) ReconcileRBAC(instance *current.Channel, update Upd
 	return nil
 }
 
-// CheckStates on Channel
-func (baseChan *BaseChannel) CheckStates(instance *current.Channel, update Update) (common.Result, error) {
-	return common.Result{
-		Status: &current.CRStatus{
-			Type:    current.ChannelCreated,
-			Version: version.Operator,
+// ReconcileConnectionProfile generates connection profile for this channel
+func (baseChan *BaseChannel) ReconcileConnectionProfile(instance *current.Channel, update Update) error {
+	var err error
+
+	network := &current.Network{}
+	err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Network}, network)
+	if err != nil {
+		return err
+	}
+	ordererorg := network.Labels["bestchains.network.initiator"]
+	clusterNodes, err := baseChan.Initializer.GetClusterNodes(ordererorg, network.GetName())
+	if err != nil {
+		return err
+	}
+	profile, err := baseChan.GenerateChannelConnProfile("", instance, clusterNodes)
+	if err != nil {
+		return err
+	}
+	binaryData, err := profile.Marshal()
+	if err != nil {
+		return err
+	}
+	cm := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      instance.GetConnectionPorfile(),
+			Namespace: baseChan.Config.Operator.Namespace,
 		},
-	}, nil
+		BinaryData: map[string][]byte{
+			"profile.yaml": binaryData,
+		},
+	}
+	err = baseChan.Client.CreateOrUpdate(context.TODO(), cm, controllerclient.CreateOrUpdateOption{
+		Owner:  instance,
+		Scheme: baseChan.Scheme,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (baseChan *BaseChannel) GenerateChannelConnProfile(clientOrg string, channel *current.Channel, clusterNodes *current.IBPOrdererList) (*connector.Profile, error) {
+	var err error
+
+	basedir := baseChan.Initializer.GetStoragePath(channel)
+
+	var orgs = make([]string, len(channel.Spec.Members))
+	for index, m := range channel.Spec.Members {
+		orgs[index] = m.GetName()
+	}
+	if clientOrg == "" && len(orgs) > 0 {
+		clientOrg = orgs[0]
+	}
+
+	// default connprofile with default client
+	profile := connector.DefaultProfile(basedir, clientOrg)
+
+	// Channel
+	profile.SetChannel(channel.GetChannelID(), channel.Spec.Peers...)
+
+	// Peers
+	peers := make(map[string][]string)
+	for _, p := range channel.Status.PeerConditions {
+		// only joined peer can be appended into connection profile
+		if p.Type != current.PeerJoined {
+			continue
+		}
+		err = profile.SetPeer(baseChan.Client, p.NamespacedName)
+		if err != nil {
+			return nil, err
+		}
+		// cache to peers
+		_, ok := peers[p.Namespace]
+		if !ok {
+			peers[p.Namespace] = make([]string, 0)
+		}
+		peers[p.Namespace] = append(peers[p.Namespace], p.String())
+	}
+
+	// Orderers
+	for _, o := range clusterNodes.Items {
+		err = profile.SetOrderer(baseChan.Client, current.NamespacedName{Namespace: o.GetNamespace(), Name: o.GetName()})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Organizations
+	for _, org := range orgs {
+		organization := &current.Organization{}
+		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: org}, organization)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to find organization")
+		}
+		// read organization admin's secret
+		orgMSPSecret := &corev1.Secret{}
+		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Namespace: org, Name: fmt.Sprintf("%s-msp-crypto", org)}, orgMSPSecret)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get channel connection profile")
+		}
+		adminUser := connector.User{
+			Name: organization.Spec.Admin,
+			Key: connector.Pem{
+				Pem: string(orgMSPSecret.Data["admin-keystore"]),
+			},
+			Cert: connector.Pem{
+				Pem: string(orgMSPSecret.Data["admin-signcert"]),
+			},
+		}
+		profile.SetOrganization(org, peers[org], adminUser)
+	}
+
+	return profile, nil
 }
 
 // GetLabels from instance.GetLabels

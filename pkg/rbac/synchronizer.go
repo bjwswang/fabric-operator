@@ -149,7 +149,7 @@ func SyncChannel(c controllerclient.Client, o v1.Object, ra ResourceAction) erro
 		return ErrBadSynchronizer
 	}
 	// PolicyRule which should be appended/removed from role's rules
-	targetRule := PolicyRule(Channel, []v1.Object{o}, []Verb{Get})
+	targetRule := PolicyRule(Channel, []v1.Object{o}, []Verb{Get, Update, Patch})
 	// Make sure each organization sync on above rule
 	for _, member := range channel.GetMembers() {
 		organization := &current.Organization{}

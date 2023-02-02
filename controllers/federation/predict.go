@@ -186,13 +186,18 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 					}
 				case current.AddMemberProposal:
 					newMember = append(newMember, fed.Spec.Members...)
+					memberName := make(map[string]bool, len(newMember))
 					for _, m := range newProposal.Spec.AddMember.Members {
+						if memberName[m] {
+							continue
+						}
 						newMember = append(newMember, current.Member{
 							Name:      m,
 							Initiator: false,
 							JoinedBy:  newProposal.GetName(),
 							JoinedAt:  &now,
 						})
+						memberName[m] = true
 					}
 				case current.DeleteMemberProposal:
 					for _, m := range fed.Spec.Members {

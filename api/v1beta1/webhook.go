@@ -69,6 +69,10 @@ func AddWebhooks(mgr ctrl.Manager, setupLog logr.Logger) (err error) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Organization")
 		return err
 	}
+	if err = registerCustomWebhook(mgr, &Channel{}, operatorUser); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Channel")
+		return err
+	}
 	return nil
 }
 

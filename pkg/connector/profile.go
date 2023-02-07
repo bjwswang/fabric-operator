@@ -23,6 +23,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/url"
+	"path/filepath"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
@@ -50,6 +51,7 @@ type Client struct {
 	Organization string `yaml:"organization,omitempty"`
 	Logging      `yaml:"logging,omitempty"`
 	// CryptoConfig `yaml:"cryptoconfig,omitempty"`
+	CredentialStore `yaml:"credentialStore,omitempty"`
 }
 
 type Logging struct {
@@ -57,6 +59,15 @@ type Logging struct {
 }
 
 type CryptoConfig struct {
+	Path string `yaml:"path,omitempty"`
+}
+
+type CredentialStore struct {
+	Path        string `yaml:"path,omitempty"`
+	CryptoStore `yaml:"cryptoStore,omitempty"`
+}
+
+type CryptoStore struct {
 	Path string `yaml:"path,omitempty"`
 }
 
@@ -120,6 +131,13 @@ func DefaultClient(baseDir string, org string) *Client {
 		Organization: org,
 		Logging: Logging{
 			Level: "info",
+		},
+		// Must specify CredentialStore to avoid `mkdir keystore permission error`
+		CredentialStore: CredentialStore{
+			Path: filepath.Join(baseDir, org, "hfc-kvs"),
+			CryptoStore: CryptoStore{
+				Path: filepath.Join(baseDir, org, "hfc-cvs"),
+			},
 		},
 		// CryptoConfig: CryptoConfig{
 		// 	Path: baseDir,

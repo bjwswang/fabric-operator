@@ -49,7 +49,7 @@ func (r *Federation) Default(ctx context.Context, client client.Client, user aut
 	federationlog.Info("default", "name", r.Name, "user", user.String())
 }
 
-//+kubebuilder:webhook:path=/validate-ibp-com-v1beta1-federation,mutating=false,failurePolicy=fail,sideEffects=None,groups=ibp.ibp.com,resources=federations,verbs=create;update;delete,versions=v1beta1,name=federation.validate.webhook,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-ibp-com-v1beta1-federation,mutating=false,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=federations,verbs=create;update;delete,versions=v1beta1,name=federation.validate.webhook,admissionReviewVersions=v1
 
 var _ validator = &Federation{}
 
@@ -62,6 +62,13 @@ func (r *Federation) ValidateCreate(ctx context.Context, client client.Client, u
 
 	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
 		return err
+	}
+
+	for _, member := range r.Spec.Members {
+		err := validateOrganization(ctx, client, member.Name)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -90,6 +97,14 @@ func (r *Federation) ValidateDelete(ctx context.Context, client client.Client, u
 		return err
 	}
 
+	if r.Status.Type != FederationFailed && r.Status.Type != FederationDissolved {
+		return errors.Errorf("forbid to delete federation when it is at status %s", r.Status.Type)
+	}
+
+	if len(r.Status.Networks) != 0 {
+		return errors.Errorf("forbid to delete federation when it still has %d networks", len(r.Status.Networks))
+	}
+
 	return nil
 }
 
@@ -116,5 +131,21 @@ func validateInitiator(ctx context.Context, c client.Client, user authentication
 			return errNoPermission
 		}
 	}
+	return nil
+}
+
+func validateOrganization(ctx context.Context, c client.Client, organization string) error {
+	federationlog.Info("validate organization: %s", organization)
+	org := &Organization{}
+	org.Name = organization
+	err := c.Get(ctx, client.ObjectKeyFromObject(org), org)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get organization %s", organization)
+	}
+
+	if org.Status.Type == Error {
+		return errors.Errorf("organization %s has error %s:%s", org.Name, org.Status.Reason, org.Status.Message)
+	}
+
 	return nil
 }

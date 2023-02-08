@@ -70,6 +70,6 @@ func (network *Network) ReconcileManagers(instance *current.Network, update base
 }
 
 // CheckStates on Network after ReconcileManagers
-func (network *Network) CheckStates(instance *current.Network) (common.Result, error) {
-	return network.BaseNetwork.CheckStates(instance)
+func (network *Network) CheckStates(instance *current.Network, update basenet.Update) (common.Result, error) {
+	return network.BaseNetwork.CheckStates(instance, update)
 }

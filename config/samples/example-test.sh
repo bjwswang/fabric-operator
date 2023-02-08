@@ -376,6 +376,7 @@ function waitNetwork() {
 	networkName=$1
 	orderNs=$2
 	want=$3
+	channelName=$4
 	START_TIME=$(date +%s)
 	while true; do
 		if [[ $want == "NoExist" ]]; then
@@ -384,9 +385,16 @@ function waitNetwork() {
 				break
 			fi
 		elif [[ $want == "Ready" ]]; then
-			#todo after https://github.com/bestchains/fabric-operator/issues/83 change these check
-			Type=$(kubectl get ibporderer -n $orderNs ${networkName} --ignore-not-found=true -o json | jq -r '.status.type')
+			Type=$(kubectl get network ${networkName} --ignore-not-found=true -o json | jq -r '.status.type')
 			if [[ $Type == "Deployed" ]]; then
+				if [[ $channelName != "" ]]; then
+					get=$(kubectl get network ${networkName} -- ignore-not-found=true -o json | jq -r '.status.channels[0]')
+					if [[ $get == $channelName ]]; then
+						break
+					else
+						continue
+					fi
+				fi
 				break
 			fi
 		fi

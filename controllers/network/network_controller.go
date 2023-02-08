@@ -127,6 +127,18 @@ func add(mgr manager.Manager, r *ReconcileNetwork) error {
 		return err
 	}
 
+	ordererPredictFuncs := predicate.Funcs{
+		UpdateFunc: r.OrdererUpdateFunc,
+	}
+
+	err = c.Watch(&source.Kind{Type: &current.IBPOrderer{}}, &handler.EnqueueRequestForOwner{
+		OwnerType:    &current.Network{},
+		IsController: true,
+	}, ordererPredictFuncs)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

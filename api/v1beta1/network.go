@@ -1,6 +1,10 @@
 package v1beta1
 
-import "os"
+import (
+	"os"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func init() {
 	SchemeBuilder.Register(&Network{}, &NetworkList{})
@@ -88,4 +92,12 @@ func (networkStatus *NetworkStatus) DeleteChannel(channel string) bool {
 	}
 
 	return exist
+}
+
+func (network *Network) GetOrdererName() string {
+	return network.GetName()
+}
+
+func (network *Network) GetOrdererNamespace() string {
+	return (&Organization{ObjectMeta: metav1.ObjectMeta{Name: network.GetInitiatorMember()}}).GetUserNamespace()
 }

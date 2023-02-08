@@ -57,7 +57,7 @@ func (organization *Organization) Reconcile(instance *current.Organization, upda
 		return common.Result{}, errors.Wrap(err, "failed to reconcile managers")
 	}
 
-	return organization.CheckStates(instance)
+	return organization.CheckStates(instance, update)
 }
 
 // TODO: customize for kubernetes
@@ -78,6 +78,6 @@ func (organization *Organization) ReconcileManagers(instance *current.Organizati
 }
 
 // CheckStates on Organization after ReconcileManagers
-func (organization *Organization) CheckStates(instance *current.Organization) (common.Result, error) {
-	return organization.BaseOrganization.CheckStates(instance)
+func (organization *Organization) CheckStates(instance *current.Organization, update baseorg.Update) (common.Result, error) {
+	return organization.BaseOrganization.CheckStates(instance, update)
 }

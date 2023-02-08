@@ -39,6 +39,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -53,6 +54,7 @@ type Update interface {
 	AdminTransfered() string
 	ClientsUpdated() bool
 	ClientsRemoved() string
+	CAStatusUpdated() bool
 }
 
 type Override interface {
@@ -73,7 +75,7 @@ type Organization interface {
 	PreReconcileChecks(instance *current.Organization, update Update) error
 	Initialize(instance *current.Organization, update Update) error
 	ReconcileManagers(instance *current.Organization, update Update) error
-	CheckStates(instance *current.Organization) (common.Result, error)
+	CheckStates(instance *current.Organization, update Update) (common.Result, error)
 	Reconcile(instance *current.Organization, update Update) (common.Result, error)
 }
 
@@ -162,7 +164,7 @@ func (organization *BaseOrganization) Reconcile(instance *current.Organization, 
 		return common.Result{}, errors.Wrap(err, "failed to reconcile managers")
 	}
 
-	return organization.CheckStates(instance)
+	return organization.CheckStates(instance, update)
 }
 
 // PreReconcileChecks on Organization upon Update
@@ -322,13 +324,24 @@ func (organization *BaseOrganization) ReconcileUsers(instance *current.Organizat
 }
 
 // CheckStates on Organization
-func (organization *BaseOrganization) CheckStates(instance *current.Organization) (common.Result, error) {
-	return common.Result{
-		Status: &current.CRStatus{
-			Type:    current.Deploying,
-			Version: version.Operator,
-		},
-	}, nil
+func (organization *BaseOrganization) CheckStates(instance *current.Organization, update Update) (common.Result, error) {
+	if update.CAStatusUpdated() && instance.Status.Type != current.Error {
+		ca := &current.IBPCA{}
+		ca.Namespace = instance.GetCA().Namespace
+		ca.Name = instance.GetCA().Name
+		if err := organization.Client.Get(context.TODO(), client.ObjectKeyFromObject(ca), ca); err == nil {
+			return common.Result{Status: &ca.Status.CRStatus}, nil
+		}
+	}
+	if !instance.HasType() {
+		return common.Result{
+			Status: &current.CRStatus{
+				Type:    current.Deploying,
+				Version: version.Operator,
+			},
+		}, nil
+	}
+	return common.Result{}, nil
 }
 
 // GetLabels from instance.GetLabels

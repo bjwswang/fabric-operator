@@ -302,27 +302,20 @@ func (r *ReconcileOrganization) AddFed(m current.Member, federation *current.Fed
 
 // CA related predict funcs
 func (r *ReconcileOrganization) CAUpdateFunc(e event.UpdateEvent) bool {
-	var err error
-
+	update := Update{}
 	oldCA := e.ObjectOld.(*current.IBPCA)
 	newCA := e.ObjectNew.(*current.IBPCA)
-	log.Info(fmt.Sprintf("Update event detected for ibpca '%s'", oldCA.GetName()))
-
-	org := &current.Organization{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{
-		Name: newCA.GetOrganization().Name,
-	}, org)
-	if err != nil {
-		log.Error(err, fmt.Sprintf("failed to get organization %s`", newCA.GetOrganization().Name))
+	if reflect.DeepEqual(oldCA.Status.CRStatus, newCA.Status.CRStatus) {
 		return false
 	}
-	// sync to CAStatus
-	err = r.SetStatus(org, &newCA.Status.CRStatus)
-	if err != nil {
-		log.Error(err, fmt.Sprintf("set organization %s to %s", org.GetName(), newCA.Status.Type))
-	}
 
-	return false
+	log.Info(fmt.Sprintf("Update event detected for ibpca '%s'", oldCA.GetName()))
+	orgName := oldCA.GetOrganization().Name
+
+	update.caStatusUpdated = true
+	r.PushUpdate(orgName, update)
+
+	return true
 }
 
 func (r *ReconcileOrganization) UpdateStatus(organization current.NamespacedName, newStatus current.CRStatus) error {

@@ -20,7 +20,6 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -115,7 +114,7 @@ func validateMemberInFederation(ctx context.Context, c client.Client, fedName st
 	}
 	for _, m := range members {
 		if ok := allMembers[m.Name]; !ok {
-			return fmt.Errorf("allMembers:%#v, members:%#v", allMembers, members)
+			return errors.Wrapf(errMemberNotInFederation, "allMembers:%#v, members:%#v", allMembers, members)
 		}
 	}
 	return nil

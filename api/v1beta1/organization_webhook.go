@@ -29,7 +29,9 @@ import (
 )
 
 var (
-	errHasNetwork = errors.New("the organization is initiator of one network")
+	errAdminIsEmpty  = errors.New("the organization's admin is empty")
+	errHasNetwork    = errors.New("the organization is initiator of one network")
+	errHasFederation = errors.New("the organization is initiator of one federation")
 )
 
 // log is for logging in this package.
@@ -67,6 +69,9 @@ func (r *Organization) ValidateUpdate(ctx context.Context, client client.Client,
 	if !isSuperUser(ctx, user) && oldOrg.Spec.Admin != user.Username {
 		return errNoPermission
 	}
+	if r.Spec.Admin == "" {
+		return errAdminIsEmpty
+	}
 	return nil
 }
 
@@ -76,6 +81,19 @@ func (r *Organization) ValidateDelete(ctx context.Context, c client.Client, user
 	if !isSuperUser(ctx, user) && r.Spec.Admin != user.Username {
 		return errNoPermission
 	}
+	// validate whether the organization is the initiator of a federation(initiator responsibility)
+	federationList := &FederationList{}
+	if err := c.List(ctx, federationList); err != nil {
+		return errors.Wrap(err, "cant get federation list")
+	}
+	for _, fed := range federationList.Items {
+		for _, m := range fed.Spec.Members {
+			if m.Initiator && m.Name == r.Name {
+				return errHasFederation
+			}
+		}
+	}
+	// validate whether the organization is the initiator of a network(initiator responsibility)
 	networkList := &NetworkList{}
 	if err := c.List(ctx, networkList); err != nil {
 		return errors.Wrap(err, "cant get network list")

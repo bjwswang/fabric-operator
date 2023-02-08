@@ -116,6 +116,9 @@ var _ = BeforeSuite(func() {
 	err = registerCustomWebhook(mgr, &Federation{}, fakeOperatorUser)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = registerCustomWebhook(mgr, &Channel{}, fakeOperatorUser)
+	Expect(err).NotTo(HaveOccurred())
+
 	//+kubebuilder:scaffold:webhook
 
 	go func() {

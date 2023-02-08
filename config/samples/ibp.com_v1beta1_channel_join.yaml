@@ -13,5 +13,5 @@ spec:
     - name: org1peer1
       namespace: org1
     - name: org2peer1
-      namespace: org1
+      namespace: org2
   description: "channel with org1 & org2"

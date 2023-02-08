@@ -11,6 +11,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-ibp-com-v1beta1-channel
+  failurePolicy: Fail
+  name: channel.mutate.webhook
+  rules:
+  - apiGroups:
+    - ibp.com
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - channels
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-ibp-com-v1beta1-federation
   failurePolicy: Fail
   name: federation.mutate.webhook
@@ -118,12 +138,33 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-ibp-com-v1beta1-channel
+  failurePolicy: Fail
+  name: channel.validate.webhook
+  rules:
+  - apiGroups:
+    - ibp.com
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - channels
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-ibp-com-v1beta1-federation
   failurePolicy: Fail
   name: federation.validate.webhook
   rules:
   - apiGroups:
-    - ibp.ibp.com
+    - ibp.com
     apiVersions:
     - v1beta1
     operations:

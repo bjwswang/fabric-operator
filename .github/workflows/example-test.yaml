@@ -1,0 +1,60 @@
+name: Example Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  LOG_DIR: "/tmp/fabric-operator-example-test/logs"
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: |
+          scripts/install-tools.sh
+          make image
+      - name: save image to /tmp
+        run: |
+          docker save hyperledgerk8s/fabric-operator:latest > /tmp/operator.image.tar
+      - name: Upload operator image
+        uses: actions/cache/save@v3
+        with:
+          key: operator.image-${{ github.sha }}
+          path: /tmp/operator.image.tar
+
+  example-test:
+    needs:
+      - build-image
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        no: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download operator image
+        uses: actions/cache/restore@v3
+        with:
+          key: operator.image-${{ github.sha }}
+          path: /tmp/operator.image.tar
+      - name: Load Docker image
+        run: |
+         docker load --input /tmp/operator.image.tar
+      - name: Example Test
+        run: config/samples/example-test.sh
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.sha }}-${{ matrix.no }}.logs
+          path: ${{ env.LOG_DIR }}

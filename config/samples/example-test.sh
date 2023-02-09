@@ -21,6 +21,7 @@ export TERM=xterm-color
 
 KindName=${KindName:-"fabric-example-test"}
 TimeoutSeconds=${TimeoutSeconds:-"600"}
+HelmTimeout=${HelmTimeout:-"1800s"}
 KindVersion=${KindVersion:-"v1.24.4"}
 TempFilePath=${TempFilePath:-"/tmp/fabric-operator-example-test"}
 KindConfigPath=${TempFilePath}/kind-config.yaml
@@ -141,7 +142,7 @@ fi
 info "2.1 install u4a-component..."
 kubectl create ns u4a-system
 sed -i -e "s/<replaced-ingress-node-name>/${KindName}-worker/g" ${InstallDirPath}/u4a-component/charts/cluster-component/values.yaml
-helm install --wait --timeout=${Timeout} cluster-component -n u4a-system ${InstallDirPath}/u4a-component/charts/cluster-component
+helm install --wait --timeout=${HelmTimeout} cluster-component -n u4a-system ${InstallDirPath}/u4a-component/charts/cluster-component
 if [[ $? -ne 0 ]]; then
 	exit $?
 fi
@@ -150,7 +151,7 @@ info "2.2 install u4a services"
 sed -i -e "s/<replaced-ingress-nginx-ip>/${workerNode1IP}/g" ${InstallDirPath}/u4a-component/values.yaml
 sed -i -e "s/<replaced-oidc-proxy-node-name>/${KindName}-worker2/g" ${InstallDirPath}/u4a-component/values.yaml
 sed -i -e "s/<replaced-k8s-ip-with-oidc-enabled>/${workerNode2IP}/g" ${InstallDirPath}/u4a-component/values.yaml
-helm install --wait --timeout=${Timeout} u4a-component -n u4a-system ${InstallDirPath}/u4a-component
+helm install --wait --timeout=${HelmTimeout} u4a-component -n u4a-system ${InstallDirPath}/u4a-component
 if [[ $? -ne 0 ]]; then
 	exit $?
 fi

@@ -129,32 +129,20 @@ EOF
 kind create cluster --name=${KindName} --wait=${Timeout} --config=${KindConfigPath} --image=kindest/node:$KindVersion
 workerNode1IP=$(kubectl get nodes ${KindName}-worker --no-headers=true -o wide | awk '{print $6}')
 workerNode2IP=$(kubectl get nodes ${KindName}-worker2 --no-headers=true -o wide | awk '{print $6}')
-if [[ $? -ne 0 ]]; then
-	exit $?
-fi
 
 info "2. install component in kubernetes..."
 git clone https://github.com/bestchains/installer.git ${InstallDirPath}
-if [[ $? -ne 0 ]]; then
-	exit $?
-fi
 
 info "2.1 install u4a-component..."
 kubectl create ns u4a-system
 sed -i -e "s/<replaced-ingress-node-name>/${KindName}-worker/g" ${InstallDirPath}/u4a-component/charts/cluster-component/values.yaml
 helm install --wait --timeout=${HelmTimeout} cluster-component -n u4a-system ${InstallDirPath}/u4a-component/charts/cluster-component
-if [[ $? -ne 0 ]]; then
-	exit $?
-fi
 
 info "2.2 install u4a services"
 sed -i -e "s/<replaced-ingress-nginx-ip>/${workerNode1IP}/g" ${InstallDirPath}/u4a-component/values.yaml
 sed -i -e "s/<replaced-oidc-proxy-node-name>/${KindName}-worker2/g" ${InstallDirPath}/u4a-component/values.yaml
 sed -i -e "s/<replaced-k8s-ip-with-oidc-enabled>/${workerNode2IP}/g" ${InstallDirPath}/u4a-component/values.yaml
 helm install --wait --timeout=${HelmTimeout} u4a-component -n u4a-system ${InstallDirPath}/u4a-component
-if [[ $? -ne 0 ]]; then
-	exit $?
-fi
 
 info "2.3 install fabric-operator"
 #TODO change this image's tag
@@ -165,8 +153,7 @@ export IMG=hyperledgerk8s/fabric-operator:example-e2e
 export IMAGE_PULL_POLICY=IfNotPresent
 make deploy
 kubectl set env -n operator-system deployment/operator-controller-manager OPERATOR_INGRESS_DOMAIN=${workerNode1IP}.nip.io
-#TODO delete sleep after finish https://github.com/bestchains/fabric-operator/issues/82
-sleep 30
+kubectl wait deploy -n operator-system operator-controller-manager --for condition=Available=True
 
 info "3. create user and get user's token"
 info "3.1 create all test users"

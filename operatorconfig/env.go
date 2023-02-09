@@ -21,6 +21,9 @@ package operatorconfig
 import "os"
 
 func SetOperatorConfigFromEnvironment(cfg *Config) {
+	if ingressClass := os.Getenv("OPERATOR_INGRESS_CLASS"); ingressClass != "" {
+		cfg.Operator.IngressClass = ingressClass
+	}
 	if domain := os.Getenv("OPERATOR_INGRESS_DOMAIN"); domain != "" {
 		cfg.Operator.IngressDomain = domain
 	}

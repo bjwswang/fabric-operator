@@ -23,7 +23,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	"github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
+	baseoverride "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/peer/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/k8s/peer/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -37,7 +39,15 @@ var _ = Describe("K8s Peer Overrides", func() {
 	)
 
 	BeforeEach(func() {
-		overrider = &override.Override{}
+		overrider = &override.Override{
+			Override: baseoverride.Override{
+				Config: &operatorconfig.Config{
+					Operator: operatorconfig.Operator{
+						IngressClass: "nginx",
+					},
+				},
+			},
+		}
 	})
 
 	Context("Ingress", func() {

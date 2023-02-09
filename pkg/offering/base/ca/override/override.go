@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	v1 "github.com/IBM-Blockchain/fabric-operator/pkg/apis/ca/v1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
@@ -31,6 +32,7 @@ import (
 )
 
 type Override struct {
+	Config *config.Config
 	Client controllerclient.Client
 }
 

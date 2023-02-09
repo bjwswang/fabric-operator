@@ -47,7 +47,7 @@ func (o *Override) UpdateIngress(instance *current.IBPPeer, ingress *networkingv
 }
 
 func (o *Override) CommonIngress(instance *current.IBPPeer, ingress *networkingv1.Ingress) error {
-	ingressClass := "nginx"
+	ingressClass := o.Config.Operator.IngressClass
 	if instance.Spec.Ingress.Class != "" {
 		ingressClass = instance.Spec.Ingress.Class
 	}

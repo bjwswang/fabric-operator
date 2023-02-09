@@ -140,6 +140,7 @@ func GetOperatorConfig(configs, caFiles, peerFiles, ordererFiles, consoleFiles, 
 		},
 		Logger: &logger,
 		Operator: config.Operator{
+			IngressClass: "nginx",
 			Restart: config.Restart{
 				Timeout: common.MustParseDuration("5m"),
 			},

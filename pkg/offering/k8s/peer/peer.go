@@ -69,6 +69,7 @@ func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.
 	o := &override.Override{
 		Override: basepeeroverride.Override{
 			Client:                        client,
+			Config:                        config,
 			DefaultCouchContainerFile:     config.PeerInitConfig.CouchContainerFile,
 			DefaultCouchInitContainerFile: config.PeerInitConfig.CouchInitContainerFile,
 			DefaultCCLauncherFile:         config.PeerInitConfig.CCLauncherFile,

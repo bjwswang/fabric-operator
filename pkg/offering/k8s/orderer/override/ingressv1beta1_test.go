@@ -25,7 +25,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	"github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
+	baseoverride "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/orderer/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/k8s/orderer/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 )
@@ -42,7 +44,15 @@ var _ = Describe("K8s Orderer Ingress Overrides", func() {
 	)
 
 	BeforeEach(func() {
-		overrider = &override.Override{}
+		overrider = &override.Override{
+			Override: baseoverride.Override{
+				Config: &operatorconfig.Config{
+					Operator: operatorconfig.Operator{
+						IngressClass: "nginx",
+					},
+				},
+			},
+		}
 		instance = &current.IBPOrderer{
 			Spec: current.IBPOrdererSpec{
 				Domain: "test.domain",

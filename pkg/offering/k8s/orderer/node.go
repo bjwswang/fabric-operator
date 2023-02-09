@@ -29,6 +29,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources"
 	resourcemanager "github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/manager"
 	baseorderer "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/orderer"
+	baseoverride "github.com/IBM-Blockchain/fabric-operator/pkg/offering/base/orderer/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/k8s/orderer/override"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/operatorerrors"
@@ -61,8 +62,14 @@ type Node struct {
 
 func NewNode(basenode *baseorderer.Node) *Node {
 	node := &Node{
-		Node:     basenode,
-		Override: &override.Override{},
+		Node: basenode,
+		Override: &override.Override{
+			Override: baseoverride.Override{
+				Name:   basenode.Name,
+				Client: basenode.Client,
+				Config: basenode.Config,
+			},
+		},
 	}
 	node.CreateManagers()
 	return node

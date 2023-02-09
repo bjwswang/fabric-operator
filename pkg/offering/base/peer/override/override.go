@@ -19,11 +19,14 @@
 package override
 
 import (
+	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 )
 
 type Override struct {
 	Client controllerclient.Client
+
+	Config *config.Config
 
 	DefaultCouchContainerFile     string
 	DefaultCouchInitContainerFile string

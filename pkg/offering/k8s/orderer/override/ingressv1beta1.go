@@ -49,7 +49,7 @@ func (o *Override) UpdateIngressv1beta1(instance *current.IBPOrderer, ingress *n
 
 func (o *Override) CommonIngressv1beta1(instance *current.IBPOrderer, ingress *networkingv1beta1.Ingress) error {
 
-	ingressClass := "nginx"
+	ingressClass := o.Config.Operator.IngressClass
 	if instance.Spec.Ingress.Class != "" {
 		ingressClass = instance.Spec.Ingress.Class
 	}

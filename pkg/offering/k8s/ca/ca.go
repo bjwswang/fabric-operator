@@ -67,6 +67,7 @@ type CA struct {
 func New(client k8sclient.Client, scheme *runtime.Scheme, config *config.Config) *CA {
 	o := &override.Override{
 		Override: basecaoverride.Override{
+			Config: config,
 			Client: client,
 		},
 	}

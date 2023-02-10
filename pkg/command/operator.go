@@ -22,11 +22,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 	"time"
 
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-lib/leader"
@@ -146,10 +148,15 @@ func OperatorWithSignal(operatorCfg *oconfig.Config, signalHandler context.Conte
 	}
 
 	var metricsAddr string
+	var probeAddr string
 	var enableLeaderElection bool
+	var webhookDisabled string
 
 	if flag.Lookup("metrics-addr") == nil {
 		flag.StringVar(&metricsAddr, "metrics-addr", ":8383", "The address the metric endpoint binds to.")
+	}
+	if flag.Lookup("health-probe-bind-address") == nil {
+		flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	}
 	if flag.Lookup("enable-leader-election") == nil {
 		flag.BoolVar(&enableLeaderElection, "enable-leader-election", true,
@@ -159,9 +166,10 @@ func OperatorWithSignal(operatorCfg *oconfig.Config, signalHandler context.Conte
 	flag.Parse()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		Port:                   9443,
+		HealthProbeBindAddress: probeAddr,
 		// LeaderElection:          enableLeaderElection,
 		LeaderElectionID:        "c30dd930.ibp.com",
 		LeaderElectionNamespace: operatorNamespace,
@@ -217,7 +225,7 @@ func OperatorWithSignal(operatorCfg *oconfig.Config, signalHandler context.Conte
 		}
 
 		// Setup all Webhook
-		webhookDisabled := os.Getenv("WEBHOOK_DISABLED")
+		webhookDisabled = os.Getenv("WEBHOOK_DISABLED")
 		if webhookDisabled != "true" {
 			go func() {
 				if err := ibpv1beta1.AddWebhooks(mgr, log); err != nil {
@@ -239,7 +247,24 @@ func OperatorWithSignal(operatorCfg *oconfig.Config, signalHandler context.Conte
 		time.Sleep(15 * time.Second)
 		return err
 	}
-
+	if err := mgr.AddHealthzCheck("healthz", func(req *http.Request) error {
+		if webhookDisabled != "true" {
+			return mgr.GetWebhookServer().StartedChecker()(req)
+		}
+		return healthz.Ping(req)
+	}); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("readyz", func(req *http.Request) error {
+		if webhookDisabled != "true" {
+			return mgr.GetWebhookServer().StartedChecker()(req)
+		}
+		return healthz.Ping(req)
+	}); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
 	log.Info("Starting the Cmd.")
 
 	// Start the Cmd

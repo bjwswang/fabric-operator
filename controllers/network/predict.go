@@ -223,3 +223,19 @@ func (r *ReconcileNetwork) DeleteChannel(netns, channs string) error {
 
 	return nil
 }
+
+func (r *ReconcileNetwork) OrdererUpdateFunc(e event.UpdateEvent) bool {
+	update := Update{}
+	newOrderer := e.ObjectNew.(*current.IBPOrderer)
+	oldOrderer := e.ObjectOld.(*current.IBPOrderer)
+	if reflect.DeepEqual(newOrderer.Status.CRStatus, oldOrderer.Status.CRStatus) {
+		return false
+	}
+
+	log.Info(fmt.Sprintf("Update event detected for orderer '%s'", newOrderer.GetName()))
+	update.ordererStatusUpdated = true
+	networkName := newOrderer.GetNetworkName()
+	r.PushUpdate(networkName, update)
+
+	return true
+}

@@ -119,7 +119,7 @@ func (channel *BaseChannel) PreReconcileChecks(instance *current.Channel, update
 	if err != nil {
 		return errors.Wrap(err, "get channel's network")
 	}
-	if network.Status.Type != current.Created {
+	if network.Status.Type != current.Deployed {
 		return errors.Errorf("network %s not created yet", network.GetName())
 	}
 	members := make(map[string]struct{})

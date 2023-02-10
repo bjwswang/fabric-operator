@@ -28,10 +28,8 @@ func (o *Override) Orderer(object v1.Object, orderer *current.IBPOrderer, action
 }
 
 func (o *Override) CreateOrUpdateOrderer(instance *current.Network, orderer *current.IBPOrderer) (err error) {
-	initiatorOrg := &current.Organization{ObjectMeta: v1.ObjectMeta{Name: instance.GetInitiatorMember()}}
-	initiatorNamespace := initiatorOrg.GetUserNamespace()
-	orderer.Namespace = initiatorNamespace
-	orderer.Name = instance.Name
+	orderer.Namespace = instance.GetOrdererNamespace()
+	orderer.Name = instance.GetOrdererName()
 	orderer.Spec = instance.Spec.OrderSpec
 
 	orderer.Spec.Domain = o.IngressDomain

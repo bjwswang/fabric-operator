@@ -277,3 +277,7 @@ func (o *IBPOrdererStatus) HasType() bool {
 
 	return o.CRStatus.Type != ""
 }
+
+func (s *IBPOrderer) GetNetworkName() string {
+	return s.GetName()
+}

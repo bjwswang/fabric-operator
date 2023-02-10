@@ -157,13 +157,13 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 			instance.Status.CRStatus = current.CRStatus{
 				Type: current.NetworkCreated,
 			}
-			result, err := reconciler.CheckStates(instance)
+			result, err := reconciler.CheckStates(instance, update)
 			Expect(err).To(BeNil())
 			Expect(result.Status.Type).To(Equal(current.NetworkCreated))
 		})
 
 		It("instance do not have type", func() {
-			result, err := reconciler.CheckStates(instance)
+			result, err := reconciler.CheckStates(instance, update)
 			Expect(err).To(BeNil())
 			Expect(result.Status.Type).To(Equal(current.Created))
 		})

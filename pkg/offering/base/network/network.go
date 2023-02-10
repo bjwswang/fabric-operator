@@ -47,6 +47,7 @@ type Update interface {
 	SpecUpdated() bool
 	MemberUpdated() bool
 	OrdererCreate() bool
+	OrdererStatusUpdated() bool
 }
 
 //go:generate counterfeiter -o mocks/override.go -fake-name Override . Override
@@ -61,7 +62,7 @@ type Network interface {
 	PreReconcileChecks(instance *current.Network, update Update) error
 	Initialize(instance *current.Network, update Update) error
 	ReconcileManagers(instance *current.Network, update Update) error
-	CheckStates(instance *current.Network) (common.Result, error)
+	CheckStates(instance *current.Network, update Update) (common.Result, error)
 	Reconcile(instance *current.Network, update Update) (common.Result, error)
 }
 
@@ -123,7 +124,7 @@ func (network *BaseNetwork) Reconcile(instance *current.Network, update Update) 
 		return common.Result{}, errors.Wrap(err, "failed to reconcile managers")
 	}
 
-	return network.CheckStates(instance)
+	return network.CheckStates(instance, update)
 }
 
 // PreReconcileChecks on Network upon Update
@@ -181,12 +182,22 @@ func (network *BaseNetwork) ReconcileManagers(instance *current.Network, update 
 }
 
 // CheckStates on Network
-func (network *BaseNetwork) CheckStates(instance *current.Network) (common.Result, error) {
+func (network *BaseNetwork) CheckStates(instance *current.Network, update Update) (common.Result, error) {
 	status := instance.Status.CRStatus
 	if !instance.HasType() {
 		status.Type = current.Created
 		status.Status = current.True
 	}
+
+	if update.OrdererStatusUpdated() && instance.Status.Type != current.Error {
+		orderer := &current.IBPOrderer{}
+		orderer.Name = instance.GetOrdererName()
+		orderer.Namespace = instance.GetOrdererNamespace()
+		if err := network.Client.Get(context.TODO(), client.ObjectKeyFromObject(orderer), orderer); err == nil {
+			return common.Result{Status: &orderer.Status.CRStatus}, nil
+		}
+	}
+
 	return common.Result{
 		Status: &status,
 	}, nil

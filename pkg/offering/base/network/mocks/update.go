@@ -28,6 +28,16 @@ type Update struct {
 	ordererCreateReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	OrdererStatusUpdatedStub        func() bool
+	ordererStatusUpdatedMutex       sync.RWMutex
+	ordererStatusUpdatedArgsForCall []struct {
+	}
+	ordererStatusUpdatedReturns struct {
+		result1 bool
+	}
+	ordererStatusUpdatedReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	SpecUpdatedStub        func() bool
 	specUpdatedMutex       sync.RWMutex
 	specUpdatedArgsForCall []struct {
@@ -47,15 +57,16 @@ func (fake *Update) MemberUpdated() bool {
 	ret, specificReturn := fake.memberUpdatedReturnsOnCall[len(fake.memberUpdatedArgsForCall)]
 	fake.memberUpdatedArgsForCall = append(fake.memberUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.MemberUpdatedStub
+	fakeReturns := fake.memberUpdatedReturns
 	fake.recordInvocation("MemberUpdated", []interface{}{})
 	fake.memberUpdatedMutex.Unlock()
-	if fake.MemberUpdatedStub != nil {
-		return fake.MemberUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.memberUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -99,15 +110,16 @@ func (fake *Update) OrdererCreate() bool {
 	ret, specificReturn := fake.ordererCreateReturnsOnCall[len(fake.ordererCreateArgsForCall)]
 	fake.ordererCreateArgsForCall = append(fake.ordererCreateArgsForCall, struct {
 	}{})
+	stub := fake.OrdererCreateStub
+	fakeReturns := fake.ordererCreateReturns
 	fake.recordInvocation("OrdererCreate", []interface{}{})
 	fake.ordererCreateMutex.Unlock()
-	if fake.OrdererCreateStub != nil {
-		return fake.OrdererCreateStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.ordererCreateReturns
 	return fakeReturns.result1
 }
 
@@ -146,20 +158,74 @@ func (fake *Update) OrdererCreateReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
+func (fake *Update) OrdererStatusUpdated() bool {
+	fake.ordererStatusUpdatedMutex.Lock()
+	ret, specificReturn := fake.ordererStatusUpdatedReturnsOnCall[len(fake.ordererStatusUpdatedArgsForCall)]
+	fake.ordererStatusUpdatedArgsForCall = append(fake.ordererStatusUpdatedArgsForCall, struct {
+	}{})
+	stub := fake.OrdererStatusUpdatedStub
+	fakeReturns := fake.ordererStatusUpdatedReturns
+	fake.recordInvocation("OrdererStatusUpdated", []interface{}{})
+	fake.ordererStatusUpdatedMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *Update) OrdererStatusUpdatedCallCount() int {
+	fake.ordererStatusUpdatedMutex.RLock()
+	defer fake.ordererStatusUpdatedMutex.RUnlock()
+	return len(fake.ordererStatusUpdatedArgsForCall)
+}
+
+func (fake *Update) OrdererStatusUpdatedCalls(stub func() bool) {
+	fake.ordererStatusUpdatedMutex.Lock()
+	defer fake.ordererStatusUpdatedMutex.Unlock()
+	fake.OrdererStatusUpdatedStub = stub
+}
+
+func (fake *Update) OrdererStatusUpdatedReturns(result1 bool) {
+	fake.ordererStatusUpdatedMutex.Lock()
+	defer fake.ordererStatusUpdatedMutex.Unlock()
+	fake.OrdererStatusUpdatedStub = nil
+	fake.ordererStatusUpdatedReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *Update) OrdererStatusUpdatedReturnsOnCall(i int, result1 bool) {
+	fake.ordererStatusUpdatedMutex.Lock()
+	defer fake.ordererStatusUpdatedMutex.Unlock()
+	fake.OrdererStatusUpdatedStub = nil
+	if fake.ordererStatusUpdatedReturnsOnCall == nil {
+		fake.ordererStatusUpdatedReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.ordererStatusUpdatedReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *Update) SpecUpdated() bool {
 	fake.specUpdatedMutex.Lock()
 	ret, specificReturn := fake.specUpdatedReturnsOnCall[len(fake.specUpdatedArgsForCall)]
 	fake.specUpdatedArgsForCall = append(fake.specUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.SpecUpdatedStub
+	fakeReturns := fake.specUpdatedReturns
 	fake.recordInvocation("SpecUpdated", []interface{}{})
 	fake.specUpdatedMutex.Unlock()
-	if fake.SpecUpdatedStub != nil {
-		return fake.SpecUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.specUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -205,6 +271,8 @@ func (fake *Update) Invocations() map[string][][]interface{} {
 	defer fake.memberUpdatedMutex.RUnlock()
 	fake.ordererCreateMutex.RLock()
 	defer fake.ordererCreateMutex.RUnlock()
+	fake.ordererStatusUpdatedMutex.RLock()
+	defer fake.ordererStatusUpdatedMutex.RUnlock()
 	fake.specUpdatedMutex.RLock()
 	defer fake.specUpdatedMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

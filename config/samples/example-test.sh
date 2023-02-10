@@ -420,8 +420,7 @@ waitVoteExist org2 dissolve-network-sample
 kubectl patch vote -n org2 vote-org2-dissolve-network-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
 
 info "4.4.3.3 pro=dissolve-network-sample become Activated"
-#TODO uncomment after https://github.com/bestchains/fabric-operator/issues/87
-#waitProposalSucceeded dissolve-network-sample
+waitProposalSucceeded dissolve-network-sample
 
 info "4.4.3.4 network=network-sample cant find, deletion finished"
 waitNetwork network-sample "" "NoExist"

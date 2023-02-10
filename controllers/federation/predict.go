@@ -29,6 +29,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -221,6 +222,9 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 						},
 					}
 					if err := r.client.Delete(context.TODO(), network); err != nil {
+						if apierrors.IsNotFound(err) {
+							return false
+						}
 						log.Error(err, fmt.Sprintf("cant delete network %s", newProposal.Spec.DissolveNetwork.Name))
 						return false
 					}

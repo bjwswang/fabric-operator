@@ -7,6 +7,7 @@ import (
 
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -60,6 +61,11 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 		}
 		network := &Network{}
 		if err := client.Get(ctx, types.NamespacedName{Name: p.Spec.DissolveNetwork.Name}, network); err != nil {
+			if apierrors.IsNotFound(err) {
+				// After Dissolve the network will delete the network CR later,
+				// and GetCandidateOrganizations should return empty at that time.
+				return orgs, nil
+			}
 			return nil, err
 		}
 		for _, o := range network.Spec.Members {

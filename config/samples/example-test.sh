@@ -25,7 +25,7 @@ KindVersion=${KindVersion:-"v1.24.4"}
 TempFilePath=${TempFilePath:-"/tmp/fabric-operator-example-test"}
 KindConfigPath=${TempFilePath}/kind-config.yaml
 InstallDirPath=${TempFilePath}/installer
-DefaultPassWord=${DefaultPassWord:-'admiN$123'}
+DefaultPassWord=${DefaultPassWord:-'passw0rd'}
 LOG_DIR=${LOG_DIR:-"/tmp/fabric-operator-example-test/logs"}
 
 Timeout="${TimeoutSeconds}s"
@@ -234,7 +234,7 @@ sed -i -e "s/<org3AdminToken>/${Admin3Token}/g" config/samples/orgs/org3.yaml
 info "4.1.1 create org=org1, wait for the relevant components to start up."
 kubectl create -f config/samples/orgs/org1.yaml --dry-run=client -o json |
 	jq '.spec.caSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.caSpec.storage.ca.class = "'$StorageClassName'"' |
-	kubectl create --as=org1admin -f -
+	kubectl create --token=${Admin1Token} -f -
 function waitOrgReady() {
 	orgName=$1
 	START_TIME=$(date +%s)
@@ -267,17 +267,17 @@ waitOrgReady org1
 info "4.1.2 create org=org2, wait for the relevant components to start up."
 kubectl create -f config/samples/orgs/org2.yaml --dry-run=client -o json |
 	jq '.spec.caSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.caSpec.storage.ca.class = "'$StorageClassName'"' |
-	kubectl create --as=org2admin -f -
+	kubectl create --token=${Admin2Token} -f -
 waitOrgReady org2
 
 info "4.1.3 create org=org3, wait for the relevant components to start up."
 kubectl create -f config/samples/orgs/org3.yaml --dry-run=client -o json |
 	jq '.spec.caSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.caSpec.storage.ca.class = "'$StorageClassName'"' |
-	kubectl create --as=org3admin -f -
+	kubectl create --token=${Admin3Token} -f -
 waitOrgReady org3
 
 info "4.2 create federation resources: federation-sample"
-kubectl create -f config/samples/ibp.com_v1beta1_federation.yaml --as=org1admin
+kubectl create -f config/samples/ibp.com_v1beta1_federation.yaml --token=${Admin1Token}
 function waitFed() {
 	fedName=$1
 	check=$2
@@ -317,7 +317,7 @@ waitFed federation-sample "Exist"
 info "4.3 create federation create proposal for fed=federation-sample"
 
 info "4.3.1 create proposal pro=create-federation-sample"
-kubectl create -f config/samples/ibp.com_v1beta1_proposal_create_federation.yaml --as=org1admin
+kubectl create -f config/samples/ibp.com_v1beta1_proposal_create_federation.yaml --token=${Admin1Token}
 
 info "4.3.2 user=org2admin vote for pro=create-federation-sample"
 function waitVoteExist() {
@@ -340,7 +340,7 @@ function waitVoteExist() {
 }
 waitVoteExist org2 create-federation-sample
 kubectl patch vote -n org2 vote-org2-create-federation-sample --type='json' \
-	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --as=org2admin
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
 
 info "4.3.3 pro=create-federation-sample become Succeeded"
 function waitProposalSucceeded() {
@@ -371,7 +371,7 @@ info "4.4.1 create single orderer node network"
 sed -i -e "s/<org1AdminToken>/${Admin1Token}/g" config/samples/ibp.com_v1beta1_network.yaml
 kubectl create -f config/samples/ibp.com_v1beta1_network.yaml --dry-run=client -o json |
 	jq '.spec.orderSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.orderSpec.storage.orderer.class = "'$StorageClassName'"' |
-	kubectl create --as=org1admin -f -
+	kubectl create --token=${Admin1Token} -f -
 function waitNetwork() {
 	networkName=$1
 	orderNs=$2
@@ -406,17 +406,17 @@ info "4.4.2 create 3 orderer node network"
 sed -i -e "s/<org1AdminToken>/${Admin1Token}/g" config/samples/ibp.com_v1beta1_network_size_3.yaml
 kubectl create -f config/samples/ibp.com_v1beta1_network_size_3.yaml --dry-run=client -o json |
 	jq '.spec.orderSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.orderSpec.storage.orderer.class = "'$StorageClassName'"' |
-	kubectl create --as=org1admin -f -
+	kubectl create --token=${Admin1Token} -f -
 waitNetwork network-sample3 "org1" "Ready"
 
 info "4.4.3 delete network need create a federation dissolve network proposal for fed=federation-sample network=network-sample"
 
 info "4.4.3.1 create proposal pro=dissolve-network-sample"
-kubectl create -f config/samples/ibp.com_v1beta1_proposal_dissolve_network.yaml --as=org1admin
+kubectl create -f config/samples/ibp.com_v1beta1_proposal_dissolve_network.yaml --token=${Admin1Token}
 
 info "4.4.3.2 user=org2admin vote for pro=dissolve-network-sample"
 waitVoteExist org2 dissolve-network-sample
-kubectl patch vote -n org2 vote-org2-dissolve-network-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --as=org2admin
+kubectl patch vote -n org2 vote-org2-dissolve-network-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
 
 info "4.4.3.3 pro=dissolve-network-sample become Activated"
 #TODO uncomment after https://github.com/bestchains/fabric-operator/issues/87
@@ -427,7 +427,7 @@ waitNetwork network-sample "" "NoExist"
 
 info "4.7 channel management"
 info "4.7.1 create channel channel=channel-sample"
-kubectl create -f config/samples/ibp.com_v1beta1_channel_create.yaml --as=org1admin
+kubectl create -f config/samples/ibp.com_v1beta1_channel_create.yaml --token=${Admin1Token}
 function waitChannelReady() {
 	channelName=$1
 	want=$2
@@ -492,7 +492,7 @@ kubectl create -f config/samples/peers/ibp.com_v1beta1_peer_org1peer1.yaml --dry
 	jq '.spec.storage.peer.class = "'$StorageClassName'"' | jq '.spec.storage.statedb.class = "'$StorageClassName'"' |
 	jq '.spec.secret.enrollment.component.cahost = "'$Org1CaHost'"' | jq '.spec.secret.enrollment.tls.cahost = "'$Org1CaHost'"' |
 	jq '.spec.secret.enrollment.component.caport = "'$Org1CaPort'"' | jq '.spec.secret.enrollment.tls.caport = "'$Org1CaPort'"' |
-	kubectl create --as=org1admin -f -
+	kubectl create --token=${Admin1Token} -f -
 function waitPeerReady() {
 	peerName=$1
 	ns=$2
@@ -530,16 +530,16 @@ kubectl create -f config/samples/peers/ibp.com_v1beta1_peer_org2peer1.yaml --dry
 	jq '.spec.storage.peer.class = "'$StorageClassName'"' | jq '.spec.storage.statedb.class = "'$StorageClassName'"' |
 	jq '.spec.secret.enrollment.component.cahost = "'$Org2CaHost'"' | jq '.spec.secret.enrollment.tls.cahost = "'$Org2CaHost'"' |
 	jq '.spec.secret.enrollment.component.caport = "'$Org2CaPort'"' | jq '.spec.secret.enrollment.tls.caport = "'$Org2CaPort'"' |
-	kubectl create --as=org2admin -f -
+	kubectl create --token=${Admin2Token} -f -
 waitPeerReady org2peer1 org2
 
 info "4.7.4 add peer node to channel peer=org1peer1 channel=channel-sample"
-kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org1.yaml --as=org1admin
+kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org1.yaml --token=${Admin1Token}
 # todo Verify that peers successfully join channel
 sleep 5
 
 info "4.7.5 add peer node to channel peer=org2peer1 channel=channel-sample"
-kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml --as=org2admin
+kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml --token=${Admin2Token}
 # todo Verify that peers successfully join channel
 
 info "all finished! ✅"

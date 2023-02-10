@@ -127,7 +127,10 @@ func add(mgr manager.Manager, r *ReconcileOrganization) error {
 	caFuncs := predicate.Funcs{
 		UpdateFunc: r.CAUpdateFunc,
 	}
-	err = c.Watch(&source.Kind{Type: &current.IBPCA{}}, &handler.EnqueueRequestForObject{}, caFuncs)
+	err = c.Watch(&source.Kind{Type: &current.IBPCA{}}, &handler.EnqueueRequestForOwner{
+		OwnerType:    &current.Organization{},
+		IsController: true,
+	}, caFuncs)
 	if err != nil {
 		return err
 	}

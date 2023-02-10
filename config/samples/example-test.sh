@@ -237,16 +237,19 @@ kubectl create -f config/samples/orgs/org1.yaml --dry-run=client -o json |
 	kubectl create --token=${Admin1Token} -f -
 function waitOrgReady() {
 	orgName=$1
+	wantFedName=$2
 	START_TIME=$(date +%s)
 	while true; do
 		status=$(kubectl get org $orgName --ignore-not-found=true -o json | jq -r .status.type)
 		if [ "$status" == "Deployed" ]; then
-			break
-		fi
-
-		# TODO after finish https://github.com/bestchains/fabric-operator/issues/79, remove check ca status
-		caStatus=$(kubectl get ibpca -n $orgName $orgName --ignore-not-found=true -o json | jq -r '.status.type')
-		if [ "$caStatus" == "Deployed" ]; then
+			if [[ $fedName != "" ]]; then
+				getFedName=$(kubectl get org $orgName --ignore-not-found=true -o json | jq -r '.status.federations[0].name')
+				if [[ $wantFedName == $getFedName ]]; then
+					break
+				else
+					continue
+				fi
+			fi
 			break
 		fi
 
@@ -313,6 +316,8 @@ function waitFed() {
 	done
 }
 waitFed federation-sample "Exist"
+waitOrgReady "org1" "federation-sample"
+waitOrgReady "org1" "federation-sample"
 
 info "4.3 create federation create proposal for fed=federation-sample"
 

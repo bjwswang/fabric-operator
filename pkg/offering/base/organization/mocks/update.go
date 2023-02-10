@@ -28,6 +28,16 @@ type Update struct {
 	adminUpdatedReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	CAUpdatedStub        func() bool
+	cAUpdatedMutex       sync.RWMutex
+	cAUpdatedArgsForCall []struct {
+	}
+	cAUpdatedReturns struct {
+		result1 bool
+	}
+	cAUpdatedReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	ClientsRemovedStub        func() string
 	clientsRemovedMutex       sync.RWMutex
 	clientsRemovedArgsForCall []struct {
@@ -77,15 +87,16 @@ func (fake *Update) AdminTransfered() string {
 	ret, specificReturn := fake.adminTransferedReturnsOnCall[len(fake.adminTransferedArgsForCall)]
 	fake.adminTransferedArgsForCall = append(fake.adminTransferedArgsForCall, struct {
 	}{})
+	stub := fake.AdminTransferedStub
+	fakeReturns := fake.adminTransferedReturns
 	fake.recordInvocation("AdminTransfered", []interface{}{})
 	fake.adminTransferedMutex.Unlock()
-	if fake.AdminTransferedStub != nil {
-		return fake.AdminTransferedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.adminTransferedReturns
 	return fakeReturns.result1
 }
 
@@ -129,15 +140,16 @@ func (fake *Update) AdminUpdated() bool {
 	ret, specificReturn := fake.adminUpdatedReturnsOnCall[len(fake.adminUpdatedArgsForCall)]
 	fake.adminUpdatedArgsForCall = append(fake.adminUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.AdminUpdatedStub
+	fakeReturns := fake.adminUpdatedReturns
 	fake.recordInvocation("AdminUpdated", []interface{}{})
 	fake.adminUpdatedMutex.Unlock()
-	if fake.AdminUpdatedStub != nil {
-		return fake.AdminUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.adminUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -176,20 +188,74 @@ func (fake *Update) AdminUpdatedReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
+func (fake *Update) CAStatusUpdated() bool {
+	fake.cAUpdatedMutex.Lock()
+	ret, specificReturn := fake.cAUpdatedReturnsOnCall[len(fake.cAUpdatedArgsForCall)]
+	fake.cAUpdatedArgsForCall = append(fake.cAUpdatedArgsForCall, struct {
+	}{})
+	stub := fake.CAUpdatedStub
+	fakeReturns := fake.cAUpdatedReturns
+	fake.recordInvocation("CAStatusUpdated", []interface{}{})
+	fake.cAUpdatedMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *Update) CAUpdatedCallCount() int {
+	fake.cAUpdatedMutex.RLock()
+	defer fake.cAUpdatedMutex.RUnlock()
+	return len(fake.cAUpdatedArgsForCall)
+}
+
+func (fake *Update) CAUpdatedCalls(stub func() bool) {
+	fake.cAUpdatedMutex.Lock()
+	defer fake.cAUpdatedMutex.Unlock()
+	fake.CAUpdatedStub = stub
+}
+
+func (fake *Update) CAUpdatedReturns(result1 bool) {
+	fake.cAUpdatedMutex.Lock()
+	defer fake.cAUpdatedMutex.Unlock()
+	fake.CAUpdatedStub = nil
+	fake.cAUpdatedReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *Update) CAUpdatedReturnsOnCall(i int, result1 bool) {
+	fake.cAUpdatedMutex.Lock()
+	defer fake.cAUpdatedMutex.Unlock()
+	fake.CAUpdatedStub = nil
+	if fake.cAUpdatedReturnsOnCall == nil {
+		fake.cAUpdatedReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.cAUpdatedReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *Update) ClientsRemoved() string {
 	fake.clientsRemovedMutex.Lock()
 	ret, specificReturn := fake.clientsRemovedReturnsOnCall[len(fake.clientsRemovedArgsForCall)]
 	fake.clientsRemovedArgsForCall = append(fake.clientsRemovedArgsForCall, struct {
 	}{})
+	stub := fake.ClientsRemovedStub
+	fakeReturns := fake.clientsRemovedReturns
 	fake.recordInvocation("ClientsRemoved", []interface{}{})
 	fake.clientsRemovedMutex.Unlock()
-	if fake.ClientsRemovedStub != nil {
-		return fake.ClientsRemovedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.clientsRemovedReturns
 	return fakeReturns.result1
 }
 
@@ -233,15 +299,16 @@ func (fake *Update) ClientsUpdated() bool {
 	ret, specificReturn := fake.clientsUpdatedReturnsOnCall[len(fake.clientsUpdatedArgsForCall)]
 	fake.clientsUpdatedArgsForCall = append(fake.clientsUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.ClientsUpdatedStub
+	fakeReturns := fake.clientsUpdatedReturns
 	fake.recordInvocation("ClientsUpdated", []interface{}{})
 	fake.clientsUpdatedMutex.Unlock()
-	if fake.ClientsUpdatedStub != nil {
-		return fake.ClientsUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.clientsUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -285,15 +352,16 @@ func (fake *Update) SpecUpdated() bool {
 	ret, specificReturn := fake.specUpdatedReturnsOnCall[len(fake.specUpdatedArgsForCall)]
 	fake.specUpdatedArgsForCall = append(fake.specUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.SpecUpdatedStub
+	fakeReturns := fake.specUpdatedReturns
 	fake.recordInvocation("SpecUpdated", []interface{}{})
 	fake.specUpdatedMutex.Unlock()
-	if fake.SpecUpdatedStub != nil {
-		return fake.SpecUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.specUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -337,15 +405,16 @@ func (fake *Update) TokenUpdated() bool {
 	ret, specificReturn := fake.tokenUpdatedReturnsOnCall[len(fake.tokenUpdatedArgsForCall)]
 	fake.tokenUpdatedArgsForCall = append(fake.tokenUpdatedArgsForCall, struct {
 	}{})
+	stub := fake.TokenUpdatedStub
+	fakeReturns := fake.tokenUpdatedReturns
 	fake.recordInvocation("TokenUpdated", []interface{}{})
 	fake.tokenUpdatedMutex.Unlock()
-	if fake.TokenUpdatedStub != nil {
-		return fake.TokenUpdatedStub()
+	if stub != nil {
+		return stub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.tokenUpdatedReturns
 	return fakeReturns.result1
 }
 
@@ -391,6 +460,8 @@ func (fake *Update) Invocations() map[string][][]interface{} {
 	defer fake.adminTransferedMutex.RUnlock()
 	fake.adminUpdatedMutex.RLock()
 	defer fake.adminUpdatedMutex.RUnlock()
+	fake.cAUpdatedMutex.RLock()
+	defer fake.cAUpdatedMutex.RUnlock()
 	fake.clientsRemovedMutex.RLock()
 	defer fake.clientsRemovedMutex.RUnlock()
 	fake.clientsUpdatedMutex.RLock()

@@ -28,8 +28,9 @@ import (
 type Update struct {
 	specUpdated bool
 
-	adminUpdated bool
-	tokenUpdated bool
+	adminUpdated    bool
+	tokenUpdated    bool
+	caStatusUpdated bool
 
 	// cache orgigin admin
 	adminTransfered string
@@ -63,6 +64,10 @@ func (u *Update) TokenUpdated() bool {
 	return u.tokenUpdated
 }
 
+func (u *Update) CAStatusUpdated() bool {
+	return u.caStatusUpdated
+}
+
 // GetUpdateStackWithTrues is a helper method to print updates that have been detected
 func (u *Update) GetUpdateStackWithTrues() string {
 	stack := ""
@@ -88,7 +93,11 @@ func (u *Update) GetUpdateStackWithTrues() string {
 	}
 
 	if u.ClientsRemoved() != "" {
-		stack += "clientsRemoved"
+		stack += "clientsRemoved "
+	}
+
+	if u.CAStatusUpdated() {
+		stack += "caStatusUpdated "
 	}
 
 	if len(stack) == 0 {

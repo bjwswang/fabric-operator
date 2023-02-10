@@ -7,26 +7,7 @@ metadata:
 spec:
   description: org1admin 用户信息的描述
   email: org1admin@tenxcloud.com
-  groups:
-  - observability
-  - system:nodes
-  - system:masters
-  - resource-reader
-  - iam.tenxcloud.com
-  - observability
   name: org1admin
-  password: $2a$10$693K.zP98yCs1qVwEp//DuWYOtLIE1doihtGhcCyYh3IpgSdGGba2
+  password: $2a$10$eXHv4JD1hEfMA/vV6Whjae84bVI0CMeZpa43z97PurPQMmD8OAfe2 # passw0rd
   phone: "18890901212"
   role: admin
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: org1admin:blockchain:common
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: blockchain:common
-subjects:
-- kind: User
-  name: org1admin

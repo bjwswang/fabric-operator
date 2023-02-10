@@ -236,7 +236,13 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 	// Update if member changes
 	if len(newMember) != 0 {
 		fed.Spec.Members = newMember
-		if err := r.client.Update(context.TODO(), fed); err != nil {
+		if err := r.client.Patch(context.TODO(), fed, nil, k8sclient.PatchOption{
+			Resilient: &k8sclient.ResilientPatch{
+				Retry:    3,
+				Into:     &current.Federation{},
+				Strategy: client.MergeFrom,
+			},
+		}); err != nil {
 			log.Error(err, fmt.Sprintf("cant update federation %s", newProposal.Spec.Federation))
 			return false
 		}

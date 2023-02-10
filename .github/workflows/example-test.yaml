@@ -18,15 +18,28 @@ jobs:
   build-image:
     runs-on: ubuntu-latest
     steps:
+      - name: Check whether the image of the same commit has been built.
+        id: cache
+        uses: actions/cache/restore@v3
+        with:
+          key: operator.image-${{ github.sha }}
+          path: /tmp/operator.image.tar
       - uses: actions/checkout@v3
+        # It would be foolish to add the same judgment over and over again, but github action currently does not have
+        # the syntax to skip all the next steps unless we let the pre step fail, and failure is not what we want.
+        # see https://github.com/actions/runner/issues/662
+        if: steps.cache.outputs.cache-hit != 'true'
       - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           scripts/install-tools.sh
           make image
       - name: save image to /tmp
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           docker save hyperledgerk8s/fabric-operator:latest > /tmp/operator.image.tar
       - name: Upload operator image
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           key: operator.image-${{ github.sha }}

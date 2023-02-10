@@ -288,15 +288,6 @@ function waitFed() {
 		CURRENT_TIME=$(date +%s)
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
 		if [ $ELAPSED_TIME -gt $TimeoutSeconds ]; then
-
-			#todo remove patch after
-			if [[ $check == "Activated" ]]; then
-				kubectl patch fed $fedName --subresource=status --type='json' \
-					-p='[{"op": "replace", "path": "/status/type", "value": "FederationActivated"}]'
-				START_TIME=CURRENT_TIME
-				continue
-			fi
-
 			error "Timeout reached"
 			exit 1
 		fi

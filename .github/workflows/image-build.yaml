@@ -12,7 +12,16 @@ jobs:
     if: github.repository == 'bestchains/fabric-operator'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set Variable
+        id: set-env
+        run: |
+          echo "TAG=$(git describe --abbrev=0 --tags --match 'v*')" >> $GITHUB_OUTPUT
+          echo "DATE=$(TZ=Asia/Shanghai date +'%Y%m%d')" >> $GITHUB_OUTPUT
+      - name: Show Variable
+        run: echo "varibables ${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}"
       - name: Test Build
         run: |
           scripts/install-tools.sh
@@ -43,6 +52,11 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             hyperledgerk8s/fabric-operator:latest
+            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.DATE }}
+            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.TAG }}-${{ steps.short-sha.outputs.sha }}
+            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
+            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}
+            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
             hyperledgerk8s/fabric-operator:${{ steps.short-sha.outputs.sha }}
           push: true
           build-args: |

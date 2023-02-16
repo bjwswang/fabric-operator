@@ -24,14 +24,18 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+	"github.com/google/go-cmp/cmp"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
 	ErrBadSynchronizer = errors.New("bad synchronizer")
+	rbaclog            = logf.Log.WithName("rbac")
 )
 
 // Synchronizer sync RBAC based on different ResourceAction uppon k8s object
@@ -168,9 +172,25 @@ func SyncChannel(c controllerclient.Client, o v1.Object, ra ResourceAction) erro
 }
 
 // SyncClusterRole defines common reconcile logic on clusterroles uppon cluster-scoped resources' action(create/update/delete)
-func SyncClusterRole(c controllerclient.Client, key types.NamespacedName, rule rbacv1.PolicyRule, ra ResourceAction) error {
+func SyncClusterRole(c controllerclient.Client, key types.NamespacedName, rule rbacv1.PolicyRule, ra ResourceAction) (err error) {
+	retryLimit := 2
+	for i := 1; i <= retryLimit; i++ {
+		err = syncClusterRoleOnce(c, key, rule, ra)
+		if err == nil {
+			return nil
+		}
+		// please apply your changes to the latest version and try again
+		if !apierrors.IsConflict(err) {
+			return err
+		}
+	}
+	return
+}
+
+func syncClusterRoleOnce(c controllerclient.Client, key types.NamespacedName, rule rbacv1.PolicyRule, ra ResourceAction) error {
 	clusterRole := &rbacv1.ClusterRole{}
 	err := c.Get(context.TODO(), key, clusterRole)
+	oldClusterRole := clusterRole.DeepCopy()
 	if err != nil {
 		return err
 	}
@@ -191,6 +211,11 @@ func SyncClusterRole(c controllerclient.Client, key types.NamespacedName, rule r
 
 	err = c.Update(context.TODO(), clusterRole)
 	if err != nil {
+		// add some log for debug
+		newClusterRole := &rbacv1.ClusterRole{}
+		err := c.Get(context.TODO(), key, newClusterRole)
+		diff := cmp.Diff(oldClusterRole, newClusterRole)
+		rbaclog.Error(err, "name", clusterRole.Name, "diff", diff)
 		return err
 	}
 

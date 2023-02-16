@@ -9,6 +9,7 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/go-test/deep v1.0.2
 	github.com/gogo/protobuf v1.3.2
+	github.com/google/go-cmp v0.5.6
 	github.com/hyperledger/fabric v1.4.11
 	github.com/hyperledger/fabric-protos-go v0.0.0-20211118165945-23d738fc3553
 	github.com/hyperledger/fabric-sdk-go v0.0.0-20221020141211-7af45cede6af
@@ -68,7 +69,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/certificate-transparency-go v1.0.21 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect

@@ -19,7 +19,7 @@
 #set -x
 export TERM=xterm-color
 
-KindName=${KindName:-"fabric-example-test"}
+KindName="kind"
 TimeoutSeconds=${TimeoutSeconds:-"600"}
 HelmTimeout=${HelmTimeout:-"1800s"}
 KindVersion=${KindVersion:-"v1.24.4"}
@@ -28,6 +28,7 @@ KindConfigPath=${TempFilePath}/kind-config.yaml
 InstallDirPath=${TempFilePath}/installer
 DefaultPassWord=${DefaultPassWord:-'passw0rd'}
 LOG_DIR=${LOG_DIR:-"/tmp/fabric-operator-example-test/logs"}
+ComponentImageFile=${ComponentImageFile:-"/tmp/all.image.tar"}
 
 Timeout="${TimeoutSeconds}s"
 mkdir ${TempFilePath} || true
@@ -117,42 +118,30 @@ function info() {
 	cecho -c 'blue' "$@"
 }
 
-info "1. create kind cluster..."
-cat >>${KindConfigPath} <<EOF
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-  - role: control-plane
-  - role: worker
-  - role: worker
-EOF
-kind create cluster --name=${KindName} --wait=${Timeout} --config=${KindConfigPath} --image=kindest/node:$KindVersion
-workerNode1IP=$(kubectl get nodes ${KindName}-worker --no-headers=true -o wide | awk '{print $6}')
-workerNode2IP=$(kubectl get nodes ${KindName}-worker2 --no-headers=true -o wide | awk '{print $6}')
+info "1. create kind cluster"
+git clone https://github.com/bestchains/installer.git ${InstallDirPath}
+cd ${InstallDirPath}
+export IGNORE_FIXED_IMAGE_LOAD=YES
+. ./scripts/kind.sh
+if [ -f $ComponentImageFile ]; then
+	info "reload component images from cache."
+	source ${InstallDirPath}/scripts/cache-image.sh
+	load_all_images $KindName /tmp/all.image.tar
+fi
 
 info "2. install component in kubernetes..."
-git clone https://github.com/bestchains/installer.git ${InstallDirPath}
+info "2.1 install u4a component and u4a services"
+export IGNORE_FABRIC_OPERATOR=YES
+. ./scripts/e2e.sh
+cd -
 
-info "2.1 install u4a-component..."
-kubectl create ns u4a-system
-sed -i -e "s/<replaced-ingress-node-name>/${KindName}-worker/g" ${InstallDirPath}/u4a-component/charts/cluster-component/values.yaml
-helm install --wait --timeout=${HelmTimeout} cluster-component -n u4a-system ${InstallDirPath}/u4a-component/charts/cluster-component
-
-info "2.2 install u4a services"
-sed -i -e "s/<replaced-ingress-nginx-ip>/${workerNode1IP}/g" ${InstallDirPath}/u4a-component/values.yaml
-sed -i -e "s/<replaced-oidc-proxy-node-name>/${KindName}-worker2/g" ${InstallDirPath}/u4a-component/values.yaml
-sed -i -e "s/<replaced-k8s-ip-with-oidc-enabled>/${workerNode2IP}/g" ${InstallDirPath}/u4a-component/values.yaml
-helm install --wait --timeout=${HelmTimeout} u4a-component -n u4a-system ${InstallDirPath}/u4a-component
-
-info "2.3 install fabric-operator"
-#TODO change this image's tag
-kubectl set image -n u4a-system deployment/oidc-server iam-provider=hyperledgerk8s/iam-provider:fabric
+info "2.2 install fabric-operator"
 docker tag hyperledgerk8s/fabric-operator:latest hyperledgerk8s/fabric-operator:example-e2e
 kind load docker-image --name=${KindName} hyperledgerk8s/fabric-operator:example-e2e
 export IMG=hyperledgerk8s/fabric-operator:example-e2e
 export IMAGE_PULL_POLICY=IfNotPresent
 make deploy
-kubectl set env -n operator-system deployment/operator-controller-manager OPERATOR_INGRESS_DOMAIN=${workerNode1IP}.nip.io
+kubectl set env -n operator-system deployment/operator-controller-manager OPERATOR_INGRESS_DOMAIN=${ingressNodeIP}.nip.io
 kubectl wait deploy -n operator-system operator-controller-manager --for condition=Available=True
 
 info "3. create user and get user's token"
@@ -207,7 +196,7 @@ Admin2Token=$Token
 getToken $Domain "org3admin" $DefaultPassWord
 Admin3Token=$Token
 
-info "3.3 get default ingressclass"
+info "3.3 get default ingress class and storage class"
 IngressClassName=$(kubectl get ingressclass --no-headers | awk '{print $1}')
 StorageClassName=$(kubectl get sc -o json |
 	jq -r '.items[] | select(.metadata.annotations."storageclass.kubernetes.io/is-default-class"=true) | .metadata.name')
@@ -532,5 +521,11 @@ sleep 5
 info "4.7.5 add peer node to channel peer=org2peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml --token=${Admin2Token}
 # todo Verify that peers successfully join channel
+
+info "cache component image"
+source ${InstallDirPath}/scripts/cache-image.sh
+save_all_images /tmp/all.image.tar /tmp/all.image.list
+info "Do we need to update the cache image? $UPLOAD_IMAGE"
+echo "UPLOAD_IMAGE=${UPLOAD_IMAGE}" >>$GITHUB_ENV
 
 info "all finished! ✅"

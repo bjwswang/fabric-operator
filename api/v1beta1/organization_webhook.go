@@ -29,9 +29,10 @@ import (
 )
 
 var (
-	errAdminIsEmpty  = errors.New("the organization's admin is empty")
-	errHasNetwork    = errors.New("the organization is initiator of one network")
-	errHasFederation = errors.New("the organization is initiator of one federation")
+	errAdminIsEmpty      = errors.New("the organization's admin is empty")
+	errAdminCantBeClient = errors.New("user can't be admin and client at the same time")
+	errHasNetwork        = errors.New("the organization is initiator of one network")
+	errHasFederation     = errors.New("the organization is initiator of one federation")
 )
 
 // log is for logging in this package.
@@ -59,6 +60,15 @@ func (r *Organization) ValidateCreate(ctx context.Context, client client.Client,
 	if !isSuperUser(ctx, user) && r.Spec.Admin != user.Username {
 		return errNoPermission
 	}
+
+	if len(r.Spec.Clients) != 0 {
+		for _, orgClient := range r.Spec.Clients {
+			if orgClient == r.Spec.Admin {
+				return errAdminCantBeClient
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -72,6 +82,15 @@ func (r *Organization) ValidateUpdate(ctx context.Context, client client.Client,
 	if r.Spec.Admin == "" {
 		return errAdminIsEmpty
 	}
+
+	if len(r.Spec.Clients) != 0 {
+		for _, orgClient := range r.Spec.Clients {
+			if orgClient == r.Spec.Admin {
+				return errAdminCantBeClient
+			}
+		}
+	}
+
 	return nil
 }
 

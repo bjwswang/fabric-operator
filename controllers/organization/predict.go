@@ -24,7 +24,6 @@ import (
 	"reflect"
 	"strings"
 
-	iam "github.com/IBM-Blockchain/fabric-operator/api/iam/v1alpha1"
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/user"
@@ -36,7 +35,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
@@ -380,14 +378,4 @@ func (r *ReconcileOrganization) DeleteFed(m current.Member, federation *current.
 		return err
 	}
 	return nil
-}
-
-func (r *ReconcileOrganization) GetIAMUser(username string) (*iam.User, error) {
-	var err error
-	iamuser := &iam.User{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: username}, iamuser)
-	if err != nil {
-		return nil, err
-	}
-	return iamuser, nil
 }

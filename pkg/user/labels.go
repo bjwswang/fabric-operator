@@ -19,6 +19,8 @@
 package user
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
@@ -50,4 +52,12 @@ func OrganizationSelector(organization string) (labels.Selector, error) {
 	}
 	selector = selector.Add(*requirement)
 	return selector, nil
+}
+
+// UserSelector constructs selector with `t7d.io.username:xxx`
+func UserSelector(preferUsername string) (labels.Selector, error) {
+	if preferUsername == "" {
+		return nil, errors.New("empty preferUsername")
+	}
+	return labels.Parse(fmt.Sprintf("t7d.io.username=%s", preferUsername))
 }

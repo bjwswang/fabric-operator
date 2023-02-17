@@ -9,8 +9,8 @@ rules:
   resources:
     - pods
     - pods/log
-    - secret
-    - configmap
+    - secrets
+    - configmaps
   verbs:
     - get
     - list

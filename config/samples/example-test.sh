@@ -215,11 +215,12 @@ kubectl create -f config/samples/orgs/org1.yaml --dry-run=client -o json |
 function waitOrgReady() {
 	orgName=$1
 	wantFedName=$2
+	token=$3
 	START_TIME=$(date +%s)
 	while true; do
 		status=$(kubectl get org $orgName --ignore-not-found=true -o json | jq -r .status.type)
 		if [ "$status" == "Deployed" ]; then
-			if [[ $fedName != "" ]]; then
+			if [[ $wantFedName != "" ]]; then
 				getFedName=$(kubectl get org $orgName --ignore-not-found=true -o json | jq -r '.status.federations[0].name')
 				if [[ $wantFedName == $getFedName ]]; then
 					break
@@ -236,35 +237,36 @@ function waitOrgReady() {
 			error "Timeout reached"
 			kubectl describe pod -n $orgName
 			kubectl get org $orgName -oyaml
-			kubectl get ibpca -n $orgName $orgName -oyaml
+			kubectl get --token=${token} ibpca -n $orgName $orgName -oyaml
 			exit 1
 		fi
 		sleep 5
 	done
 }
-waitOrgReady org1
+waitOrgReady org1 "" ${Admin1Token}
 
 info "4.1.2 create org=org2, wait for the relevant components to start up."
 kubectl create -f config/samples/orgs/org2.yaml --dry-run=client -o json |
 	jq '.spec.caSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.caSpec.storage.ca.class = "'$StorageClassName'"' |
 	kubectl create --token=${Admin2Token} -f -
-waitOrgReady org2
+waitOrgReady org2 "" ${Admin2Token}
 
 info "4.1.3 create org=org3, wait for the relevant components to start up."
 kubectl create -f config/samples/orgs/org3.yaml --dry-run=client -o json |
 	jq '.spec.caSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.caSpec.storage.ca.class = "'$StorageClassName'"' |
 	kubectl create --token=${Admin3Token} -f -
-waitOrgReady org3
+waitOrgReady org3 "" ${Admin3Token}
 
 info "4.2 create federation resources: federation-sample"
 kubectl create -f config/samples/ibp.com_v1beta1_federation.yaml --token=${Admin1Token}
 function waitFed() {
 	fedName=$1
 	check=$2
+	token=$3
 	START_TIME=$(date +%s)
 	while true; do
 		if [[ $check == "Exist" ]]; then
-			name=$(kubectl get fed $fedName --no-headers --ignore-not-found=true | awk '{print $1}')
+			name=$(kubectl get fed --token=${token} $fedName --no-headers --ignore-not-found=true | awk '{print $1}')
 			if [[ $name != "" ]]; then
 				break
 			fi
@@ -283,9 +285,9 @@ function waitFed() {
 		sleep 5
 	done
 }
-waitFed federation-sample "Exist"
-waitOrgReady "org1" "federation-sample"
-waitOrgReady "org1" "federation-sample"
+waitFed federation-sample "Exist" ${Admin1Token}
+waitOrgReady "org1" "federation-sample" ${Admin1Token}
+waitOrgReady "org1" "federation-sample" ${Admin1Token}
 
 info "4.3 create federation create proposal for fed=federation-sample"
 
@@ -296,9 +298,10 @@ info "4.3.2 user=org2admin vote for pro=create-federation-sample"
 function waitVoteExist() {
 	ns=$1
 	proposalName=$2
+	token=$3
 	START_TIME=$(date +%s)
 	while true; do
-		voteName=$(kubectl get vote -n $ns -l "bestchains.vote.proposal=$proposalName" --no-headers=true --ignore-not-found=true | awk '{print $1}')
+		voteName=$(kubectl get vote --token=${token} -n $ns -l "bestchains.vote.proposal=$proposalName" --no-headers=true --ignore-not-found=true | awk '{print $1}')
 		if [[ $voteName != "" ]]; then
 			break
 		fi
@@ -311,16 +314,17 @@ function waitVoteExist() {
 		sleep 5
 	done
 }
-waitVoteExist org2 create-federation-sample
+waitVoteExist org2 create-federation-sample ${Admin2Token}
 kubectl patch vote -n org2 vote-org2-create-federation-sample --type='json' \
 	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
 
 info "4.3.3 pro=create-federation-sample become Succeeded"
 function waitProposalSucceeded() {
 	proposalName=$1
+	token=$2
 	START_TIME=$(date +%s)
 	while true; do
-		Type=$(kubectl get pro $proposalName --ignore-not-found=true -o json | jq -r '.status.conditions[] | select(.status=="True") | .type')
+		Type=$(kubectl get pro --token=${token} $proposalName --ignore-not-found=true -o json | jq -r '.status.conditions[] | select(.status=="True") | .type')
 		if [[ $Type == "Succeeded" ]]; then
 			break
 		fi
@@ -334,10 +338,10 @@ function waitProposalSucceeded() {
 		sleep 5
 	done
 }
-waitProposalSucceeded create-federation-sample
+waitProposalSucceeded create-federation-sample ${Admin1Token}
 
 info "4.3.4 fed=federation-sample become Activated, federation create finish!"
-waitFed federation-sample "Activated"
+waitFed federation-sample "Activated" ${Admin1Token}
 
 info "4.4 network management"
 info "4.4.1 create single orderer node network"
@@ -350,10 +354,11 @@ function waitNetwork() {
 	orderNs=$2
 	want=$3
 	channelName=$4
+	token=$5
 	START_TIME=$(date +%s)
 	while true; do
 		if [[ $want == "NoExist" ]]; then
-			name=$(kubectl get network $networkName --no-headers=true --ignore-not-found=true | awk '{print $1}')
+			name=$(kubectl get network --token=${token} $networkName --no-headers=true --ignore-not-found=true | awk '{print $1}')
 			if [[ $name == "" ]]; then
 				break
 			fi
@@ -381,14 +386,14 @@ function waitNetwork() {
 		sleep 5
 	done
 }
-waitNetwork network-sample "org1" "Ready"
+waitNetwork network-sample "org1" "Ready" ${Admin1Token}
 
 info "4.4.2 create 3 orderer node network"
 sed -i -e "s/<org1AdminToken>/${Admin1Token}/g" config/samples/ibp.com_v1beta1_network_size_3.yaml
 kubectl create -f config/samples/ibp.com_v1beta1_network_size_3.yaml --dry-run=client -o json |
 	jq '.spec.orderSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.orderSpec.storage.orderer.class = "'$StorageClassName'"' |
 	kubectl create --token=${Admin1Token} -f -
-waitNetwork network-sample3 "org1" "Ready"
+waitNetwork network-sample3 "org1" "Ready" ${Admin1Token}
 
 info "4.4.3 delete network need create a federation dissolve network proposal for fed=federation-sample network=network-sample"
 
@@ -396,14 +401,14 @@ info "4.4.3.1 create proposal pro=dissolve-network-sample"
 kubectl create -f config/samples/ibp.com_v1beta1_proposal_dissolve_network.yaml --token=${Admin1Token}
 
 info "4.4.3.2 user=org2admin vote for pro=dissolve-network-sample"
-waitVoteExist org2 dissolve-network-sample
+waitVoteExist org2 dissolve-network-sample ${Admin2Token}
 kubectl patch vote -n org2 vote-org2-dissolve-network-sample --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
 
 info "4.4.3.3 pro=dissolve-network-sample become Activated"
-waitProposalSucceeded dissolve-network-sample
+waitProposalSucceeded dissolve-network-sample ${Admin2Token}
 
 info "4.4.3.4 network=network-sample cant find, deletion finished"
-waitNetwork network-sample "" "NoExist"
+waitNetwork network-sample "" "NoExist" ${Admin2Token}
 
 info "4.7 channel management"
 info "4.7.1 create channel channel=channel-sample"
@@ -411,15 +416,16 @@ kubectl create -f config/samples/ibp.com_v1beta1_channel_create.yaml --token=${A
 function waitChannelReady() {
 	channelName=$1
 	want=$2
+	token=$3
 	START_TIME=$(date +%s)
 	while true; do
 		if [[ $want == "NoExist" ]]; then
-			kubectl get network $networkName
+			kubectl get network --token=${token} $networkName
 			if [[ $? -eq 1 ]]; then
 				break
 			fi
 		elif [[ $want == "Ready" ]]; then
-			Type=$(kubectl get channel $channelName --ignore-not-found=true -o json | jq -r '.status.type')
+			Type=$(kubectl get channel --token=${token} $channelName --ignore-not-found=true -o json | jq -r '.status.type')
 			if [[ $Type == "ChannelCreated" ]]; then
 				break
 			fi
@@ -434,11 +440,11 @@ function waitChannelReady() {
 		sleep 5
 	done
 }
-waitChannelReady channel-sample "Ready"
+waitChannelReady channel-sample "Ready" ${Admin1Token}
 
 info "4.7.2 create peer node peer=org1peer1"
-Org1CaCert=$(kubectl get cm -norg1 org1-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.tls.cert')
-Org1CaURI=$(kubectl get cm -norg1 org1-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.endpoints.api')
+Org1CaCert=$(kubectl get cm --token=${Admin1Token} -norg1 org1-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.tls.cert')
+Org1CaURI=$(kubectl get cm --token=${Admin1Token} -norg1 org1-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.endpoints.api')
 function parseURI() {
 	uri=$1
 	# https://stackoverflow.com/a/6174447/5939892
@@ -477,10 +483,11 @@ function waitPeerReady() {
 	peerName=$1
 	ns=$2
 	want=$3
+	token=$4
 	START_TIME=$(date +%s)
 	while true; do
 		if [[ $want == "" ]]; then
-			Type=$(kubectl get ibppeer -n $ns $peerName --ignore-not-found=true -o json | jq -r '.status.type')
+			Type=$(kubectl get ibppeer --token=${token} -n $ns $peerName --ignore-not-found=true -o json | jq -r '.status.type')
 			if [[ $Type == "Deployed" ]]; then
 				break
 			fi
@@ -489,17 +496,17 @@ function waitPeerReady() {
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
 		if [ $ELAPSED_TIME -gt $TimeoutSeconds ]; then
 			error "Timeout reached"
-			kubectl describe ibppeer -n $ns $peerName
+			kubectl describe --token=${token} ibppeer -n $ns $peerName
 			exit 1
 		fi
 		sleep 5
 	done
 }
-waitPeerReady org1peer1 org1
+waitPeerReady org1peer1 org1 ${Admin1Token}
 
 info "4.7.3 create peer node peer=org2peer1"
-Org2CaCert=$(kubectl get cm -norg2 org2-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.tls.cert')
-Org2CaURI=$(kubectl get cm -norg2 org2-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.endpoints.api')
+Org2CaCert=$(kubectl get cm --token=${Admin2Token} -norg2 org2-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.tls.cert')
+Org2CaURI=$(kubectl get cm --token=${Admin2Token} -norg2 org2-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.endpoints.api')
 parseURI ${Org2CaURI}
 Org2CaHost=${host}
 Org2CaPort=${port}
@@ -511,7 +518,7 @@ kubectl create -f config/samples/peers/ibp.com_v1beta1_peer_org2peer1.yaml --dry
 	jq '.spec.secret.enrollment.component.cahost = "'$Org2CaHost'"' | jq '.spec.secret.enrollment.tls.cahost = "'$Org2CaHost'"' |
 	jq '.spec.secret.enrollment.component.caport = "'$Org2CaPort'"' | jq '.spec.secret.enrollment.tls.caport = "'$Org2CaPort'"' |
 	kubectl create --token=${Admin2Token} -f -
-waitPeerReady org2peer1 org2
+waitPeerReady org2peer1 org2 ${Admin2Token}
 
 info "4.7.4 add peer node to channel peer=org1peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org1.yaml --token=${Admin1Token}

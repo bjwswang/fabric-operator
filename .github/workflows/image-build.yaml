@@ -53,10 +53,10 @@ jobs:
           tags: |
             hyperledgerk8s/fabric-operator:latest
             hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.DATE }}
-            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.TAG }}-${{ steps.short-sha.outputs.sha }}
+            hyperledgerk8s/fabric-operator:${{ steps.set-env.outputs.TAG }}-${{ steps.short-sha.outputs.sha }}
             hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
-            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}
-            hyperledgerk8s/fabric-operator:v${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
+            hyperledgerk8s/fabric-operator:${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}
+            hyperledgerk8s/fabric-operator:${{ steps.set-env.outputs.TAG }}-${{ steps.set-env.outputs.DATE }}-${{ steps.short-sha.outputs.sha }}
             hyperledgerk8s/fabric-operator:${{ steps.short-sha.outputs.sha }}
           push: true
           build-args: |

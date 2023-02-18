@@ -58,11 +58,11 @@ func (organization *Organization) HasType() bool {
 	return organization.Status.CRStatus.Type != ""
 }
 
-func (organizationStatus *OrganizationStatus) AddFederation(federation NamespacedName) bool {
+func (organizationStatus *OrganizationStatus) AddFederation(federation string) bool {
 	var conflict bool
 
 	for _, f := range organizationStatus.Federations {
-		if f.String() == federation.String() {
+		if f == federation {
 			conflict = true
 			break
 		}
@@ -75,14 +75,14 @@ func (organizationStatus *OrganizationStatus) AddFederation(federation Namespace
 	return conflict
 }
 
-func (organizationStatus *OrganizationStatus) DeleteFederation(federation NamespacedName) bool {
+func (organizationStatus *OrganizationStatus) DeleteFederation(federation string) bool {
 	var exist bool
 	var index int
 
 	federations := organizationStatus.Federations
 
 	for curr, f := range federations {
-		if f.String() == federation.String() {
+		if f == federation {
 			exist = true
 			index = curr
 			break

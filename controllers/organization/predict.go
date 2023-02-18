@@ -275,10 +275,7 @@ func (r *ReconcileOrganization) AddFed(m current.Member, federation *current.Fed
 		return err
 	}
 
-	conflict := organization.Status.AddFederation(current.NamespacedName{
-		Name:      federation.Name,
-		Namespace: federation.Namespace,
-	})
+	conflict := organization.Status.AddFederation(federation.Name)
 	// conflict detected,do not need to PatchStatus
 	if conflict {
 		return errors.Errorf("federation %s already exist in organization %s", federation.GetName(), m.GetName())
@@ -357,10 +354,7 @@ func (r *ReconcileOrganization) DeleteFed(m current.Member, federation *current.
 		return err
 	}
 
-	exist := organization.Status.DeleteFederation(current.NamespacedName{
-		Name:      federation.Name,
-		Namespace: federation.Namespace,
-	})
+	exist := organization.Status.DeleteFederation(federation.Name)
 
 	// federation do not exist in this organization ,do not need to PatchStatus
 	if !exist {

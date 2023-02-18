@@ -222,7 +222,7 @@ function waitOrgReady() {
 		status=$(kubectl get org $orgName --token=${token} --ignore-not-found=true -o json | jq -r .status.type)
 		if [ "$status" == "Deployed" ]; then
 			if [[ $wantFedName != "" ]]; then
-				getFedName=$(kubectl get org $orgName --token=${token} --ignore-not-found=true -o json | jq -r '.status.federations[0].name')
+				getFedName=$(kubectl get org $orgName --token=${token} --ignore-not-found=true -o json | jq -r '.status.federations[0]')
 				if [[ $wantFedName == $getFedName ]]; then
 					break
 				fi

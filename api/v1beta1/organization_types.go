@@ -61,7 +61,7 @@ type OrganizationStatus struct {
 
 	// Federations which this organization has been added
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Federations []NamespacedName `json:"federations,omitempty"`
+	Federations []string `json:"federations,omitempty"`
 }
 
 //+kubebuilder:object:root=true

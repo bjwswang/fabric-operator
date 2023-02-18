@@ -2125,7 +2125,7 @@ func (in *OrganizationStatus) DeepCopyInto(out *OrganizationStatus) {
 	in.CRStatus.DeepCopyInto(&out.CRStatus)
 	if in.Federations != nil {
 		in, out := &in.Federations, &out.Federations
-		*out = make([]NamespacedName, len(*in))
+		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
 }

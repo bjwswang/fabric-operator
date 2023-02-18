@@ -36,3 +36,7 @@ type EndorsePolicyList struct {
 
 	Items []EndorsePolicy `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&EndorsePolicy{}, &EndorsePolicyList{})
+}

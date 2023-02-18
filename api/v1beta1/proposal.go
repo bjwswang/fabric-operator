@@ -95,6 +95,14 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 		for _, o := range ch.Spec.Members {
 			orgs = append(orgs, o.Name)
 		}
+	case DeployChaincodeProposal1:
+		for _, member := range p.Spec.DeployChaincode.Members {
+			orgs = append(orgs, member.Name)
+		}
+	case UpgradeChaincodeProposal1:
+		for _, member := range p.Spec.UpgradeChaincode.Members {
+			orgs = append(orgs, member.Name)
+		}
 	}
 	return orgs, nil
 }
@@ -107,6 +115,8 @@ const (
 	DissolveNetworkProposal
 	ArchiveChannelProposal
 	UnarchiveChannelProposal
+	DeployChaincodeProposal1
+	UpgradeChaincodeProposal1
 )
 
 func (p *Proposal) GetPurpose() uint {
@@ -132,6 +142,12 @@ func (p *Proposal) GetPurpose() uint {
 	if p.Spec.UnarchiveChannel != nil {
 		t = t | UnarchiveChannelProposal
 	}
+	if p.Spec.DeployChaincode != nil {
+		t = t | DeployChaincodeProposal1
+	}
+	if p.Spec.UpgradeChaincode != nil {
+		t = t | UpgradeChaincodeProposal1
+	}
 	return t
 }
 
@@ -155,6 +171,10 @@ func (p *Proposal) SelfType() string {
 		return "ArchiveChannelProposal"
 	case UnarchiveChannelProposal:
 		return "UnarchiveChannelProposal"
+	case DeployChaincodeProposal1:
+		return "DeployChaincode"
+	case UpgradeChaincodeProposal1:
+		return "UpgradeChaincode"
 	default:
 		return ""
 	}

@@ -1,0 +1,16 @@
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  name: create-chaincode
+  labels:
+    bestchains.chaincode.delete.proposal: chaincode-sample
+spec:
+  federation: federation-sample
+  policy: All
+  initiatorOrganization: org1
+  deployChaincode:
+    chaincode: chaincode-sample
+    members:
+    - name: org1
+      initiator: true
+    - name: org2

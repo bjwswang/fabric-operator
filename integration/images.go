@@ -29,7 +29,7 @@ var (
 	CaImage            = util.GetRegistyServer() + "fabric-ca"
 	CaTag              = FabricCAVersion
 	PeerImage          = util.GetRegistyServer() + "fabric-peer"
-	PeerTag            = FabricVersion24
+	PeerTag            = FabricVersion24 + "-external"
 	OrdererImage       = util.GetRegistyServer() + "fabric-orderer"
 	OrdererTag         = FabricVersion24
 	Orderer14Tag       = "1.4.12"

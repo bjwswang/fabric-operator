@@ -165,6 +165,7 @@ func (baseChan *BaseChannel) ConnectorProfile(channelID string, peer current.Nam
 		// add peer under channel section
 		info := profile.GetChannel(channelID)
 		info.Peers[peer.String()] = *connector.DefaultPeerInfo()
+		profile.Channels[channelID] = info
 		// add peer under peers&organization
 		err = profile.SetPeer(baseChan.Client, current.NamespacedName{Name: peer.Name, Namespace: peer.Namespace})
 		if err != nil {

@@ -102,6 +102,8 @@ spec:
               value: "false"
             - name: CORE_OPERATIONS_TLS_CLIENTROOTCAS_FILES
               value: /certs/msp/tlscacerts/cacert-0.pem
+            - name: FABRIC_LOGGING_SPEC
+              value: debug
           image: ""
           imagePullPolicy: IfNotPresent
           livenessProbe:

@@ -104,6 +104,10 @@ type ProposalSource struct {
 	ArchiveChannel *ArchiveChannel `json:"archiveChannel,omitempty"`
 	// +optional
 	UnarchiveChannel *UnarchiveChannel `json:"unarchiveChannel,omitempty"`
+	// +optional
+	DeployChaincode *DeployChaincodeProposal `json:"deployChaincode,omitempty"`
+	// +optional
+	UpgradeChaincode *UpgradeChaincodeProposal `json:"upgradeChaincode,omitempty"`
 }
 
 type AddMember struct {
@@ -122,6 +126,17 @@ type DissolveNetwork struct {
 }
 
 type CreateFederation struct {
+}
+type DeployChaincodeProposal struct {
+	Chaincode string   `json:"chaincode"`
+	Members   []Member `json:"members"`
+}
+
+type UpgradeChaincodeProposal struct {
+	Chaincode         string         `json:"chaincode"`
+	NewVersion        string         `json:"newVersion"`
+	NewChaincodeImage ChaincodeImage `json:"newChaincodeImage"`
+	Members           []Member       `json:"members"`
 }
 
 type ArchiveChannel struct {

@@ -21,6 +21,7 @@ package channel
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
@@ -38,6 +39,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	errPeerAlreadyJoined = errors.New("already exists")
+)
+
 const (
 	// pollDuration in each poll
 	pollDuration = 5 * time.Second
@@ -53,17 +58,22 @@ func (baseChan *BaseChannel) ReconcilePeer(instance *current.Channel, peer curre
 	if err != nil {
 		return errors.Wrap(err, "check peer")
 	}
+	index, condition := instance.GetPeerCondition(peer)
+	if condition.Type == current.PeerJoined {
+		return nil
+	}
 
 	err = baseChan.JoinChannel(instance.GetName(), peer)
-
-	index, condition := instance.GetPeerCondition(peer)
 	if err != nil {
-		// patch error status to channel
-		log.Error(err, "failed to reconcile peer", "peer", peer.String())
-		condition.Type = current.PeerError
-		condition.Status = v1.ConditionTrue
-		condition.Reason = err.Error()
-		condition.LastTransitionTime = v1.Now()
+		// skip if peer already joined
+		if !strings.Contains(err.Error(), errPeerAlreadyJoined.Error()) {
+			// patch error status to channel
+			log.Error(err, "failed to reconcile peer", "peer", peer.String())
+			condition.Type = current.PeerError
+			condition.Status = v1.ConditionTrue
+			condition.Reason = err.Error()
+			condition.LastTransitionTime = v1.Now()
+		}
 	} else {
 		condition.Type = current.PeerJoined
 		condition.Status = v1.ConditionTrue

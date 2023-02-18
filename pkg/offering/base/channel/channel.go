@@ -138,12 +138,12 @@ func (channel *BaseChannel) PreReconcileChecks(instance *current.Channel, update
 
 // Initialize on Channel upon Update
 func (baseChan *BaseChannel) Initialize(instance *current.Channel, update Update) error {
-	err := baseChan.Initializer.CreateChannel(instance)
-	if err != nil {
-		return err
+	if instance.Status.Type != current.ChannelCreated {
+		err := baseChan.Initializer.CreateChannel(instance)
+		if err != nil {
+			return err
+		}
 	}
-
-	// Patch status
 
 	return nil
 }

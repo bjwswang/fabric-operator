@@ -71,6 +71,30 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 		for _, o := range network.Spec.Members {
 			orgs = append(orgs, o.Name)
 		}
+	case ArchiveChannelProposal:
+		channel := p.Spec.ProposalSource.ArchiveChannel.Channel
+		ch := &Channel{}
+		if err := client.Get(ctx, types.NamespacedName{Name: channel}, ch); err != nil {
+			if apierrors.IsNotFound(err) {
+				return orgs, nil
+			}
+			return nil, err
+		}
+		for _, o := range ch.Spec.Members {
+			orgs = append(orgs, o.Name)
+		}
+	case UnarchiveChannelProposal:
+		channel := p.Spec.ProposalSource.UnarchiveChannel.Channel
+		ch := &Channel{}
+		if err := client.Get(ctx, types.NamespacedName{Name: channel}, ch); err != nil {
+			if apierrors.IsNotFound(err) {
+				return orgs, nil
+			}
+			return nil, err
+		}
+		for _, o := range ch.Spec.Members {
+			orgs = append(orgs, o.Name)
+		}
 	}
 	return orgs, nil
 }
@@ -81,6 +105,8 @@ const (
 	DeleteMemberProposal
 	DissolveFederationProposal
 	DissolveNetworkProposal
+	ArchiveChannelProposal
+	UnarchiveChannelProposal
 )
 
 func (p *Proposal) GetPurpose() uint {
@@ -99,6 +125,12 @@ func (p *Proposal) GetPurpose() uint {
 	}
 	if p.Spec.DissolveNetwork != nil {
 		t = t | DissolveNetworkProposal
+	}
+	if p.Spec.ArchiveChannel != nil {
+		t = t | ArchiveChannelProposal
+	}
+	if p.Spec.UnarchiveChannel != nil {
+		t = t | UnarchiveChannelProposal
 	}
 	return t
 }
@@ -119,6 +151,10 @@ func (p *Proposal) SelfType() string {
 		return "DissolveFederationProposal"
 	case DissolveNetworkProposal:
 		return "DissolveNetworkProposal"
+	case ArchiveChannelProposal:
+		return "ArchiveChannelProposal"
+	case UnarchiveChannelProposal:
+		return "UnarchiveChannelProposal"
 	default:
 		return ""
 	}

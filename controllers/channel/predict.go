@@ -19,12 +19,18 @@
 package channel
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/go-test/deep"
 	"gopkg.in/yaml.v2"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -124,4 +130,84 @@ func (r *ReconcileChannel) UpdateFunc(e event.UpdateEvent) bool {
 	log.Info(fmt.Sprintf("Spec update triggering reconcile on Channel custom resource %s: update [ %+v ]", oldChan.Name, update.GetUpdateStackWithTrues()))
 
 	return true
+}
+
+func (r *ReconcileChannel) ProposalUpdateFunc(e event.UpdateEvent) bool {
+	var err error
+
+	oldProposal := e.ObjectOld.(*current.Proposal)
+	newProposal := e.ObjectNew.(*current.Proposal)
+	log.Info(fmt.Sprintf("Update event detected for proposal '%s'", oldProposal.Spec.Federation))
+
+	if reflect.DeepEqual(oldProposal.Spec, newProposal.Spec) && reflect.DeepEqual(oldProposal.Status, newProposal.Status) {
+		return false
+	}
+
+	targetChannel := ""
+	if newProposal.Status.Phase == current.ProposalFinished {
+		for _, c := range newProposal.Status.Conditions {
+			switch c.Type {
+			case current.ProposalSucceeded:
+				switch newProposal.GetPurpose() {
+				case current.ArchiveChannelProposal:
+					targetChannel = newProposal.Spec.ArchiveChannel.Channel
+					err = r.PatchProposalStatus(targetChannel, newProposal.GetName(), current.ArchiveChannelProposal)
+					if err != nil {
+						log.Error(err, "patch channel status with proposal %s succ")
+					}
+				case current.UnarchiveChannelProposal:
+					targetChannel = newProposal.Spec.UnarchiveChannel.Channel
+					err = r.PatchProposalStatus(targetChannel, newProposal.GetName(), current.UnarchiveChannelProposal)
+					if err != nil {
+						log.Error(err, "patch channel status by proposal succ", "proposal", newProposal.GetName())
+					}
+				default:
+					return false
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func (r *ReconcileChannel) PatchProposalStatus(targetChannel string, proposal string, purpose uint) error {
+	ch := &current.Channel{}
+	ch.Name = targetChannel
+	err := r.client.Get(context.TODO(), client.ObjectKeyFromObject(ch), ch)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	switch purpose {
+	case current.ArchiveChannelProposal:
+		ch.Status.ArchivedStatus = ch.Status.CRStatus
+		ch.Status.CRStatus = current.CRStatus{
+			Type:              current.ChannelArchived,
+			Status:            current.True,
+			Reason:            "archived",
+			Message:           fmt.Sprintf("channel archived by proposal %s", proposal),
+			LastHeartbeatTime: metav1.Now(),
+		}
+	case current.UnarchiveChannelProposal:
+		ch.Status.CRStatus = ch.Status.ArchivedStatus
+		ch.Status.ArchivedStatus = current.CRStatus{}
+	}
+
+	err = r.client.PatchStatus(context.TODO(), ch, nil, controllerclient.PatchOption{
+		Resilient: &k8sclient.ResilientPatch{
+			Retry:    2,
+			Into:     &current.Channel{},
+			Strategy: client.MergeFrom,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

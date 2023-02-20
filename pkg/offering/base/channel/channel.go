@@ -186,12 +186,16 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 
 // CheckStates on Channel(do nothing)
 func (baseChan *BaseChannel) CheckStates(instance *current.Channel, update Update) (common.Result, error) {
-	return common.Result{
-		Status: &current.CRStatus{
-			Type:    current.ChannelCreated,
-			Version: version.Operator,
-		},
-	}, nil
+	if !instance.HasType() {
+		return common.Result{
+			Status: &current.CRStatus{
+				Type:    current.ChannelCreated,
+				Version: version.Operator,
+			},
+		}, nil
+	}
+
+	return common.Result{}, nil
 }
 
 func (baseChan *BaseChannel) SetOwnerReference(instance *current.Channel, update Update) error {

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,11 +32,15 @@ import (
 )
 
 var (
-	errChangeProposalPurpose = errors.New("the purpose of the proposal cannot be changed")
-	errNullProposalPurpose   = errors.New("the proposal should have a purpose")
-	errMoreProposalPurpose   = errors.New("the proposal should have only one purpose")
-	errChangeInitiator       = errors.New("the initiator of the proposal cannot be changed")
-	errChangeFederation      = errors.New("the federation of the proposal cannot be changed")
+	errChangeProposalPurpose  = errors.New("the purpose of the proposal cannot be changed")
+	errNullProposalPurpose    = errors.New("the proposal should have a purpose")
+	errMoreProposalPurpose    = errors.New("the proposal should have only one purpose")
+	errChangeInitiator        = errors.New("the initiator of the proposal cannot be changed")
+	errChangeFederation       = errors.New("the federation of the proposal cannot be changed")
+	errChannelNotFound        = errors.New("the relevant channel in the proposal cannot be found")
+	errChannelInError         = errors.New("the relevant channel in the proposal is in Error status")
+	errChannelAlreadyArchived = errors.New("the relevant channel in the proposal is already archived")
+	errChannelNotArchivedYet  = errors.New("the relevant channel in the proposal not archived yet")
 )
 
 // log is for logging in this package.
@@ -82,6 +87,11 @@ func (r *Proposal) ValidateCreate(ctx context.Context, client client.Client, use
 	if err := validateInitiator(ctx, client, user, fakeMembers); err != nil {
 		return err
 	}
+
+	if err := validateProposalSource(ctx, client, r.Spec.ProposalSource); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -111,6 +121,10 @@ func (r *Proposal) ValidateUpdate(ctx context.Context, client client.Client, old
 		return err
 	}
 
+	if err := validateProposalSource(ctx, client, r.Spec.ProposalSource); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -129,6 +143,51 @@ func (r *Proposal) ValidateDelete(ctx context.Context, client client.Client, use
 
 	if err := validateInitiator(ctx, client, user, fakeMembers); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func validateProposalSource(ctx context.Context, c client.Client, proposalSource ProposalSource) error {
+	if proposalSource.ArchiveChannel != nil {
+		if err := validateChannel(ctx, c, proposalSource.ArchiveChannel.Channel, ArchiveChannelProposal); err != nil {
+			return err
+		}
+	}
+
+	if proposalSource.UnarchiveChannel != nil {
+		if err := validateChannel(ctx, c, proposalSource.UnarchiveChannel.Channel, UnarchiveChannelProposal); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateChannel(ctx context.Context, c client.Client, channel string, purpose uint) error {
+	ch := &Channel{}
+	ch.Name = channel
+	err := c.Get(ctx, client.ObjectKeyFromObject(ch), ch)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return errChannelNotFound
+		}
+		return err
+	}
+
+	if ch.Status.Type == Error {
+		return errChannelInError
+	}
+
+	switch purpose {
+	case ArchiveChannelProposal:
+		if ch.Status.Type == ChannelArchived {
+			return errChannelAlreadyArchived
+		}
+	case UnarchiveChannelProposal:
+		if ch.Status.Type != ChannelArchived {
+			return errChannelNotArchivedYet
+		}
 	}
 
 	return nil

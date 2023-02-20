@@ -154,9 +154,9 @@ const (
 	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
 	ChannelCreated IBPCRStatusType = "ChannelCreated"
 
-	// ChannelDissoleved means channel been dissolved by `Proposal-Vote`
+	// ChannelArchived means channel been marked as `Archived` by `Proposal-Vote`
 	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
-	ChannelDissoleved IBPCRStatusType = "ChannelDissolved"
+	ChannelArchived IBPCRStatusType = "ChannelArchived"
 )
 
 // +k8s:deepcopy-gen=true

@@ -1,0 +1,12 @@
+---
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  name: unarchive-channel-sample
+spec:
+  federation: federation-sample
+  policy: All
+  initiatorOrganization: org1
+  unarchiveChannel:
+    channel: channel-sample
+    description: "this channel no longer needs"

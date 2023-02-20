@@ -100,6 +100,10 @@ type ProposalSource struct {
 	DissolveFederation *DissolveFederation `json:"dissolveFederation,omitempty"`
 	// +optional
 	DissolveNetwork *DissolveNetwork `json:"dissolveNetwork,omitempty"`
+	// +optional
+	ArchiveChannel *ArchiveChannel `json:"archiveChannel,omitempty"`
+	// +optional
+	UnarchiveChannel *UnarchiveChannel `json:"unarchiveChannel,omitempty"`
 }
 
 type AddMember struct {
@@ -118,6 +122,16 @@ type DissolveNetwork struct {
 }
 
 type CreateFederation struct {
+}
+
+type ArchiveChannel struct {
+	Channel     string `json:"channel"`
+	Description string `json:"description,omitempty"`
+}
+
+type UnarchiveChannel struct {
+	Channel     string `json:"channel"`
+	Description string `json:"description,omitempty"`
 }
 
 type VoteResult struct {

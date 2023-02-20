@@ -416,14 +416,14 @@ function waitChannelReady() {
 	token=$3
 	START_TIME=$(date +%s)
 	while true; do
-		if [[ $want == "NoExist" ]]; then
-			kubectl get network --token=${token} $networkName
-			if [[ $? -eq 1 ]]; then
+		if [[ $want == "ChannelCreated" ]]; then
+			Type=$(kubectl get channel --token=${token} $channelName --ignore-not-found=true -o json | jq -r '.status.type')
+			if [[ $Type == $want ]]; then
 				break
 			fi
-		elif [[ $want == "Ready" ]]; then
+		elif [[ $want == "ChannelArchived" ]]; then
 			Type=$(kubectl get channel --token=${token} $channelName --ignore-not-found=true -o json | jq -r '.status.type')
-			if [[ $Type == "ChannelCreated" ]]; then
+			if [[ $Type == $want ]]; then
 				break
 			fi
 		fi
@@ -437,7 +437,7 @@ function waitChannelReady() {
 		sleep 5
 	done
 }
-waitChannelReady channel-sample "Ready" ${Admin1Token}
+waitChannelReady channel-sample "ChannelCreated" ${Admin1Token}
 
 info "4.7.2 create peer node peer=org1peer1"
 Org1CaCert=$(kubectl get cm --token=${Admin1Token} -norg1 org1-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.tls.cert')
@@ -525,6 +525,35 @@ sleep 5
 info "4.7.5 add peer node to channel peer=org2peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml --token=${Admin2Token}
 # todo Verify that peers successfully join channel
+sleep 5
+
+info "4.7.6 create a proposal to archive channel-sample"
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_archive_channel.yaml
+
+info "4.7.7 user=org2admin vote for pro=archive-channel-sample"
+waitVoteExist org2 archive-channel-sample ${Admin2Token}
+kubectl patch vote -n org2 vote-org2-archive-channel-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
+
+info "4.7.8 pro=archive-channel-sample become Succeeded"
+waitProposalSucceeded archive-channel-sample ${Admin1Token}
+
+info "4.7.9 channel=channel-sample become Archived"
+waitChannelReady channel-sample "ChannelArchived" ${Admin1Token}
+
+info "4.7.10 create a proposal to unarchive channel-sample"
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_unarchive_channel.yaml
+
+info "4.7.11 user=org2admin vote for pro=unarchive-channel-sample"
+waitVoteExist org2 unarchive-channel-sample ${Admin2Token}
+kubectl patch vote -n org2 vote-org2-unarchive-channel-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
+
+info "4.7.12 pro=unarchive-channel-sample become Succeeded"
+waitProposalSucceeded unarchive-channel-sample ${Admin1Token}
+
+info "4.7.13 channel=channel-sample become Archived"
+waitChannelReady channel-sample "ChannelCreated" ${Admin1Token}
 
 info "cache component image"
 source ${InstallDirPath}/scripts/cache-image.sh

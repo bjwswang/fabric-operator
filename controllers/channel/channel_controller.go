@@ -112,7 +112,34 @@ func add(mgr manager.Manager, r *ReconcileChannel) error {
 		return err
 	}
 
+	proposalFuncs := predicate.Funcs{
+		UpdateFunc: r.ProposalUpdateFunc,
+	}
+
+	err = c.Watch(&source.Kind{Type: &current.Proposal{}}, handler.EnqueueRequestsFromMapFunc(proposal2channelMap), proposalFuncs)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func proposal2channelMap(object client.Object) []reconcile.Request {
+	proposal := object.(*current.Proposal)
+	targetChannel := ""
+	switch proposal.GetPurpose() {
+	case current.ArchiveChannelProposal:
+		targetChannel = proposal.Spec.ArchiveChannel.Channel
+	case current.UnarchiveChannelProposal:
+		targetChannel = proposal.Spec.UnarchiveChannel.Channel
+	}
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Name: targetChannel,
+			},
+		},
+	}
 }
 
 var _ reconcile.Reconciler = &ReconcileChannel{}

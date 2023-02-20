@@ -73,6 +73,7 @@ type PeerCondition struct {
 // ChannelStatus defines the observed state of Channel
 type ChannelStatus struct {
 	CRStatus       `json:",inline"`
+	ArchivedStatus CRStatus        `json:"archivedStatus,omitempty"`
 	PeerConditions []PeerCondition `json:"peerConditions,omitempty"`
 }
 

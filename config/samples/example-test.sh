@@ -471,7 +471,7 @@ Org1CaPort=${port}
 sed -i -e "s/<org1AdminToken>/${Admin1Token}/g" config/samples/peers/ibp.com_v1beta1_peer_org1peer1.yaml
 sed -i -e "s/<org1-ca-cert>/${Org1CaCert}/g" config/samples/peers/ibp.com_v1beta1_peer_org1peer1.yaml
 kubectl create -f config/samples/peers/ibp.com_v1beta1_peer_org1peer1.yaml --dry-run=client -o json |
-	jq '.spec.ingress.class = "'$IngressClassName'"' |
+	jq '.spec.domain = "'$ingressNodeIP'.nip.io"' | jq '.spec.ingress.class = "'$IngressClassName'"' |
 	jq '.spec.storage.peer.class = "'$StorageClassName'"' | jq '.spec.storage.statedb.class = "'$StorageClassName'"' |
 	jq '.spec.secret.enrollment.component.cahost = "'$Org1CaHost'"' | jq '.spec.secret.enrollment.tls.cahost = "'$Org1CaHost'"' |
 	jq '.spec.secret.enrollment.component.caport = "'$Org1CaPort'"' | jq '.spec.secret.enrollment.tls.caport = "'$Org1CaPort'"' |
@@ -510,7 +510,7 @@ Org2CaPort=${port}
 sed -i -e "s/<org2AdminToken>/${Admin2Token}/g" config/samples/peers/ibp.com_v1beta1_peer_org2peer1.yaml
 sed -i -e "s/<org2-ca-cert>/${Org2CaCert}/g" config/samples/peers/ibp.com_v1beta1_peer_org2peer1.yaml
 kubectl create -f config/samples/peers/ibp.com_v1beta1_peer_org2peer1.yaml --dry-run=client -o json |
-	jq '.spec.ingress.class = "'$IngressClassName'"' |
+	jq '.spec.domain = "'$ingressNodeIP'.nip.io"' | jq '.spec.ingress.class = "'$IngressClassName'"' |
 	jq '.spec.storage.peer.class = "'$StorageClassName'"' | jq '.spec.storage.statedb.class = "'$StorageClassName'"' |
 	jq '.spec.secret.enrollment.component.cahost = "'$Org2CaHost'"' | jq '.spec.secret.enrollment.tls.cahost = "'$Org2CaHost'"' |
 	jq '.spec.secret.enrollment.component.caport = "'$Org2CaPort'"' | jq '.spec.secret.enrollment.tls.caport = "'$Org2CaPort'"' |
@@ -519,12 +519,37 @@ waitPeerReady org2peer1 org2 "" ${Admin2Token}
 
 info "4.7.4 add peer node to channel peer=org1peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org1.yaml --token=${Admin1Token}
-# todo Verify that peers successfully join channel
+function waitPeerJoined() {
+	channelName=$1
+	peerIndex=$2
+	want=$3
+	token=$4
+	START_TIME=$(date +%s)
+	while true; do
+		if [[ $want != "" ]]; then
+			Type=$(kubectl get channels --token=${token} $channelName --ignore-not-found=true -o json | jq -r ".status.peerConditions[$peerIndex].type")
+			if [[ $Type == $want ]]; then
+				break
+			fi
+		else
+            break
+        fi
+		CURRENT_TIME=$(date +%s)
+		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+		if [ $ELAPSED_TIME -gt 60 ]; then
+			error "Timeout reached"
+			kubectl describe --token=${token} channels ${channelName}
+			exit 1
+		fi
+		sleep 5
+	done
+}
+waitPeerJoined channel-sample 0 PeerJoined ${Admin1Token}
 sleep 5
 
 info "4.7.5 add peer node to channel peer=org2peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml --token=${Admin2Token}
-# todo Verify that peers successfully join channel
+waitPeerJoined channel-sample 1 PeerJoined ${Admin2Token}
 sleep 5
 
 info "4.7.6 create a proposal to archive channel-sample"

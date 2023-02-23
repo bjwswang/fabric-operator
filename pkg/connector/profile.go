@@ -38,7 +38,7 @@ import (
 type Profile struct {
 	Version       string `yaml:"version,omitempty"`
 	Client        `yaml:"client,omitempty"`
-	Channels      map[string]ChannelInfo      `yaml:"channels,omitempty"`
+	Channels      map[string]ChannelInfo      `yaml:"channels"`
 	Organizations map[string]OrganizationInfo `yaml:"organizations,omitempty"`
 	// Orderers defines all orderer endpoints which can be used
 	Orderers map[string]NodeEndpoint `yaml:"orderers,omitempty"`
@@ -74,7 +74,7 @@ type CryptoStore struct {
 // ChannelInfo defines configurations when connect to this channel
 type ChannelInfo struct {
 	// Peers which can be used to connect to this channel
-	Peers map[string]PeerInfo `yaml:"peers,omitempty"`
+	Peers map[string]PeerInfo `yaml:"peers"`
 }
 
 type PeerInfo struct {
@@ -175,6 +175,7 @@ func (profile *Profile) SetChannel(channelID string, peers ...current.Namespaced
 	for _, p := range peers {
 		info.Peers[p.String()] = *DefaultPeerInfo()
 	}
+	profile.Channels[channelID] = info
 }
 
 /* Channel settings in Profile */

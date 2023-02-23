@@ -187,10 +187,13 @@ func validatePeersOwnership(ctx context.Context, c client.Client, ownerOrgs []st
 		if err != nil {
 			return errors.Wrapf(err, "failed to get peer %s", peer.String())
 		}
-		if p.Status.Type == Error {
+
+		switch p.Status.Type {
+		case Error:
 			return errors.Errorf("peer %s has error %s:%s", peer.String(), p.Status.Reason, p.Status.Message)
+		case Deploying:
+			return errors.Errorf("peer %s still deploying. cannot be used to join channel", peer.String())
 		}
 	}
-
 	return nil
 }

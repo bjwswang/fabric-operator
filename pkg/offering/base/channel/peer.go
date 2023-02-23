@@ -64,16 +64,12 @@ func (baseChan *BaseChannel) ReconcilePeer(instance *current.Channel, peer curre
 	}
 
 	err = baseChan.JoinChannel(instance.GetName(), peer)
-	if err != nil {
-		// skip if peer already joined
-		if !strings.Contains(err.Error(), errPeerAlreadyJoined.Error()) {
-			// patch error status to channel
-			log.Error(err, "failed to reconcile peer", "peer", peer.String())
-			condition.Type = current.PeerError
-			condition.Status = v1.ConditionTrue
-			condition.Reason = err.Error()
-			condition.LastTransitionTime = v1.Now()
-		}
+	if err != nil && !strings.Contains(err.Error(), errPeerAlreadyJoined.Error()) {
+		log.Error(err, "failed to reconcile peer", "peer", peer.String())
+		condition.Type = current.PeerError
+		condition.Status = v1.ConditionTrue
+		condition.Reason = err.Error()
+		condition.LastTransitionTime = v1.Now()
 	} else {
 		condition.Type = current.PeerJoined
 		condition.Status = v1.ConditionTrue

@@ -42,7 +42,7 @@ func (i *Initializer) ConfigureOrderer(instance *current.Channel, profile *confi
 		return nil, err
 	}
 
-	org := configtx.DefaultOrganization(ordererorg)
+	org := configtx.DefaultOrdererOrganization(ordererorg)
 	org.MSPDir = i.GetOrgMSPDir(instance, ordererorg)
 	err = profile.AddOrgToOrderer(org)
 	if err != nil {

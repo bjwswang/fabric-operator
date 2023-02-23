@@ -47,3 +47,31 @@ func DefaultOrganization(orgMSPID string) *Organization {
 		},
 	}
 }
+
+func DefaultOrdererOrganization(orgMSPID string) *Organization {
+	return &Organization{
+		Name:           orgMSPID,
+		ID:             orgMSPID,
+		MSPType:        "bccsp",
+		MSPDir:         "/certs/msp",
+		AdminPrincipal: "Role.MEMBER",
+		Policies: map[string]*Policy{
+			"Readers": {
+				Type: "Signature",
+				Rule: fmt.Sprintf("OR('%s.member')", orgMSPID),
+			},
+			"Writers": {
+				Type: "Signature",
+				Rule: fmt.Sprintf("OR('%s.member')", orgMSPID),
+			},
+			"Admins": {
+				Type: "Signature",
+				Rule: fmt.Sprintf("OR('%s.member')", orgMSPID),
+			},
+			"Endorsement": {
+				Type: "Signature",
+				Rule: fmt.Sprintf("OR('%s.member')", orgMSPID),
+			},
+		},
+	}
+}

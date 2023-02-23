@@ -198,6 +198,14 @@ func GetGenesisDefaults() *TopLevel {
 							Type: "ImplicitMeta",
 							Rule: "MAJORITY Admins",
 						},
+						"LifecycleEndorsement": {
+							Type: "ImplicitMeta",
+							Rule: "MAJORITY Endorsement",
+						},
+						"Endorsement": {
+							Type: "ImplicitMeta",
+							Rule: "MAJORITY Endorsement",
+						},
 					},
 					ACLs: make(map[string]string),
 				},

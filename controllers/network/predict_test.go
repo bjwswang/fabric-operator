@@ -74,28 +74,21 @@ var _ = Describe("Predict on Network", func() {
 		}
 		network = &current.Network{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "network-sample",
-				Namespace: "org1",
+				Name: "network-sample",
 			},
 			Spec: current.NetworkSpec{
 				Federation: federation.GetName(),
-				Members: []current.Member{
-					{Name: "org1", Initiator: true},
-					{Name: "org2", Initiator: false},
-				},
-				OrderSpec: current.IBPOrdererSpec{},
+				Initiator:  "org1",
+				OrderSpec:  current.IBPOrdererSpec{},
 			},
 		}
 		updatedNetwork = &current.Network{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "network-sample",
-				Namespace: "org1",
+				Name: "network-sample",
 			},
 			Spec: current.NetworkSpec{
 				Federation: federation.GetName(),
-				Members: []current.Member{
-					{Name: "org1", Initiator: true},
-				},
+				Initiator:  "org1",
 			},
 			// status detected
 			Status: current.NetworkStatus{

@@ -207,12 +207,7 @@ func (r *ReconcileNetwork) Reconcile(ctx context.Context, request reconcile.Requ
 	}
 
 	if _, ok := instance.Labels[NETWORK_INITIATOR_LABEL]; !ok {
-		for _, member := range instance.Spec.Members {
-			if member.Initiator {
-				instance.Labels[NETWORK_INITIATOR_LABEL] = member.Name
-				break
-			}
-		}
+		instance.Labels[NETWORK_INITIATOR_LABEL] = instance.Spec.Initiator
 		err = r.client.Update(context.TODO(), instance)
 		return reconcile.Result{Requeue: true}, err
 	}

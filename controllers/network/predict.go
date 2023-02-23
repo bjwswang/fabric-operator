@@ -68,21 +68,12 @@ func (r *ReconcileNetwork) CreateFunc(e event.CreateEvent) bool {
 			update.specUpdated = true
 		}
 
-		added, removed := current.DifferMembers(network.Spec.Members, existingNet.Spec.Members)
-		if len(added) != 0 || len(removed) != 0 {
-			log.Info(fmt.Sprintf("Network '%s' members was updated while operator was down", network.GetName()))
-			log.Info(fmt.Sprintf("Difference detected: added members %v", added))
-			log.Info(fmt.Sprintf("Difference detected: removed members %v", removed))
-			update.memberUpdated = true
-		}
-
 		log.Info(fmt.Sprintf("Create event triggering reconcile for updating Network '%s'", network.GetName()))
 		r.PushUpdate(network.GetName(), update)
 		return true
 	}
 
 	update.specUpdated = true
-	update.memberUpdated = true
 	update.ordererCreate = true
 
 	r.PushUpdate(network.GetName(), update)
@@ -101,13 +92,6 @@ func (r *ReconcileNetwork) UpdateFunc(e event.UpdateEvent) bool {
 	}
 
 	update.specUpdated = true
-
-	added, removed := current.DifferMembers(oldNet.GetMembers(), newNet.GetMembers())
-	if len(added) != 0 || len(removed) != 0 {
-		log.Info(fmt.Sprintf("Difference detected: added members %v", added))
-		log.Info(fmt.Sprintf("Difference detected: removed members %v", removed))
-		update.memberUpdated = true
-	}
 
 	r.PushUpdate(oldNet.GetName(), update)
 

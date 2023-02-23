@@ -27,19 +27,13 @@ func (network *Network) GetLabels() map[string]string {
 	}
 }
 
-func (network *Network) GetMembers() []Member {
-	return network.Spec.Members
-}
-
 func (network *Network) GetInitiatorMember() string {
-	for _, m := range network.GetMembers() {
-		if m.Initiator {
-			return m.Name
-		}
-	}
-	return ""
+	return network.Spec.Initiator
 }
 
+func (network *Network) HasInitiator() bool {
+	return network.Spec.Initiator != ""
+}
 func (network *Network) HasFederation() bool {
 	return network.Spec.Federation != ""
 }
@@ -50,10 +44,6 @@ func (network *Network) HasOrder() bool {
 
 func (network *Network) HasType() bool {
 	return network.Status.CRStatus.Type != ""
-}
-
-func (network *Network) HasMembers() bool {
-	return len(network.Spec.Members) != 0
 }
 
 func (networkStatus *NetworkStatus) AddChannel(channel string) bool {

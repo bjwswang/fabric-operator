@@ -32,13 +32,12 @@ type NetworkSpec struct {
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	Federation string `json:"federation"`
 
+	// Initiator is the organization who initiates this network and host consensus cluster
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+	Initiator string `json:"initiator"`
 	// InitialToken is the default value of the OrderSpec.ClusterSecret.[].Enrollment.TLS/Component.EnrollToken
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	InitialToken string `json:"initialToken"`
-	// Members which this network contains
-	// (DO NOT EDIT)Cloned automatically from Federation.Spec.Members
-	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Members []Member `json:"members"`
 
 	// OrderSpec is the configurations of network's related Order
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true

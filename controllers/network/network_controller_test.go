@@ -52,16 +52,12 @@ var _ = Describe("ReconcileFederation", func() {
 	BeforeEach(func() {
 		network = &current.Network{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "network-sample",
-				Namespace: "org1",
+				Name: "network-sample",
 			},
 			Spec: current.NetworkSpec{
 				Federation: "fedeartion-sample",
-				Members: []current.Member{
-					{Name: "org1", Initiator: true},
-					{Name: "org2", Initiator: false},
-				},
-				OrderSpec: current.IBPOrdererSpec{},
+				Initiator:  "org1",
+				OrderSpec:  current.IBPOrdererSpec{},
 			},
 		}
 		client = &mocks.Client{
@@ -131,7 +127,7 @@ var _ = Describe("ReconcileFederation", func() {
 		BeforeEach(func() {
 			reconciler.update = map[string][]Update{
 				network.GetName(): {
-					{specUpdated: true, memberUpdated: true},
+					{specUpdated: true},
 				},
 			}
 
@@ -152,7 +148,7 @@ var _ = Describe("ReconcileFederation", func() {
 		BeforeEach(func() {
 			reconciler.update = map[string][]Update{
 				network.GetName(): {
-					{specUpdated: true, memberUpdated: true},
+					{specUpdated: true},
 				},
 			}
 			k8soffering.ReconcileReturns(common.Result{
@@ -169,18 +165,6 @@ var _ = Describe("ReconcileFederation", func() {
 			_, err := reconciler.Reconcile(context.TODO(), request)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("patch error"))
-		})
-
-		It("set status succ.requeue due to another update exists", func() {
-			reconciler.update = map[string][]Update{
-				network.GetName(): {
-					{specUpdated: true, memberUpdated: true},
-					{specUpdated: true, memberUpdated: false},
-				},
-			}
-			result, err := reconciler.Reconcile(context.TODO(), request)
-			Expect(err).To(BeNil())
-			Expect(result.Requeue).To(BeTrue())
 		})
 
 		It("reconcile result contains requeue:true", func() {

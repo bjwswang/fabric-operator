@@ -135,8 +135,17 @@ func validateMemberInNetwork(ctx context.Context, c client.Client, netName strin
 		return errors.Errorf("network %s has error %s:%s", netName, net.Status.Reason, net.Status.Message)
 	}
 
-	allMembers := make(map[string]bool, len(net.Spec.Members))
-	for _, m := range net.Spec.Members {
+	fed := &Federation{}
+	fed.Name = net.Spec.Federation
+	if err := c.Get(ctx, client.ObjectKeyFromObject(fed), fed); err != nil {
+		if apierrors.IsNotFound(err) {
+			return errNoFederation
+		}
+		return errors.Wrap(err, "failed to get federation")
+	}
+
+	allMembers := make(map[string]bool, len(fed.Spec.Members))
+	for _, m := range fed.Spec.Members {
 		allMembers[m.Name] = true
 	}
 	for _, m := range members {

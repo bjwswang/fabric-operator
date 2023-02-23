@@ -7,6 +7,7 @@ import (
 
 	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
+	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -68,7 +69,14 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 			}
 			return nil, err
 		}
-		for _, o := range network.Spec.Members {
+		fed := &Federation{}
+		if err := client.Get(ctx, types.NamespacedName{Name: network.Spec.Federation}, fed); err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil, errNoFederation
+			}
+			return nil, errors.Wrap(err, "failed to get federation")
+		}
+		for _, o := range fed.Spec.Members {
 			orgs = append(orgs, o.Name)
 		}
 	case ArchiveChannelProposal:

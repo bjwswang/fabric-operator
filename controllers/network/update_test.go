@@ -30,8 +30,7 @@ var _ = Describe("Network update", func() {
 	})
 	It("full stack", func() {
 		update := &Update{
-			specUpdated:   true,
-			memberUpdated: true,
+			specUpdated: true,
 		}
 		Expect(update.GetUpdateStackWithTrues()).To(Equal("specUpdated memberUpdated "))
 	})

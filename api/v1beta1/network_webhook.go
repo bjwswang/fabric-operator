@@ -31,8 +31,8 @@ import (
 )
 
 var (
-	errNoFederation          = errors.New("cant find federation")
-	errMemberNotInFederation = errors.New("some member not belongs to this federation")
+	errNoFederation                    = errors.New("cant find federation")
+	errNetworkInitiatorNotInFederation = errors.New("network initiator not belongs to this federation")
 )
 
 // log is for logging in this package.
@@ -60,11 +60,11 @@ var _ validator = &Network{}
 func (r *Network) ValidateCreate(ctx context.Context, client client.Client, user authenticationv1.UserInfo) error {
 	networklog.Info("validate create", "name", r.Name, "user", user.String())
 
-	if err := validateMemberInFederation(ctx, client, r.Spec.Federation, r.Spec.Members); err != nil {
+	if err := validateInitiatorInFederation(ctx, client, r.Spec.Federation, r.Spec.Initiator); err != nil {
 		return err
 	}
 
-	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
+	if err := validateNetworkInitiator(ctx, client, user, r.Spec.Initiator); err != nil {
 		return err
 	}
 
@@ -75,15 +75,7 @@ func (r *Network) ValidateCreate(ctx context.Context, client client.Client, user
 func (r *Network) ValidateUpdate(ctx context.Context, client client.Client, old runtime.Object, user authenticationv1.UserInfo) error {
 	networklog.Info("validate update", "name", r.Name, "user", user.String())
 
-	if isSuperUser(ctx, user) {
-		return nil
-	}
-
-	if err := validateMemberInFederation(ctx, client, r.Spec.Federation, r.Spec.Members); err != nil {
-		return err
-	}
-
-	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
+	if err := validateNetworkInitiator(ctx, client, user, r.Spec.Initiator); err != nil {
 		return err
 	}
 
@@ -93,13 +85,14 @@ func (r *Network) ValidateUpdate(ctx context.Context, client client.Client, old 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *Network) ValidateDelete(ctx context.Context, client client.Client, user authenticationv1.UserInfo) error {
 	networklog.Info("validate delete", "name", r.Name, "user", user.String())
-	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
+
+	if err := validateNetworkInitiator(ctx, client, user, r.Spec.Initiator); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateMemberInFederation(ctx context.Context, c client.Client, fedName string, members []Member) error {
+func validateInitiatorInFederation(ctx context.Context, c client.Client, fedName string, initiator string) error {
 	fed := &Federation{}
 	fed.Name = fedName
 	if err := c.Get(ctx, client.ObjectKeyFromObject(fed), fed); err != nil {
@@ -108,13 +101,24 @@ func validateMemberInFederation(ctx context.Context, c client.Client, fedName st
 		}
 		return errors.Wrap(err, "failed to get federation")
 	}
-	allMembers := make(map[string]bool, len(fed.Spec.Members))
 	for _, m := range fed.Spec.Members {
-		allMembers[m.Name] = true
+		if m.Name == initiator {
+			return nil
+		}
 	}
-	for _, m := range members {
-		if ok := allMembers[m.Name]; !ok {
-			return errors.Wrapf(errMemberNotInFederation, "allMembers:%#v, members:%#v", allMembers, members)
+	return errNetworkInitiatorNotInFederation
+}
+
+func validateNetworkInitiator(ctx context.Context, c client.Client, user authenticationv1.UserInfo, initiator string) error {
+	org := &Organization{}
+	org.Name = initiator
+	if !isSuperUser(ctx, user) {
+		err := c.Get(ctx, client.ObjectKeyFromObject(org), org)
+		if err != nil {
+			return errors.Wrap(err, "failed to get initiator organization")
+		}
+		if org.Spec.Admin != user.Username {
+			return errNoPermission
 		}
 	}
 	return nil

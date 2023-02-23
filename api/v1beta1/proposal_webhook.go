@@ -20,10 +20,12 @@ package v1beta1
 
 import (
 	"context"
-	"errors"
 	"time"
 
+	"github.com/pkg/errors"
+
 	authenticationv1 "k8s.io/api/authentication/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,6 +43,7 @@ var (
 	errChannelInError         = errors.New("the relevant channel in the proposal is in Error status")
 	errChannelAlreadyArchived = errors.New("the relevant channel in the proposal is already archived")
 	errChannelNotArchivedYet  = errors.New("the relevant channel in the proposal not archived yet")
+	errMemberNotInFederation  = errors.New("some member not belongs to this federation")
 )
 
 // log is for logging in this package.
@@ -145,6 +148,27 @@ func (r *Proposal) ValidateDelete(ctx context.Context, client client.Client, use
 		return err
 	}
 
+	return nil
+}
+
+func validateMemberInFederation(ctx context.Context, c client.Client, fedName string, members []Member) error {
+	fed := &Federation{}
+	fed.Name = fedName
+	if err := c.Get(ctx, client.ObjectKeyFromObject(fed), fed); err != nil {
+		if apierrors.IsNotFound(err) {
+			return errNoFederation
+		}
+		return errors.Wrap(err, "failed to get federation")
+	}
+	allMembers := make(map[string]bool, len(fed.Spec.Members))
+	for _, m := range fed.Spec.Members {
+		allMembers[m.Name] = true
+	}
+	for _, m := range members {
+		if ok := allMembers[m.Name]; !ok {
+			return errors.Wrapf(errMemberNotInFederation, "allMembers:%#v, members:%#v", allMembers, members)
+		}
+	}
 	return nil
 }
 

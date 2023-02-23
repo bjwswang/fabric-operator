@@ -1909,13 +1909,6 @@ func (in *NetworkList) DeepCopyObject() runtime.Object {
 func (in *NetworkSpec) DeepCopyInto(out *NetworkSpec) {
 	*out = *in
 	out.License = in.License
-	if in.Members != nil {
-		in, out := &in.Members, &out.Members
-		*out = make([]Member, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
 	in.OrderSpec.DeepCopyInto(&out.OrderSpec)
 }
 

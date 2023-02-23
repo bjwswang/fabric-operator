@@ -263,12 +263,11 @@ var _ = Describe("Predict federation events", func() {
 
 			network = &current.Network{
 				ObjectMeta: v1.ObjectMeta{
-					Name:      "network-sample",
-					Namespace: "org1",
+					Name: "network-sample",
 				},
 				Spec: current.NetworkSpec{
 					Federation: federation.GetName(),
-					Members:    federation.GetMembers(),
+					Initiator:  "org1",
 					OrderSpec:  current.IBPOrdererSpec{},
 				},
 			}

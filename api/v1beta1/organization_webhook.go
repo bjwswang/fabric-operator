@@ -118,10 +118,8 @@ func (r *Organization) ValidateDelete(ctx context.Context, c client.Client, user
 		return errors.Wrap(err, "cant get network list")
 	}
 	for _, net := range networkList.Items {
-		for _, m := range net.Spec.Members {
-			if m.Initiator && m.Name == r.Name {
-				return errHasNetwork
-			}
+		if net.Spec.Initiator == r.Name {
+			return errHasNetwork
 		}
 	}
 	return nil

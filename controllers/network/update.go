@@ -27,17 +27,12 @@ import (
 // Update defines a list of elements that we detect spec updates on
 type Update struct {
 	specUpdated          bool
-	memberUpdated        bool
 	ordererCreate        bool
 	ordererStatusUpdated bool
 }
 
 func (u *Update) SpecUpdated() bool {
 	return u.specUpdated
-}
-
-func (u *Update) MemberUpdated() bool {
-	return u.memberUpdated
 }
 
 func (u *Update) OrdererCreate() bool {
@@ -53,10 +48,6 @@ func (u *Update) GetUpdateStackWithTrues() string {
 
 	if u.specUpdated {
 		stack += "specUpdated "
-	}
-
-	if u.memberUpdated {
-		stack += "memberUpdated "
 	}
 
 	if u.ordererCreate {

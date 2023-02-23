@@ -140,7 +140,7 @@ func (network *BaseNetwork) PreReconcileChecks(instance *current.Network, update
 		return errors.New("network's federation is empty")
 	}
 
-	if !instance.HasMembers() {
+	if !instance.HasInitiator() {
 		return errors.New("network's members is empty")
 	}
 
@@ -154,12 +154,6 @@ func (network *BaseNetwork) PreReconcileChecks(instance *current.Network, update
 		return errors.Errorf("the dependent federation %s is not activated yet", federation.GetName())
 	}
 
-	// Network only can contain members inherited from Federation
-	added, _ := current.DifferMembers(federation.GetMembers(), instance.GetMembers())
-	if len(added) != 0 {
-		return errors.Errorf("network %s contains members %v which not in Federation %s", instance.GetName(), added, federation.GetName())
-	}
-
 	return nil
 }
 
@@ -171,6 +165,7 @@ func (network *BaseNetwork) Initialize(instance *current.Network, update Update)
 // ReconcileManagers on Network upon Update
 func (network *BaseNetwork) ReconcileManagers(instance *current.Network, update Update) error {
 	var err error
+	// member updated in federation
 	if update.MemberUpdated() {
 		err = network.RBACManager.Reconcile(bcrbac.Network, instance, bcrbac.ResourceUpdate)
 		if err != nil {

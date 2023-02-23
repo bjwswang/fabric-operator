@@ -51,16 +51,12 @@ var _ = Describe("K8s Network Reconcile Logic", func() {
 				Kind: "Network",
 			},
 			ObjectMeta: v1.ObjectMeta{
-				Name:      "network-sample",
-				Namespace: "org1",
+				Name: "network-sample",
 			},
 			Spec: current.NetworkSpec{
 				OrderSpec:  current.IBPOrdererSpec{},
 				Federation: "federation-sample",
-				Members: []current.Member{
-					{Name: "org1", Initiator: false},
-					{Name: "org3", Initiator: false},
-				},
+				Initiator:  "org1",
 			},
 		}
 	})

@@ -67,18 +67,14 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 		BeforeEach(func() {
 			instance = &current.Network{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "network-sample",
-					Namespace: "org1",
+					Name: "network-sample",
 				},
 				Spec: current.NetworkSpec{
 					OrderSpec: current.IBPOrdererSpec{
 						License: current.License{Accept: true},
 					},
 					Federation: "federation-sample",
-					Members: []current.Member{
-						{Name: "org1", Initiator: true},
-						{Name: "org3", Initiator: false},
-					},
+					Initiator:  "org1",
 				},
 			}
 		})
@@ -92,10 +88,10 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 			err = reconciler.PreReconcileChecks(instance, update)
 			Expect(err.Error()).To(ContainSubstring("federation is empty"))
 		})
-		It("failed due to missing members", func() {
-			instance.Spec.Members = []current.Member{}
+		It("failed due to missing initator", func() {
+			instance.Spec.Initiator = ""
 			err = reconciler.PreReconcileChecks(instance, update)
-			Expect(err.Error()).To(ContainSubstring("members is empty"))
+			Expect(err.Error()).To(ContainSubstring("initiator is empty"))
 		})
 		It("failed due to federation is not activated yet", func() {
 			client.GetStub = func(ctx context.Context, nn types.NamespacedName, o k8sclient.Object) error {
@@ -127,10 +123,6 @@ var _ = Describe("BaseNetwork Reconcile Logic", func() {
 
 			err = reconciler.PreReconcileChecks(instance, update)
 			Expect(err.Error()).To(ContainSubstring("not in Federation"))
-
-			added, _ := current.DifferMembers(fedMembers, instance.GetMembers())
-			Expect(len(added)).To(Equal(1))
-			Expect(added[0].GetName()).To(Equal("org3"))
 		})
 
 	})

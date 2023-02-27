@@ -6,15 +6,15 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // +k8s:deepcopy-gen=true
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Cluster
+// +kubebuilder:resource:scope=Cluster,shortName=epolicy;epolicies
 type EndorsePolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
-	Spec EndorsePolicySpec `json:"spec"`
+	Spec EndorsePolicySpec `json:"spec,omitempty"`
 	// +operator-sdk:gen-csv:customresourcedefinitions.statusDescriptors=true
-	Status EndorsePolicyStatus `json:"status"`
+	Status EndorsePolicyStatus `json:"status,omitempty"`
 }
 
 type EndorsePolicySpec struct {

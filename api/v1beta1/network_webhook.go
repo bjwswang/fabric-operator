@@ -25,6 +25,7 @@ import (
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -50,6 +51,11 @@ func (r *Network) Default(ctx context.Context, client client.Client, user authen
 	r.Spec.OrderSpec.OrdererType = "etcdraft"
 	if r.Spec.OrderSpec.ClusterSize == 0 {
 		r.Spec.OrderSpec.ClusterSize = 1
+	}
+
+	for index := range r.Spec.Members {
+		now := metav1.Now()
+		r.Spec.Members[index].JoinedAt = &now
 	}
 }
 

@@ -41,7 +41,7 @@ spec:
                 fieldRef:
                   fieldPath: status.hostIP
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 6
             httpGet:
@@ -105,7 +105,7 @@ spec:
             - name: LICENSE
               value: accept
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: init
           resources:
             limits:

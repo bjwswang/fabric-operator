@@ -17,7 +17,7 @@
 #
 name: "couchdbinit"
 image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
-imagePullPolicy: Always
+imagePullPolicy: IfNotPresent
 resources:
   requests:
     cpu: 0.2

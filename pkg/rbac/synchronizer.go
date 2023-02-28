@@ -65,7 +65,7 @@ func SyncFederation(c controllerclient.Client, o v1.Object, ra ResourceAction) e
 	}
 
 	// PolicyRule which should be appended/removed from role's rules
-	targetRule := PolicyRule(Federation, []v1.Object{o}, []Verb{Get})
+	targetRule := PolicyRule(Federation, []v1.Object{o}, []Verb{Get, Delete})
 
 	// Make sure each organization sync on above rule
 	for _, member := range federation.GetMembers() {
@@ -126,7 +126,7 @@ func SyncNetwork(c controllerclient.Client, o v1.Object, ra ResourceAction) erro
 		return ErrBadSynchronizer
 	}
 	// PolicyRule which should be appended/removed from role's rules
-	targetRule := PolicyRule(Network, []v1.Object{o}, []Verb{Get})
+	targetRule := PolicyRule(Network, []v1.Object{o}, []Verb{Get, Delete})
 	// Make sure each organization sync on above rule
 	for _, member := range network.GetMembers() {
 		organization := &current.Organization{}

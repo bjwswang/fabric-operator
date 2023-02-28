@@ -361,6 +361,11 @@ function waitNetwork() {
 			if [[ $name == "" ]]; then
 				break
 			fi
+		elif [[ $want == "Dissolved" ]]; then
+			Type=$(kubectl get network ${networkName} --token=${token} --ignore-not-found=true -o json | jq -r '.status.type')
+			if [[ $Type == "NetworkDissolved" ]]; then
+				break
+			fi			
 		elif [[ $want == "Ready" ]]; then
 			Type=$(kubectl get network ${networkName} --token=${token} --ignore-not-found=true -o json | jq -r '.status.type')
 			if [[ $Type == "Deployed" ]]; then
@@ -404,7 +409,11 @@ kubectl patch vote -n org2 vote-org2-dissolve-network-sample --type='json' -p='[
 info "4.4.3.3 pro=dissolve-network-sample become Activated"
 waitProposalSucceeded dissolve-network-sample ${Admin2Token}
 
-info "4.4.3.4 network=network-sample cant find, deletion finished"
+info "4.4.3.4 network=network-sample status.type become Dissolved, dissolve finished"
+waitNetwork network-sample "" "Dissolved" "" ${Admin2Token}
+
+info "4.4.3.5 delete network-sample after dissolved"
+kubectl delete -f config/samples/ibp.com_v1beta1_network.yaml --token=${Admin1Token}
 waitNetwork network-sample "" "NoExist" "" ${Admin2Token}
 
 info "4.7 channel management"

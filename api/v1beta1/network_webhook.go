@@ -33,6 +33,7 @@ import (
 var (
 	errNoFederation          = errors.New("cant find federation")
 	errMemberNotInFederation = errors.New("some member not belongs to this federation")
+	errOnlyDissolvedNetwork  = errors.New("only dissolved network can be deleted")
 )
 
 // log is for logging in this package.
@@ -96,6 +97,11 @@ func (r *Network) ValidateDelete(ctx context.Context, client client.Client, user
 	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
 		return err
 	}
+
+	if r.Status.CRStatus.Type != NetworkDissoleved {
+		return errOnlyDissolvedNetwork
+	}
+
 	return nil
 }
 

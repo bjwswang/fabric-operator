@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -216,16 +217,27 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 						newMember = append(newMember, m)
 					}
 				case current.DissolveNetworkProposal:
-					network := &current.Network{
-						ObjectMeta: v1.ObjectMeta{
-							Name: newProposal.Spec.DissolveNetwork.Name,
-						},
-					}
-					if err := r.client.Delete(context.TODO(), network); err != nil {
+					network := &current.Network{}
+					if err := r.client.Get(context.TODO(), types.NamespacedName{Name: newProposal.Spec.DissolveNetwork.Name}, network); err != nil {
 						if apierrors.IsNotFound(err) {
 							return false
 						}
-						log.Error(err, fmt.Sprintf("cant delete network %s", newProposal.Spec.DissolveNetwork.Name))
+						log.Error(err, fmt.Sprintf("cant find network %s", newProposal.Spec.DissolveNetwork.Name))
+						return false
+					}
+					network.Status.CRStatus.Type = current.NetworkDissoleved
+					network.Status.Status = current.True
+					network.Status.Reason = "DissolveNetworkProposal"
+					network.Status.Message = "Proposal to dissolve this network succeeded"
+					network.Status.LastHeartbeatTime = metav1.Now()
+					if err := r.client.PatchStatus(context.TODO(), network, nil, k8sclient.PatchOption{
+						Resilient: &k8sclient.ResilientPatch{
+							Retry:    2,
+							Into:     &current.Network{},
+							Strategy: client.MergeFrom,
+						},
+					}); err != nil {
+						log.Error(err, fmt.Sprintf("cant patch network %s status to %s", newProposal.Spec.DissolveNetwork.Name, current.NetworkDissoleved))
 						return false
 					}
 				}

@@ -12,6 +12,8 @@ resources:
 - bases/ibp.com_votes.yaml
 - bases/ibp.com_networks.yaml
 - bases/ibp.com_channels.yaml
+- bases/ibp.com_endorsepolicies.yaml
+
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

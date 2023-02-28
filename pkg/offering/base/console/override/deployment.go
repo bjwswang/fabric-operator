@@ -349,7 +349,7 @@ func (o *Override) CreateCouchdbContainer() container.Container {
 	couchdb := &corev1.Container{
 		Name:            "couchdb",
 		Image:           "",
-		ImagePullPolicy: "Always",
+		ImagePullPolicy: "IfNotPresent",
 		Env: []corev1.EnvVar{
 			{
 				Name:  "LICENSE",

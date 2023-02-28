@@ -17,7 +17,7 @@
 #
 name: "couchdb"
 image: ""
-imagePullPolicy: Always
+imagePullPolicy: IfNotPresent
 securityContext:
   privileged: false
   readOnlyRootFileSystem: false

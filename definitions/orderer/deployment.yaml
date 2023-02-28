@@ -36,7 +36,7 @@ spec:
             - name: FABRIC_CFG_PATH
               value: /certs/
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 5
             httpGet:
@@ -135,7 +135,7 @@ spec:
             - name: USE_WEBSOCKETS
               value: "true"
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 6
             tcpSocket:
@@ -192,7 +192,7 @@ spec:
             - name: LICENSE
               value: accept
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: init
           resources:
             limits:

@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 name: "chaincode-launcher"
-imagePullPolicy: Always
+imagePullPolicy: IfNotPresent
 securityContext:
   privileged: false
   readOnlyRootFileSystem: false

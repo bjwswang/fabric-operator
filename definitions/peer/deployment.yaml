@@ -34,7 +34,7 @@ spec:
             - name: LICENSE
               value: accept
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 6
             initialDelaySeconds: 30
@@ -103,7 +103,7 @@ spec:
             - name: CORE_OPERATIONS_TLS_CLIENTROOTCAS_FILES
               value: /certs/msp/tlscacerts/cacert-0.pem
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 6
             httpGet:
@@ -190,7 +190,7 @@ spec:
             - name: USE_WEBSOCKETS
               value: "true"
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 6
             tcpSocket:
@@ -238,7 +238,7 @@ spec:
             - name: LICENSE
               value: accept
           image: fluent/fluentd:v1.4-2
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           livenessProbe:
             failureThreshold: 6
             initialDelaySeconds: 30
@@ -282,7 +282,7 @@ spec:
             - name: LICENSE
               value: accept
           image: ""
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: init
           resources:
             limits:

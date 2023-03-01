@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,6 +48,11 @@ var channellog = logf.Log.WithName("channel-resource")
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Channel) Default(ctx context.Context, client client.Client, user authenticationv1.UserInfo) {
 	channellog.Info("default", "name", r.Name, "user", user.String())
+
+	for index := range r.Spec.Members {
+		now := metav1.Now()
+		r.Spec.Members[index].JoinedAt = &now
+	}
 }
 
 //+kubebuilder:webhook:path=/validate-ibp-com-v1beta1-channel,mutating=false,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=channels,verbs=create;update;delete,versions=v1beta1,name=channel.validate.webhook,admissionReviewVersions=v1

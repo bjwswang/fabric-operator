@@ -183,11 +183,14 @@ func (profile *Profile) SetChannel(channelID string, peers ...current.Namespaced
 func (profile *Profile) GetChannel(channelID string) ChannelInfo {
 	if profile.Channels == nil {
 		profile.Channels = make(map[string]ChannelInfo)
-		return ChannelInfo{
-			Peers: map[string]PeerInfo{},
+	}
+	v, ok := profile.Channels[channelID]
+	if !ok {
+		v = ChannelInfo{
+			Peers: make(map[string]PeerInfo),
 		}
 	}
-	return profile.Channels[channelID]
+	return v
 }
 
 /* Organization settings in Profile */

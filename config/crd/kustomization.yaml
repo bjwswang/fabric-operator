@@ -13,6 +13,7 @@ resources:
 - bases/ibp.com_networks.yaml
 - bases/ibp.com_channels.yaml
 - bases/ibp.com_endorsepolicies.yaml
+- bases/ibp.com_chaincodes.yaml
 
 # +kubebuilder:scaffold:crdkustomizeresource
 

@@ -69,8 +69,8 @@ func New(client controllerclient.Client, scheme *runtime.Scheme, cfg *Config) *I
 }
 
 // CreateChannel used to help create a channel within network,including:
-// 	- create a genesis block for channel
-// 	- join all orderer nodes into channel
+//   - create a genesis block for channel
+//   - join all orderer nodes into channel
 func (i *Initializer) CreateChannel(instance *current.Channel) error {
 	var err error
 

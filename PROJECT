@@ -107,4 +107,13 @@ resources:
     defaulting: true
     validation: true
     webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: ibp.com
+  group: ibp
+  kind: Chaincode
+  path: github.com/IBM-Blockchain/fabric-operator/api/v1beta1
+  version: v1beta1
 version: "3"

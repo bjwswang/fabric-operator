@@ -2895,3 +2895,276 @@ kubectl apply -f config/samples/ibp.com_v1beta1_channel_create.yaml
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org1.yaml
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml
 ```
+
+### 链码
+
+#### 1. 创建 EndorsementPolicy
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_chaincode_endorse_policy.yaml
+```
+
+详细yaml
+<details>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: EndorsePolicy
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ibp.com/v1beta1","kind":"EndorsePolicy","metadata":{"annotations":{},"name":"e-policy"},"spec":{"channel":"channel-sample","value":"OR('org1.member','org2.member')"}}
+  creationTimestamp: "2023-03-01T08:09:17Z"
+  generation: 1
+  name: e-policy
+  resourceVersion: "92107"
+  uid: 222672f0-829b-4d64-ba94-4d1b3e78bc92
+spec:
+  channel: channel-sample
+  value: OR('org1.member','org2.member')
+```
+
+</details>
+
+<!-- 补充yaml -->
+#### 2. 创建链码
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_chaincode.yaml
+```
+
+详细yaml
+
+<details>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Chaincode
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ibp.com/v1beta1","kind":"Chaincode","metadata":{"annotations":{},"name":"chaincode-sample"},"spec":{"channel":"channel-sample","endorsePolicyRef":{"name":"e-policy"},"id":"chaincode1","images":{"digest":"sha256:6e9ce1685fed64558499ece990fa533fe7a35e2658bec7ad830a6fabdd99af7f","name":"hyperledgerk8s/contract-go"},"initRequired":false,"label":"chaincode1","license":{"accept":true},"version":"v1"}}
+  creationTimestamp: "2023-03-01T08:11:34Z"
+  generation: 1
+  name: chaincode-sample
+  resourceVersion: "92642"
+  uid: c2e6bb7f-6798-4e4f-bf61-a3a66d877794
+spec:
+  channel: channel-sample
+  endorsePolicyRef:
+    name: e-policy
+  externalBuilder: k8s
+  id: chaincode1
+  images:
+    digest: sha256:6e9ce1685fed64558499ece990fa533fe7a35e2658bec7ad830a6fabdd99af7f
+    name: hyperledgerk8s/contract-go
+    pullSecret: Always
+  initRequired: false
+  label: chaincode1
+  license:
+    accept: true
+  version: v1
+status:
+  phase: ChaincodePending
+  sequence: 1
+```
+
+</details>
+
+#### 3. 发起提案 proposal，创建链码
+
+```bash
+kubectl apply -f config/samples/ibp.com_v1beta1_proposal_create_chaincode.yaml
+```
+
+详细 Proposal 
+
+<details>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ibp.com/v1beta1","kind":"Proposal","metadata":{"annotations":{},"labels":{"bestchains.chaincode.delete.proposal":"chaincode-sample"},"name":"create-chaincode"},"spec":{"deployChaincode":{"chaincode":"chaincode-sample","members":[{"initiator":true,"name":"org1"},{"name":"org2"}]},"federation":"federation-sample","initiatorOrganization":"org1","policy":"All"}}
+  creationTimestamp: "2023-03-01T08:17:04Z"
+  generation: 1
+  labels:
+    bestchains.chaincode.delete.proposal: chaincode-sample
+    bestchains.proposal.type: DeployChaincode
+  name: create-chaincode
+  resourceVersion: "94019"
+  uid: b68b0a5b-be62-4e6b-91b6-3ff374d2b0bb
+spec:
+  deployChaincode:
+    chaincode: chaincode-sample
+    members:
+    - initiator: true
+      name: org1
+    - name: org2
+  deprecated: false
+  endAt: "2023-03-02T08:17:04Z"
+  federation: federation-sample
+  initiatorOrganization: org1
+  policy: All
+  startAt: "2023-03-01T08:17:04Z"
+status:
+  phase: Voting
+  votes:
+  - description: ""
+    name: vote-org2-create-chaincode
+    namespace: org2
+    organization:
+      name: org2
+      namespace: org2
+  - decision: true
+    description: ""
+    name: vote-org1-create-chaincode
+    namespace: org1
+    organization:
+      name: org1
+      namespace: org1
+    phase: Voted
+    voteTime: "2023-03-01T08:17:06Z"
+```
+
+</details>
+
+通过下面命令让 org2 通过投票。
+
+```bash
+kubectl patch vote -n org2 vote-org2-create-chaincode --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
+```
+
+投票通过 yaml 
+
+<details>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ibp.com/v1beta1","kind":"Proposal","metadata":{"annotations":{},"labels":{"bestchains.chaincode.delete.proposal":"chaincode-sample"},"name":"create-chaincode"},"spec":{"deployChaincode":{"chaincode":"chaincode-sample","members":[{"initiator":true,"name":"org1"},{"name":"org2"}]},"federation":"federation-sample","initiatorOrganization":"org1","policy":"All"}}
+  creationTimestamp: "2023-03-01T08:17:04Z"
+  generation: 1
+  labels:
+    bestchains.chaincode.delete.proposal: chaincode-sample
+    bestchains.proposal.type: DeployChaincode
+  name: create-chaincode
+  resourceVersion: "94160"
+  uid: b68b0a5b-be62-4e6b-91b6-3ff374d2b0bb
+spec:
+  deployChaincode:
+    chaincode: chaincode-sample
+    members:
+    - initiator: true
+      name: org1
+    - name: org2
+  deprecated: false
+  endAt: "2023-03-02T08:17:04Z"
+  federation: federation-sample
+  initiatorOrganization: org1
+  policy: All
+  startAt: "2023-03-01T08:17:04Z"
+status:
+  conditions:
+  - lastTransitionTime: "2023-03-01T08:17:42Z"
+    message: Success
+    reason: Success
+    status: "True"
+    type: Succeeded
+  phase: Finished
+  votes:
+  - decision: true
+    description: ""
+    name: vote-org1-create-chaincode
+    namespace: org1
+    organization:
+      name: org1
+      namespace: org1
+    phase: Voted
+    voteTime: "2023-03-01T08:17:06Z"
+  - decision: true
+    description: ""
+    name: vote-org2-create-chaincode
+    namespace: org2
+    organization:
+      name: org2
+      namespace: org2
+    phase: Voted
+    voteTime: "2023-03-01T08:17:42Z"
+```
+</details>
+
+
+投票成功后，chaincode 则会开始安装部署，查看 chaincode 的 yaml
+
+<details>
+
+```yaml
+apiVersion: ibp.com/v1beta1
+kind: Chaincode
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"ibp.com/v1beta1","kind":"Chaincode","metadata":{"annotations":{},"name":"chaincode-sample"},"spec":{"channel":"channel-sample","endorsePolicyRef":{"name":"e-policy"},"id":"chaincode1","images":{"digest":"sha256:6e9ce1685fed64558499ece990fa533fe7a35e2658bec7ad830a6fabdd99af7f","name":"hyperledgerk8s/contract-go"},"initRequired":false,"label":"chaincode1","license":{"accept":true},"version":"v1"}}
+  creationTimestamp: "2023-03-01T08:11:34Z"
+  generation: 1
+  name: chaincode-sample
+  resourceVersion: "95045"
+  uid: c2e6bb7f-6798-4e4f-bf61-a3a66d877794
+spec:
+  channel: channel-sample
+  endorsePolicyRef:
+    name: e-policy
+  externalBuilder: k8s
+  id: chaincode1
+  images:
+    digest: sha256:6e9ce1685fed64558499ece990fa533fe7a35e2658bec7ad830a6fabdd99af7f
+    name: hyperledgerk8s/contract-go
+    pullSecret: Always
+  initRequired: false
+  label: chaincode1
+  license:
+    accept: true
+  version: v1
+status:
+  conditions:
+  - lastTransitionTime: "2023-03-01T08:20:13Z"
+    message: chaincode is not running on this peer node org2peer1
+    nextStage: Running
+    reason: chaincode is not running on this peer node org2peer1
+    status: "False"
+    type: Error
+  - lastTransitionTime: "2023-03-01T08:20:13Z"
+    message: chaincode is running
+    nextStage: ""
+    reason: ""
+    status: "True"
+    type: Running
+  phase: ChaincodeRunning
+  sequence: 1
+```
+
+</details>
+
+#### 4. 检查链码是否正常运行
+
+```bash
+root@macbookpro:~# kubectl get po -norg1
+NAME                                                              READY   STATUS    RESTARTS   AGE
+cc-org1-org1peer1chaincode1-79ecefe2e6ce879134996982dbda6d94273   1/1     Running   0          26m
+network-sample3node1-588ddfcc88-6s4ps                             2/2     Running   0          39m
+network-sample3node2-759d85bc64-5sxcp                             2/2     Running   0          39m
+network-sample3node3-f4fd564cb-fmnrr                              2/2     Running   0          39m
+org1-66b6c77f77-zrfjz                                             1/1     Running   0          5h36m
+org1peer1-5b5688b844-wtl6p                                        2/2     Running   0          38m
+root@macbookpro:~# kubectl get po -norg2
+NAME                                                              READY   STATUS    RESTARTS   AGE
+cc-org2-org2peer1chaincode1-79ecefe2e6ce879134996982dbda6d94273   1/1     Running   0          26m
+org2-9f9b658f-w5xvs                                               1/1     Running   0          5h35m
+org2peer1-78f8cc4774-rn2q2                                        2/2     Running   0          38m
+```

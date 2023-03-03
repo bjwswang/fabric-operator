@@ -31,6 +31,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/ingressv1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/orderer"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/orderernode"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/pipelinerun"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/pv"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/pvc"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/role"
@@ -39,6 +40,7 @@ import (
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/service"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/manager/resources/serviceaccount"
 	routev1 "github.com/openshift/api/route/v1"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -231,5 +233,15 @@ func (m *Manager) CreateOrdererManager(suffix string, oFunc func(v1.Object, *cur
 		OrdererFile:  file,
 		LabelsFunc:   labelsFunc,
 		OverrideFunc: oFunc,
+	}
+}
+
+func (m *Manager) CreatePipelinerunManager(suffix string, oFunc func(v1.Object, *pipelinev1beta1.PipelineRun, resources.Action) error, labelsFunc func(v1.Object) map[string]string, file string) resources.Manager {
+	return &pipelinerun.Manager{
+		Client:         m.Client,
+		Scheme:         m.Scheme,
+		PipelinRunFile: file,
+		LabelsFunc:     labelsFunc,
+		OverrideFunc:   oFunc,
 	}
 }

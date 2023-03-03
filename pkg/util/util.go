@@ -38,6 +38,8 @@ import (
 	"strings"
 	"time"
 
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/clientset"
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/pkg/errors"
@@ -300,6 +302,21 @@ func GetCRDFromFile(file string) (*extv1.CustomResourceDefinition, error) {
 	}
 
 	return crd, nil
+}
+
+func GetPipelineRunFromFile(file string) (*pipelinev1beta1.PipelineRun, error) {
+	jsonBytes, err := ConvertYamlFileToJson(file)
+	if err != nil {
+		return nil, err
+	}
+
+	pipelinRun := &pipelinev1beta1.PipelineRun{}
+	err = json.Unmarshal(jsonBytes, &pipelinRun)
+	if err != nil {
+		return nil, err
+	}
+
+	return pipelinRun, nil
 }
 
 func GetPodFromFile(file string) (*corev1.Pod, error) {

@@ -1,0 +1,4 @@
+## Append samples you want in your CSV to this file as resources ##
+resources:
+- ibp_v1beta1_chaincodebuild.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

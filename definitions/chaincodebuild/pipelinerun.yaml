@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: sample-minio-chaincodebuild-pipelinerun
+  labels:
+    description: "A_PipelineRun_For_ChaincodeBuild_WITH_KANIKO"
+spec:
+  pipelineRef:
+    name: chaincodebuild-kaniko
+  params:
+    - name: SOURCE
+      value: minio
+    - name: SOURCE_MINIO_BUCKET
+      value: bestchains
+    - name: SOURCE_MINIO_OBJECT
+      value: go-contract
+    - name: SOURCE_MINIO_HOST
+      value: minio.tekton-pipelines-addons.svc.cluster.local
+    - name: SOURCE_MINIO_ACCESS_KEY
+      value: "q18aRFqWOAX7pEin"
+    - name: SOURCE_MINIO_SECRET_KEY
+      value: "nCbZIP6q4s8KtQpL7n8CD2N88H6XABGf"
+    - name: SOURCE
+      value: git
+    - name: SOURCE_GIT_URL
+      value: https://github.com/bestchains/fabric-builder-k8s
+    - name: SOURCE_GIT_REFERENCE
+      value: "main"
+    - name: APP_IMAGE
+      value: hyperledgerk8s/go-contract
+    - name: DOCKERFILE
+      value: bestchains/go-contract/Dockerfile.optimized # Must be in format : {bucket}/{object}/{relevant_path_to_object_root_directory}
+    - name: CONTEXT
+      value: bestchains/go-contract # Must be in format {bucket}/{object}
+  workspaces:
+    - name: source-ws
+      subPath: source
+      persistentVolumeClaim:
+        claimName: cache-image-ws-pvc
+    - name: dockerconfig-ws
+      secret:
+        secretName: dockerhub-secret

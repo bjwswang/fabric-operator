@@ -1,0 +1,20 @@
+apiVersion: ibp.com/v1beta1
+kind: ChaincodeBuild
+metadata:
+  name: chaincodebuild-sample-git
+spec:
+  license:
+    accept: true
+  network: network-sample3
+  id: go-contract
+  version: "0.2"
+  initiator: org1
+  pipelineRunSpec:
+    git:
+      url: "https://github.com/bestchains/fabric-builder-k8s"
+      reference: ""
+    dockerBuild:
+      pushSecret: "dockerhub-secret"
+      appImage: hyperledgerk8s/go-contract
+      dockerfile: ./samples/go-contract/Dockerfile.optimized
+      context: ./samples/go-contract

@@ -26,6 +26,7 @@ import (
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/command"
 	cainit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
+	ccbinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/chaincodebuild"
 	chaninit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/channel"
 	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
 	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
@@ -47,15 +48,16 @@ import (
 )
 
 const (
-	defaultConfigs         = "./defaultconfig"
-	defaultPeerDef         = "./definitions/peer"
-	defaultCADef           = "./definitions/ca"
-	defaultOrdererDef      = "./definitions/orderer"
-	defaultConsoleDef      = "./definitions/console"
-	defaultOrganizationDef = "./definitions/organization"
-	defaultFederationDef   = "./definitions/federation"
-	defaultVoteDef         = "./definitions/vote"
-	defaultNetworkDef      = "./definitions/network"
+	defaultConfigs           = "./defaultconfig"
+	defaultPeerDef           = "./definitions/peer"
+	defaultCADef             = "./definitions/ca"
+	defaultOrdererDef        = "./definitions/orderer"
+	defaultConsoleDef        = "./definitions/console"
+	defaultOrganizationDef   = "./definitions/organization"
+	defaultFederationDef     = "./definitions/federation"
+	defaultVoteDef           = "./definitions/vote"
+	defaultNetworkDef        = "./definitions/network"
+	defaultChaincodeBuildDef = "./definitions/chaincodebuild"
 )
 
 var log = logf.Log.WithName("cmd")
@@ -85,6 +87,7 @@ func main() {
 	setDefaultVoteDefinitions(operatorCfg)
 	setDefaultNetworkDefinitions(operatorCfg)
 	setDefaultChannelDefinitions(operatorCfg)
+	setDefaultChaincodeBuildDefinitions(operatorCfg)
 
 	operatorCfg.Operator.SetDefaults()
 
@@ -250,5 +253,16 @@ func setDefaultNetworkDefinitions(cfg *config.Config) {
 func setDefaultChannelDefinitions(cfg *config.Config) {
 	cfg.ChannelInitConfig = &chaninit.Config{
 		StoragePath: "/tmp/chaninit",
+	}
+}
+
+func setDefaultChaincodeBuildDefinitions(cfg *config.Config) {
+	cfg.ChaincodeBuildInitConfig = &ccbinit.Config{
+		PipelinRunNamespace: os.Getenv("PIPELINE_RUN_NAMESPACE"),
+		MinioHost:           os.Getenv("MINIO_HOST"),
+		MinioAccessKey:      os.Getenv("MINIO_ACCESS_KEY"),
+		MinioSecretKey:      os.Getenv("MINIO_SECRET_KEY"),
+		PipelineRunPVCFile:  filepath.Join(defaultChaincodeBuildDef, "pipelinerun_pvc.yaml"),
+		PipelineRunFile:     filepath.Join(defaultChaincodeBuildDef, "pipelinerun.yaml"),
 	}
 }

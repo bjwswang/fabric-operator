@@ -25,14 +25,14 @@ import (
 	"path/filepath"
 
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
-	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
-	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
-	orginit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/organization"
-
 	"github.com/IBM-Blockchain/fabric-operator/pkg/apis/common"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/apis/deployer"
 	cainit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/ca"
+	ccbinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/chaincodebuild"
+	fedinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/federation"
+	netinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/network"
 	ordererinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer"
+	orginit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/organization"
 	peerinit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/peer"
 	uzap "go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -121,8 +121,9 @@ func GetOperatorConfig(configs, caFiles, peerFiles, ordererFiles, consoleFiles, 
 			CAFile:                 filepath.Join(organizationFiles, "ca.yaml"),
 			StoragePath:            "/tmp/orginit",
 		},
-		FederationInitConfig: &fedinit.Config{},
-		NetworkInitConfig:    &netinit.Config{},
+		FederationInitConfig:     &fedinit.Config{},
+		NetworkInitConfig:        &netinit.Config{},
+		ChaincodeBuildInitConfig: &ccbinit.Config{},
 		ConsoleInitConfig: &config.ConsoleConfig{
 			DeploymentFile:           filepath.Join(consoleFiles, "deployment.yaml"),
 			PVCFile:                  filepath.Join(consoleFiles, "pvc.yaml"),

@@ -16,15 +16,18 @@
  * limitations under the License.
  */
 
-package apis
+package chaincodebuild
 
-import (
-	"github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-)
+type Config struct {
+	// PipelinRunNamespace namespace where pipelinerun executes
+	PipelinRunNamespace string
 
-func init() {
-	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
-	AddToSchemes = append(AddToSchemes, v1beta1.SchemeBuilder.AddToScheme)
-	AddToSchemes = append(AddToSchemes, pipelinev1beta1.AddToScheme)
+	// Minio configurations
+	MinioHost      string
+	MinioAccessKey string
+	MinioSecretKey string
+
+	// PipelineRun tempaltes
+	PipelineRunPVCFile string
+	PipelineRunFile    string
 }

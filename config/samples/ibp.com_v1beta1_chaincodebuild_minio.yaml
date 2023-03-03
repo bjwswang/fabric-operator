@@ -1,0 +1,20 @@
+apiVersion: ibp.com/v1beta1
+kind: ChaincodeBuild
+metadata:
+  name: chaincodebuild-sample-minio
+spec:
+  license:
+    accept: true
+  network: network-sample3
+  id: go-contract
+  version: "0.1"
+  initiator: org1
+  pipelineRunSpec:
+    minio:
+      bucket: "bestchains"
+      object: "go-contract"
+    dockerBuild:
+      pushSecret: "dockerhub-secret"
+      appImage: hyperledgerk8s/go-contract
+      dockerfile: bestchains/go-contract/Dockerfile.optimized
+      context: bestchains/go-contract

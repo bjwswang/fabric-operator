@@ -16,15 +16,11 @@
  * limitations under the License.
  */
 
-package apis
+package controllers
 
-import (
-	"github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-)
+import "github.com/IBM-Blockchain/fabric-operator/controllers/chaincodebuild"
 
 func init() {
-	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
-	AddToSchemes = append(AddToSchemes, v1beta1.SchemeBuilder.AddToScheme)
-	AddToSchemes = append(AddToSchemes, pipelinev1beta1.AddToScheme)
+	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
+	AddToManagerFuncs = append(AddToManagerFuncs, chaincodebuild.Add)
 }

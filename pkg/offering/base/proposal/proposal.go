@@ -32,6 +32,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	k8sruntime "sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -102,6 +103,10 @@ func (p *BaseProposal) Reconcile(instance *current.Proposal) (result common.Resu
 }
 
 func (c *BaseProposal) ReconcileManagers(ctx context.Context, instance *current.Proposal) (err error) {
+	if err = c.ReconcileOwnerReference(instance); err != nil {
+		return errors.Wrap(err, "failed OwerReference reconciliation")
+	}
+
 	if err = c.ReconcileRBAC(instance); err != nil {
 		return errors.Wrap(err, "failed RBAC reconciliation")
 	}
@@ -109,6 +114,33 @@ func (c *BaseProposal) ReconcileManagers(ctx context.Context, instance *current.
 		return errors.Wrap(err, "failed Vote reconciliation")
 	}
 	return
+}
+
+func (c *BaseProposal) ReconcileOwnerReference(instance *current.Proposal) (err error) {
+	fed := &current.Federation{}
+	err = c.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Federation}, fed)
+	if err != nil {
+		return errors.Wrap(err, "get proposal's federation")
+	}
+	ownerReference := bcrbac.OwnerReference(bcrbac.Federation, fed)
+
+	var exist bool
+	for _, reference := range instance.OwnerReferences {
+		if reference.UID == ownerReference.UID {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		instance.OwnerReferences = append(instance.OwnerReferences, ownerReference)
+
+		err = c.Client.Update(context.TODO(), instance)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (c *BaseProposal) ReconcileRBAC(instance *current.Proposal) (err error) {

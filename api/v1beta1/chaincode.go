@@ -2,10 +2,11 @@ package v1beta1
 
 const (
 	// ChaincodeProposalLabel the main purpose of this label is to make it easier to clean up the proposal when the chaincode is deleted.
-	ChaincodeProposalLabel = "bestchains.chaincode.delete.proposal"
-	ChaincodeChannelLabel  = "bestchains.chaincode.channel"
-	ChaincodeIDLabel       = "bestchains.chaincode.id"
-	ChaincodeVersionLabel  = "bestchains.chaincode.version"
+	ChaincodeProposalLabel         = "bestchains.chaincode.delete.proposal"
+	ChaincodeChannelLabel          = "bestchains.chaincode.channel"
+	ChaincodeIDLabel               = "bestchains.chaincode.id"
+	ChaincodeVersionLabel          = "bestchains.chaincode.version"
+	ChaincodeUsedEndorsementPolicy = "bestchians.chaincode.endorsementpolicy"
 )
 
 var condOrder = []ChaincodeConditionType{ChaincodeCondDone, ChaincodeCondPackaged, ChaincodeCondInstalled,

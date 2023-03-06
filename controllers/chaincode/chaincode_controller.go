@@ -172,6 +172,10 @@ func (r *ReconcileChaincode) Reconcile(ctx context.Context, request reconcile.Re
 		update = true
 		instance.Labels[current.ChaincodeVersionLabel] = instance.Spec.Version
 	}
+	if instance.Labels[current.ChaincodeUsedEndorsementPolicy] != instance.Spec.EndorsePolicyRef.Name {
+		update = true
+		instance.Labels[current.ChaincodeUsedEndorsementPolicy] = instance.Spec.EndorsePolicyRef.Name
+	}
 	if update {
 		reqLogger.Info(fmt.Sprintf("update chaincode %s's labels", instance.GetName()))
 		return reconcile.Result{Requeue: true}, r.client.Update(context.TODO(), instance)

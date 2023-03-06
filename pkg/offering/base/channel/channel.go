@@ -153,7 +153,7 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 	var err error
 
 	// set channel's owner reference to its network
-	err = baseChan.SetOwnerReference(instance, update)
+	err = baseChan.ReconcileOwnerReference(instance, update)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (baseChan *BaseChannel) CheckStates(instance *current.Channel, update Updat
 	return common.Result{}, nil
 }
 
-func (baseChan *BaseChannel) SetOwnerReference(instance *current.Channel, update Update) error {
+func (baseChan *BaseChannel) ReconcileOwnerReference(instance *current.Channel, update Update) error {
 	var err error
 
 	network := &current.Network{}
@@ -216,7 +216,7 @@ func (baseChan *BaseChannel) SetOwnerReference(instance *current.Channel, update
 		}
 	}
 	if !exist {
-		instance.OwnerReferences = []v1.OwnerReference{bcrbac.OwnerReference(bcrbac.Network, network)}
+		instance.OwnerReferences = append(instance.OwnerReferences, ownerReference)
 
 		err = baseChan.Client.Update(context.TODO(), instance)
 		if err != nil {

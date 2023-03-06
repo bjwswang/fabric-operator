@@ -35,7 +35,7 @@ import (
 func ChaincodeStorageDir(baseDir string, instance *current.Chaincode) string {
 	if baseDir == "" {
 		if baseDir = os.Getenv("STORE"); baseDir == "" {
-			baseDir = "/demo"
+			baseDir = "/bestchains/chaincodes"
 		}
 	}
 	if _, err := os.Stat(baseDir); err != nil {

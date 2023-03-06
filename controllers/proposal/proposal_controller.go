@@ -174,12 +174,7 @@ func (r *ReconcileProposal) Reconcile(ctx context.Context, request reconcile.Req
 		return reconcile.Result{}, err
 	}
 
-	if instance.Labels == nil {
-		instance.Labels = make(map[string]string)
-	}
-	proposalType := instance.SelfType()
-	if v, ok := instance.Labels[PROPOSAL_TYPE]; !ok || proposalType != v {
-		instance.Labels[PROPOSAL_TYPE] = proposalType
+	if r.SetLabels(instance) {
 		err = r.client.Update(context.TODO(), instance)
 		return reconcile.Result{Requeue: true}, err
 	}
@@ -194,6 +189,31 @@ func (r *ReconcileProposal) Reconcile(ctx context.Context, request reconcile.Req
 	return result.Result, nil
 }
 
+func (r *ReconcileProposal) SetLabels(instance *current.Proposal) bool {
+	if instance.Labels == nil {
+		instance.Labels = make(map[string]string)
+	}
+	proposalType := instance.SelfType()
+	update := false
+	if v, ok := instance.Labels[PROPOSAL_TYPE]; !ok || proposalType != v {
+		update = true
+		instance.Labels[PROPOSAL_TYPE] = proposalType
+	}
+	if instance.Spec.DeployChaincode != nil {
+		if v, ok := instance.Labels[current.ChaincodeProposalLabel]; !ok || v != instance.Spec.DeployChaincode.Chaincode {
+			instance.Labels[current.ChaincodeProposalLabel] = instance.Spec.DeployChaincode.Chaincode
+			update = true
+		}
+	}
+	if instance.Spec.UpgradeChaincode != nil {
+		if v, ok := instance.Labels[current.ChaincodeProposalLabel]; !ok || v != instance.Spec.UpgradeChaincode.Chaincode {
+			instance.Labels[current.ChaincodeProposalLabel] = instance.Spec.UpgradeChaincode.Chaincode
+			update = true
+		}
+	}
+
+	return update
+}
 func (r *ReconcileProposal) SetStatus(ctx context.Context, instance *current.Proposal, reconcileErr error) (err error) {
 	if err = r.client.Get(ctx, types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}, instance); err != nil {
 		return err

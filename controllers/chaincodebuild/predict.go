@@ -23,6 +23,7 @@ import (
 	"fmt"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	k8sclient "github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/go-test/deep"
 	"github.com/pkg/errors"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -30,6 +31,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -121,11 +123,16 @@ func (r *ReconcileChaincodeBuild) patchChaincodeBuildStatus(build *current.Chain
 	for _, condition := range newStatus.Conditions {
 		// Pipeline completed
 		if condition.Reason == pipelinev1beta1.PipelineRunReasonCompleted.String() && condition.Status == corev1.ConditionTrue {
-			// retrieve pipeline results
+			// retrieve and patch pipelinerun results
 			if newStatus.PipelineResults != nil {
-				// patch status
 				build.Status.PipelineRunResults = newStatus.PipelineResults
-				err := r.client.PatchStatus(context.TODO(), build, nil)
+				err := r.client.PatchStatus(context.TODO(), build, nil, k8sclient.PatchOption{
+					Resilient: &k8sclient.ResilientPatch{
+						Retry:    3,
+						Into:     &current.ChaincodeBuild{},
+						Strategy: client.MergeFrom,
+					},
+				})
 				if err != nil {
 					return err
 				}

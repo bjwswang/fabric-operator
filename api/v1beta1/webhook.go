@@ -79,6 +79,9 @@ func AddWebhooks(mgr ctrl.Manager, setupLog logr.Logger) (err error) {
 	if err = registerCustomWebhook(mgr, &EndorsePolicy{}, operatorUser); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "EndorsePolicy")
 	}
+	if err = registerCustomWebhook(mgr, &ChaincodeBuild{}, operatorUser); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ChaincodeBuild")
+	}
 	return nil
 }
 

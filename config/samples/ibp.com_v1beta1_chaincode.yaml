@@ -6,12 +6,7 @@ spec:
   license:
     accept: true
   channel: channel-sample
-  id: "chaincode1"
   label: "chaincode1"
-  version: "v1"
   initRequired: false
   endorsePolicyRef:
     name: e-policy
-  images:
-    name: hyperledgerk8s/contract-go
-    digest: sha256:6e9ce1685fed64558499ece990fa533fe7a35e2658bec7ad830a6fabdd99af7f

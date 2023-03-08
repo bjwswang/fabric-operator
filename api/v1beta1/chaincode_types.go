@@ -68,20 +68,18 @@ type ChaincodeSpec struct {
 	// Which channel does chaincode belong to.
 	Channel string `json:"channel"`
 	// chaincode id
-	// +kubebuilder:validation:Pattern:=`^[a-z][a-z0-9]{7,63}$`
-	ID string `json:"id"`
+	ID string `json:"id,omitempty"`
 	// current version
-	Version      string `json:"version"`
+	Version      string `json:"version,omitempty"`
 	Label        string `json:"label"`
 	InitRequired bool   `json:"initRequired"`
 
 	EndorsePolicyRef `json:"endorsePolicyRef"`
 	// ExternalBuilder used, default is k8s
 	// +optional
-	// +kubebuilder:default:=k8s
 	ExternalBuilder string `json:"externalBuilder,omitempty"`
 	// the image used by the current version of chaincode
-	Images ChaincodeImage `json:"images"`
+	Images ChaincodeImage `json:"images,omitempty"`
 }
 
 type EndorsePolicyRef struct {
@@ -98,10 +96,10 @@ type ChaincodeImage struct {
 }
 
 type ChaincodeHistory struct {
-	Version     string                 `json:"version"`
-	Image       ChaincodeImage         `json:"image"`
-	FinalState  ChaincodeConditionType `json:"finalState"`
-	UpgradeTime metav1.Time            `json:"upgradeTime"`
+	Version         string         `json:"version"`
+	Image           ChaincodeImage `json:"image"`
+	ExternalBuilder string         `json:"externalBuilder"`
+	UpgradeTime     metav1.Time    `json:"upgradeTime"`
 }
 
 type ChaincodeCondition struct {

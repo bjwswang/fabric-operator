@@ -10,6 +10,7 @@ spec:
   initiatorOrganization: org1
   deployChaincode:
     chaincode: chaincode-sample
+    externalBuilder: chaincodebuild-sample-git
     members:
     - name: org1
       initiator: true

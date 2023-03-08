@@ -2896,7 +2896,7 @@ kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org1.yaml
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml
 ```
 
-### 链码
+### 安装链码
 
 #### 1. 创建 EndorsementPolicy
 

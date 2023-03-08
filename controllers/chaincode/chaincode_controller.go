@@ -205,9 +205,8 @@ func (r *ReconcileChaincode) UpdateFunc(e event.UpdateEvent) bool {
 		return false
 	}
 
-	// TODO: 添加了逻辑，当image，version发生变化， 判断history是否存在，不存在则不进行处理
 	r1 := !reflect.DeepEqual(oldCC.Spec, newCC.Spec) || !reflect.DeepEqual(oldCC.Status, newCC.Status)
-	return r1 || newCC.Status.Phase == ""
+	return r1 || newCC.Status.Phase == "" || newCC.Status.Phase == current.ChaincodePhaseApproved
 }
 
 func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
@@ -222,77 +221,109 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 		log.Error(err, fmt.Sprintf("failed to get chaincode %s ", newProposal.Labels[current.ChaincodeProposalLabel]))
 		return false
 	}
-	if cr.Status.Phase != current.ChaincodePhasePending {
+	log.Info(fmt.Sprintf("new proposal phase %s", newProposal.Status.Phase))
+	if newProposal.Status.Phase != current.ProposalFinished {
 		return false
 	}
 
-	log.Info(fmt.Sprintf("new proposal phase %s", newProposal.Status.Phase))
-	if newProposal.Status.Phase == current.ProposalFinished {
-		for i := len(newProposal.Status.Conditions) - 1; i >= 0; i-- {
-			cond := newProposal.Status.Conditions[i]
-			if cond.Type == current.ProposalFailed {
-				cr.Status.Phase = current.ChaincodePhaseUnapproved
-				break
-			}
-			if cond.Type == current.ProposalSucceeded {
-				cr.Status.Phase = current.ChaincodePhaseApproved
-				break
-			}
+	for i := len(newProposal.Status.Conditions) - 1; i >= 0; i-- {
+		cond := newProposal.Status.Conditions[i]
+		if cond.Type == current.ProposalFailed {
+			cr.Status.Phase = current.ChaincodePhaseUnapproved
+			break
 		}
-		log.Info(fmt.Sprintf("proposal:%s done, chaincode status: %s", newProposal.GetName(), cr.Status.Phase))
-		upgrade := false
-		if cr.Status.Phase == current.ChaincodePhaseApproved && newProposal.Spec.UpgradeChaincode != nil {
-			upgrade = true
-			if cr.Status.History == nil {
-				cr.Status.History = make([]current.ChaincodeHistory, 0)
-			}
-			shouldAppend := true
-			for _, item := range cr.Status.History {
-				if item.Image.Name == cr.Spec.Images.Name &&
-					item.Image.Digest == cr.Spec.Images.Digest &&
-					item.Image.PullSecret == cr.Spec.Images.PullSecret &&
-					item.Version == cr.Spec.Version {
-					shouldAppend = false
-					break
-				}
-			}
-			if shouldAppend {
-				cr.Status.History = append(cr.Status.History, current.ChaincodeHistory{
-					Version:     cr.Spec.Version,
-					Image:       cr.Spec.Images,
-					UpgradeTime: v1.Now(),
-				})
-			}
+		if cond.Type == current.ProposalSucceeded {
+			cr.Status.Phase = current.ChaincodePhaseApproved
+			break
+		}
+	}
+	log.Info(fmt.Sprintf("proposal:%s done, chaincode status: %s", newProposal.GetName(), cr.Status.Phase))
 
-			cr.Spec.Images = newProposal.Spec.UpgradeChaincode.NewChaincodeImage
-			cr.Spec.Version = newProposal.Spec.UpgradeChaincode.NewVersion
-			cr.Status.Sequence++
-			cr.Status.Conditions = make([]current.ChaincodeCondition, 0)
+	if cr.Status.Phase != current.ChaincodePhaseApproved && cr.Status.Phase != current.ChaincodePhaseUnapproved {
+		log.Error(fmt.Errorf("expect %s or %s, but got %s",
+			current.ChaincodePhaseApproved, current.ChaincodePhaseUnapproved, cr.Status.Phase), "")
+		return false
+	}
+
+	if cr.Status.Phase == current.ChaincodePhaseApproved {
+		upgrade := false
+		ccDef := newProposal.Spec.DeployChaincode
+		if ccDef == nil {
+			upgrade = true
+			ccDef = newProposal.Spec.UpgradeChaincode
 		}
-		if err := r.client.PatchStatus(context.TODO(), cr, nil, k8sclient.PatchOption{
+		if !upgrade && len(cr.Status.History) > 0 {
+			log.Error(fmt.Errorf("already deployed chaincode is not allowed to be redeployed"), "")
+			return false
+		}
+
+		image, digest, version, id, err := r.PickUpImageFromBuilder(ccDef.ExternalBuilder)
+		if err != nil {
+			log.Error(err, "the proposal passed, but failed to get the mirror information.")
+			return false
+		}
+		originSpec := cr.Spec
+		cr.Spec.ExternalBuilder = ccDef.ExternalBuilder
+		cr.Spec.Images.Name = image
+		cr.Spec.Images.Digest = digest
+		cr.Spec.Version = version
+		cr.Spec.ID = id
+
+		if err := r.client.Patch(context.TODO(), cr, nil, k8sclient.PatchOption{
 			Resilient: &k8sclient.ResilientPatch{
 				Retry:    3,
 				Into:     &current.Chaincode{},
 				Strategy: client.MergeFrom,
 			},
 		}); err != nil {
-			log.Error(err, fmt.Sprintf("failed to patch chaincode %s status", cr.GetName()))
+			log.Error(err, fmt.Sprintf("failed to patch chaincode %s spec", cr.GetName()))
 			return false
 		}
-		if upgrade {
-			if err := r.client.Patch(context.TODO(), cr, nil, k8sclient.PatchOption{
-				Resilient: &k8sclient.ResilientPatch{
-					Retry:    3,
-					Into:     &current.Chaincode{},
-					Strategy: client.MergeFrom,
-				},
-			}); err != nil {
-				log.Error(err, fmt.Sprintf("failed to path chaincode %s spec", cr.GetName()))
-				return false
-			}
+
+		cr = &current.Chaincode{}
+		if err := r.client.Get(context.TODO(),
+			types.NamespacedName{Name: newProposal.Labels[current.ChaincodeProposalLabel]}, cr); err != nil {
+			log.Error(err, fmt.Sprintf("failed to get chaincode %s ", newProposal.Labels[current.ChaincodeProposalLabel]))
+			return false
 		}
-		log.Info(fmt.Sprintf("patch chaincode %s status successfully", cr.GetName()))
-		return true
+		cr.Status.Phase = current.ChaincodePhaseApproved
+		if upgrade {
+			if cr.Status.History == nil {
+				cr.Status.History = make([]current.ChaincodeHistory, 0)
+			}
+			appendHistory := true
+			for idx, item := range cr.Status.History {
+				if item.Image.Name == originSpec.Images.Name &&
+					item.Image.Digest == originSpec.Images.Digest &&
+					item.Image.PullSecret == originSpec.Images.PullSecret &&
+					item.Version == originSpec.Version &&
+					item.ExternalBuilder == originSpec.ExternalBuilder {
+					cr.Status.History[idx].UpgradeTime = v1.Now()
+					appendHistory = false
+					break
+				}
+			}
+			if appendHistory {
+				cr.Status.History = append(cr.Status.History, current.ChaincodeHistory{
+					Version:         cr.Spec.Version,
+					Image:           cr.Spec.Images,
+					ExternalBuilder: ccDef.ExternalBuilder,
+					UpgradeTime:     v1.Now(),
+				})
+			}
+			cr.Status.Conditions = make([]current.ChaincodeCondition, 0)
+			cr.Status.Sequence++
+		}
+	}
+
+	if err := r.client.PatchStatus(context.TODO(), cr, nil, k8sclient.PatchOption{
+		Resilient: &k8sclient.ResilientPatch{
+			Retry:    3,
+			Into:     &current.Chaincode{},
+			Strategy: client.MergeFrom,
+		},
+	}); err != nil {
+		log.Error(err, fmt.Sprintf("failed to patch chaincode %s status", cr.GetName()))
 	}
 	return false
 }
@@ -323,4 +354,31 @@ func (r *ReconcileChaincode) ProposalDeleteFunc(e event.DeleteEvent) bool {
 	proposal := e.Object.(*current.Proposal)
 	log.Info(fmt.Sprintf("proposal:%s deleted", proposal.GetName()))
 	return false
+}
+
+func (r *ReconcileChaincode) PickUpImageFromBuilder(builderName string) (string, string, string, string, error) {
+	image, digest, version, id := "", "", "", ""
+	if builderName == "" {
+		return image, digest, version, id, fmt.Errorf("empty chiancodeBuilder name")
+	}
+	builder := &current.ChaincodeBuild{}
+	if err := r.client.Get(context.TODO(), types.NamespacedName{Name: builderName}, builder); err != nil {
+		log.Error(err, "trying to get the chaincode image, but failed to get the chaincodebuild")
+		return image, digest, version, id, err
+	}
+
+	if len(builder.Status.PipelineRunResults) != 2 {
+		return image, digest, version, id, fmt.Errorf("expect only 2 elements, but have %d", len(builder.Status.PipelineRunResults))
+	}
+	version = builder.Spec.Version
+	id = builder.Spec.ID
+	for _, item := range builder.Status.PipelineRunResults {
+		if item.Name == current.IMAGE_URL {
+			image = item.Value
+		}
+		if item.Name == current.IMAGE_DIGEST {
+			digest = item.Value
+		}
+	}
+	return image, digest, version, id, nil
 }

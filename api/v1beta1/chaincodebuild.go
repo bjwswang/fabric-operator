@@ -29,6 +29,11 @@ var (
 	errInvalidSourceGit   = errors.New("pipeline source git is invalid.missing url")
 )
 
+const (
+	IMAGE_URL    = "IMAGE_URL"
+	IMAGE_DIGEST = "IMAGE_DIGEST"
+)
+
 func init() {
 	SchemeBuilder.Register(&ChaincodeBuild{}, &ChaincodeBuildList{})
 }

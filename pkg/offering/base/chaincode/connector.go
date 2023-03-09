@@ -55,7 +55,7 @@ func ProfileProvider(cli controllerclient.Client, channelID string) (*connector.
 		return nil, errors.Wrap(err, "failed to get channel connection profile")
 	}
 	profile := &connector.Profile{}
-	err = profile.Unmarshal(cm.BinaryData["profile.yaml"])
+	err = profile.Unmarshal(cm.BinaryData["profile.yaml"], connector.YAML)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid channel connection profile")
 	}
@@ -64,7 +64,7 @@ func ProfileProvider(cli controllerclient.Client, channelID string) (*connector.
 
 func ProfileFn(p *connector.Profile) func() ([]byte, error) {
 	return func() ([]byte, error) {
-		return p.Marshal()
+		return p.Marshal(connector.YAML)
 	}
 }
 

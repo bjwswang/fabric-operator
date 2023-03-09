@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"net/url"
 	"path/filepath"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
@@ -35,82 +34,105 @@ import (
 )
 
 // Profile contasins all we need to connect with a blockchain network. Currently we use embeded pem by default
+// +k8s:deepcopy-gen=true
 type Profile struct {
-	Version       string `yaml:"version,omitempty"`
-	Client        `yaml:"client,omitempty"`
-	Channels      map[string]ChannelInfo      `yaml:"channels"`
-	Organizations map[string]OrganizationInfo `yaml:"organizations,omitempty"`
+	Version       string `yaml:"version,omitempty" json:"version,omitempty"`
+	Client        `yaml:"client,omitempty" json:"client,omitempty"`
+	Channels      map[string]ChannelInfo      `yaml:"channels" json:"channels"`
+	Organizations map[string]OrganizationInfo `yaml:"organizations,omitempty" json:"organizations,omitempty"`
 	// Orderers defines all orderer endpoints which can be used
-	Orderers map[string]NodeEndpoint `yaml:"orderers,omitempty"`
+	Orderers map[string]NodeEndpoint `yaml:"orderers,omitempty" json:"orderers,omitempty"`
 	// Peers defines all peer endpoints which can be used
-	Peers map[string]NodeEndpoint `yaml:"peers,omitempty"`
+	Peers map[string]NodeEndpoint `yaml:"peers,omitempty" json:"peers,omitempty"`
 }
 
-// Client defines who is trying to connect with network
+// Client defines who is trying to connect with networks
 type Client struct {
-	Organization string `yaml:"organization,omitempty"`
-	Logging      `yaml:"logging,omitempty"`
-	// CryptoConfig `yaml:"cryptoconfig,omitempty"`
-	CredentialStore `yaml:"credentialStore,omitempty"`
+	Organization string `yaml:"organization,omitempty" json:"organization,omitempty"`
+	Logging      `yaml:"logging,omitempty" json:"logging,omitempty"`
+	// For blockchain explorer
+	AdminCredential `yaml:"adminCredential,omitempty" json:"adminCredential,omitempty"`
+	CredentialStore `yaml:"credentialStore,omitempty" json:"credentialStore,omitempty"`
+	TLSEnable       bool `yaml:"tlsEnable,omitempty" json:"tlsEnable,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 type Logging struct {
-	Level string `yaml:"level,omitempty"`
+	Level string `yaml:"level,omitempty" json:"level,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 type CryptoConfig struct {
-	Path string `yaml:"path,omitempty"`
+	Path string `yaml:"path,omitempty" json:"path,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
+type AdminCredential struct {
+	ID       string `yaml:"id,omitempty" json:"id,omitempty"`
+	Password string `yaml:"password,omitempty" json:"password" default:"passw0rd"`
+}
+
+// +k8s:deepcopy-gen=true
 type CredentialStore struct {
-	Path        string `yaml:"path,omitempty"`
-	CryptoStore `yaml:"cryptoStore,omitempty"`
+	Path        string `yaml:"path,omitempty" json:"path,omitempty"`
+	CryptoStore `yaml:"cryptoStore,omitempty" json:"cryptoStore,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 type CryptoStore struct {
-	Path string `yaml:"path,omitempty"`
+	Path string `yaml:"path,omitempty" json:"path,omitempty"`
 }
 
 // ChannelInfo defines configurations when connect to this channel
+// +k8s:deepcopy-gen=true
 type ChannelInfo struct {
 	// Peers which can be used to connect to this channel
-	Peers map[string]PeerInfo `yaml:"peers"`
+	Peers map[string]PeerInfo `yaml:"peers" json:"peers"`
 }
 
+// +k8s:deepcopy-gen=true
 type PeerInfo struct {
-	EndorsingPeer  *bool `yaml:"endorsingPeer,omitempty"`
-	ChaincodeQuery *bool `yaml:"chaincodeQuery,omitempty"`
-	LedgerQuery    *bool `yaml:"ledgerQuery,omitempty"`
-	EventSource    *bool `yaml:"eventSource,omitempty"`
+	EndorsingPeer  *bool `yaml:"endorsingPeer,omitempty" json:"endorsingPeer,omitempty"`
+	ChaincodeQuery *bool `yaml:"chaincodeQuery,omitempty" json:"chaincodeQuery,omitempty"`
+	LedgerQuery    *bool `yaml:"ledgerQuery,omitempty" json:"ledgerQuery,omitempty"`
+	EventSource    *bool `yaml:"eventSource,omitempty" json:"eventSource,omitempty"`
 }
 
 // OrganizationInfo defines a organization along with its users and peers
+// +k8s:deepcopy-gen=true
 type OrganizationInfo struct {
-	MSPID string          `yaml:"mspid,omitempty"`
-	Users map[string]User `yaml:"users,omitempty"`
-	// CryptoPath string          `yaml:"cryptoPath,omitempty"`
-	Peers []string `yaml:"peers,omitempty"`
+	MSPID string          `yaml:"mspid,omitempty" json:"mspid,omitempty"`
+	Users map[string]User `yaml:"users,omitempty" json:"users,omitempty"`
+	Peers []string        `yaml:"peers,omitempty" json:"peers,omitempty"`
+
+	// For blockchain explorer
+	AdminPrivateKey Pem `yaml:"adminPrivateKey,omitempty" json:"adminPrivateKey,omitempty"`
+	SignedCert      Pem `yaml:"signedCert,omitempty" json:"signedCert,omitempty"`
 }
 
 // User is the ca identity which has a private key(embeded pem) and signed certificate(embeded pem)
+// +k8s:deepcopy-gen=true
 type User struct {
-	Name string `yaml:"name,omitempty"`
-	Key  Pem    `yaml:"key,omitempty"`
-	Cert Pem    `yaml:"cert,omitempty"`
+	Name string `yaml:"name,omitempty" json:"name,omitempty"`
+	Key  Pem    `yaml:"key,omitempty" json:"key,omitempty"`
+	Cert Pem    `yaml:"cert,omitempty" json:"cert,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 type Pem struct {
-	Pem string `yaml:"pem,omitempty"`
+	Pem string `yaml:"pem,omitempty" json:"pem,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 type NodeEndpoint struct {
-	URL        string `yaml:"url,omitempty"`
-	TLSCACerts `yaml:"tlsCACerts,omitempty"`
+	URL        string `yaml:"url,omitempty" json:"url,omitempty"`
+	TLSCACerts `yaml:"tlsCACerts,omitempty" json:"tlsCACerts,omitempty"`
 }
 
+// +k8s:deepcopy-gen=true
 type TLSCACerts struct {
-	Path string `yaml:"path,omitempty"`
-	Pem  string `yaml:"pem,omitempty"`
+	Path string `yaml:"path,omitempty" json:"path,omitempty"`
+	Pem  string `yaml:"pem,omitempty" json:"pem,omitempty"`
 }
 
 /* Default in Profile */
@@ -139,9 +161,7 @@ func DefaultClient(baseDir string, org string) *Client {
 				Path: filepath.Join(baseDir, org, "hfc-cvs"),
 			},
 		},
-		// CryptoConfig: CryptoConfig{
-		// 	Path: baseDir,
-		// },
+		TLSEnable: true,
 	}
 }
 
@@ -163,9 +183,20 @@ func DefaultPeerInfo() *PeerInfo {
 /* Client settings in Profile */
 
 func (profile *Profile) SetClient(clientorg string) {
-	// profile.Client.CryptoConfig.Path = baseDir
 	profile.Client.Organization = clientorg
 }
+
+func (profile *Profile) SetClientAdminCredential(id string, password string) {
+	if password == "" {
+		password = "passw0rd"
+	}
+	profile.Client.AdminCredential = AdminCredential{
+		ID:       id,
+		Password: password,
+	}
+}
+
+/* Channel settings in Profile */
 
 func (profile *Profile) SetChannel(channelID string, peers ...current.NamespacedName) {
 	info, ok := profile.Channels[channelID]
@@ -178,7 +209,16 @@ func (profile *Profile) SetChannel(channelID string, peers ...current.Namespaced
 	profile.Channels[channelID] = info
 }
 
-/* Channel settings in Profile */
+func (profile *Profile) RemoveChannelPeers(channelID string, peers ...string) {
+	info, ok := profile.Channels[channelID]
+	if !ok {
+		info.Peers = make(map[string]PeerInfo)
+	}
+	for _, p := range peers {
+		delete(info.Peers, p)
+	}
+	profile.Channels[channelID] = info
+}
 
 func (profile *Profile) GetChannel(channelID string) ChannelInfo {
 	if profile.Channels == nil {
@@ -201,7 +241,6 @@ func (profile *Profile) GetOrganization(organization string) OrganizationInfo {
 		return OrganizationInfo{
 			MSPID: organization,
 			Users: make(map[string]User),
-			// CryptoPath: filepath.Join(organization, "users", "{username}", "msp"), // {org_name}/users/{username}/msp
 			Peers: make([]string, 0),
 		}
 	}
@@ -213,12 +252,17 @@ func (profile *Profile) SetOrganization(organization string, peers []string, use
 		profile.Organizations = make(map[string]OrganizationInfo)
 	}
 	info := OrganizationInfo{
-		MSPID: organization,
-		Users: make(map[string]User),
-		// CryptoPath: filepath.Join(organization, "users", "{username}", "msp"), // {org_name}/users/{username}/msp
-		Peers: peers,
+		MSPID:           organization,
+		Users:           make(map[string]User),
+		Peers:           peers,
+		AdminPrivateKey: Pem{},
+		SignedCert:      Pem{},
 	}
 	for _, user := range users {
+		if info.AdminPrivateKey.Pem == "" {
+			info.AdminPrivateKey.Pem = user.Key.Pem
+			info.SignedCert.Pem = user.Cert.Pem
+		}
 		info.Users[user.Name] = user
 	}
 	profile.Organizations[organization] = info
@@ -235,6 +279,20 @@ func (profile *Profile) SetOrganizationUsers(organization string, users ...User)
 	profile.Organizations[organization] = orgInfo
 }
 
+func (profile *Profile) GetOrganizationUsers(organization string) map[string]User {
+	orgInfo := profile.GetOrganization(organization)
+	if orgInfo.Users == nil {
+		orgInfo.Users = make(map[string]User)
+	}
+	return orgInfo.Users
+}
+
+func (profile *Profile) RemoveOrganizationUsers(organization string) {
+	orgInfo := profile.GetOrganization(organization)
+	orgInfo.Users = make(map[string]User)
+	profile.Organizations[organization] = orgInfo
+}
+
 func (profile *Profile) RemoveOrganization(organization string) {
 	if profile.Organizations == nil {
 		profile.Organizations = make(map[string]OrganizationInfo)
@@ -244,6 +302,13 @@ func (profile *Profile) RemoveOrganization(organization string) {
 }
 
 /* Peer settings in Profile */
+
+func (profile *Profile) RemoveOrganizationPeers(org string) {
+	orgInfo := profile.GetOrganization(org)
+	for _, p := range orgInfo.Peers {
+		delete(profile.Peers, p)
+	}
+}
 
 func (profile *Profile) SetPeer(client controllerclient.Client, peer current.NamespacedName) error {
 	if profile.Peers == nil {
@@ -307,28 +372,38 @@ func GetNodeEndpoint(client controllerclient.Client, node current.NamespacedName
 		return NodeEndpoint{}, err
 	}
 
-	apiURL, err := url.Parse(conn.Endpoints.API)
-	if err != nil {
-		return NodeEndpoint{}, errors.Wrap(err, "invalid node api")
-	}
-
-	tlsPem, err := base64.StdEncoding.DecodeString(conn.TLS.SignCerts)
+	tlsPem, err := base64.StdEncoding.DecodeString(conn.TLS.CACerts[0])
 	if err != nil {
 		return NodeEndpoint{}, errors.Wrap(err, "not a valid pem format cert")
 	}
 	return NodeEndpoint{
-		URL: apiURL.Host,
+		URL: conn.Endpoints.API,
 		TLSCACerts: TLSCACerts{
 			Pem: string(tlsPem),
 		},
 	}, nil
 }
 
+type Format string
+
+const (
+	JSON Format = "json"
+	YAML Format = "yaml"
+)
+
 /* Marshal/Unmarshal in Profile*/
-func (profile *Profile) Marshal() ([]byte, error) {
+func (profile *Profile) Marshal(format Format) ([]byte, error) {
+	switch format {
+	case JSON:
+		return json.Marshal(profile)
+	}
 	return yaml.Marshal(profile)
 }
 
-func (profile *Profile) Unmarshal(in []byte) error {
+func (profile *Profile) Unmarshal(in []byte, format Format) error {
+	switch format {
+	case JSON:
+		return json.Unmarshal(in, profile)
+	}
 	return yaml.Unmarshal(in, profile)
 }

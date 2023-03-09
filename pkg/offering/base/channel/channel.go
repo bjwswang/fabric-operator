@@ -164,20 +164,22 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 		return err
 	}
 
-	// Channel changed or network changed or peer updated
-	if update.SpecUpdated() || update.NetworkUpdated() || update.PeerUpdated() {
-		err = baseChan.ReconcileConnectionProfile(instance, update)
-		if err != nil {
-			return err
-		}
-	}
-
+	// Reconcile peer if peer updated
+	// - join new peer into channel
 	if update.PeerUpdated() {
 		for _, p := range instance.Spec.Peers {
 			err = baseChan.ReconcilePeer(instance, p)
 			if err != nil {
 				return errors.Wrap(err, "failed to patch channel status")
 			}
+		}
+	}
+
+	// Channel changed or network changed or peer updated
+	if update.SpecUpdated() || update.NetworkUpdated() || update.PeerUpdated() {
+		err = baseChan.ReconcileConnectionProfile(instance, update)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -242,58 +244,41 @@ func (baseChan *BaseChannel) ReconcileRBAC(instance *current.Channel, update Upd
 func (baseChan *BaseChannel) ReconcileConnectionProfile(instance *current.Channel, update Update) error {
 	var err error
 
-	network := &current.Network{}
-	err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Network}, network)
+	// Full conneciton profile
+	profile, err := baseChan.GenerateChannelConnProfile("", instance)
 	if err != nil {
 		return err
+	}
+	// Connection profile which only have relevant org's admin credentials
+	for _, org := range instance.Spec.Members {
+		p := profile.DeepCopy()
+		err = baseChan.GenerateConnProfileForOrg(instance, p, org.Name)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (baseChan *BaseChannel) GenerateChannelConnProfile(clientOrg string, channel *current.Channel) (*connector.Profile, error) {
+	var err error
+
+	// get network cluster nodes
+	network := &current.Network{}
+	err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: channel.Spec.Network}, network)
+	if err != nil {
+		return nil, err
 	}
 	ordererorg := network.Labels["bestchains.network.initiator"]
 	clusterNodes, err := baseChan.Initializer.GetClusterNodes(ordererorg, network.GetName())
 	if err != nil {
-		return err
-	}
-	profile, err := baseChan.GenerateChannelConnProfile("", instance, clusterNodes)
-	if err != nil {
-		return err
-	}
-	binaryData, err := profile.Marshal()
-	if err != nil {
-		return err
-	}
-	cm := &corev1.ConfigMap{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      instance.GetConnectionPorfile(),
-			Namespace: baseChan.Config.Operator.Namespace,
-		},
-		BinaryData: map[string][]byte{
-			"profile.yaml": binaryData,
-		},
-	}
-	err = baseChan.Client.CreateOrUpdate(context.TODO(), cm, controllerclient.CreateOrUpdateOption{
-		Owner:  instance,
-		Scheme: baseChan.Scheme,
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (baseChan *BaseChannel) GenerateChannelConnProfile(clientOrg string, channel *current.Channel, clusterNodes *current.IBPOrdererList) (*connector.Profile, error) {
-	var err error
-
-	basedir := baseChan.Initializer.GetStoragePath(channel)
-
-	var orgs = make([]string, len(channel.Spec.Members))
-	for index, m := range channel.Spec.Members {
-		orgs[index] = m.GetName()
-	}
-	if clientOrg == "" && len(orgs) > 0 {
-		clientOrg = orgs[0]
+		return nil, err
 	}
 
 	// default connprofile with default client
-	profile := connector.DefaultProfile(basedir, clientOrg)
+	basedir := baseChan.Initializer.GetStoragePath(channel)
+	profile := connector.DefaultProfile(basedir, "")
 
 	// Channel
 	profile.SetChannel(channel.GetChannelID(), channel.Spec.Peers...)
@@ -326,31 +311,117 @@ func (baseChan *BaseChannel) GenerateChannelConnProfile(clientOrg string, channe
 	}
 
 	// Organizations
+	var orgs = make([]string, len(channel.Spec.Members))
+	for index, m := range channel.Spec.Members {
+		orgs[index] = m.GetName()
+	}
 	for _, org := range orgs {
-		organization := &current.Organization{}
-		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: org}, organization)
+		adminUser, err := baseChan.GetOrgAdminCredentials(org)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to find organization")
-		}
-		// read organization admin's secret
-		orgMSPSecret := &corev1.Secret{}
-		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Namespace: org, Name: fmt.Sprintf("%s-msp-crypto", org)}, orgMSPSecret)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get channel connection profile")
-		}
-		adminUser := connector.User{
-			Name: organization.Spec.Admin,
-			Key: connector.Pem{
-				Pem: string(orgMSPSecret.Data["admin-keystore"]),
-			},
-			Cert: connector.Pem{
-				Pem: string(orgMSPSecret.Data["admin-signcert"]),
-			},
+			return nil, err
 		}
 		profile.SetOrganization(org, peers[org], adminUser)
 	}
 
+	yamlBinaryData, err := profile.Marshal(connector.YAML)
+	if err != nil {
+		return nil, err
+	}
+	jsonBinaryData, err := profile.Marshal(connector.JSON)
+	if err != nil {
+		return nil, err
+	}
+	cm := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      channel.GetConnectionPorfile(),
+			Namespace: baseChan.Config.Operator.Namespace,
+		},
+		BinaryData: map[string][]byte{
+			"profile.yaml": yamlBinaryData,
+			"profile.json": jsonBinaryData,
+		},
+	}
+	err = baseChan.Client.CreateOrUpdate(context.TODO(), cm, controllerclient.CreateOrUpdateOption{
+		Owner:  channel,
+		Scheme: baseChan.Scheme,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return profile, nil
+}
+
+func (baseChan *BaseChannel) GenerateConnProfileForOrg(instance *current.Channel, profile *connector.Profile, org string) error {
+	profile.SetClient(org)
+
+	// set this org's admin credentails
+	for _, member := range instance.Spec.Members {
+		if member.Name != org {
+			orgInfo := profile.GetOrganization(member.Name)
+			profile.RemoveChannelPeers(instance.GetChannelID(), orgInfo.Peers...)
+			profile.RemoveOrganizationPeers(member.Name)
+			profile.RemoveOrganization(member.Name)
+		}
+	}
+
+	// set 1st user as client's admin credential(for blockchain explorer)
+	for _, u := range profile.GetOrganizationUsers(org) {
+		profile.SetClientAdminCredential(u.Name, "")
+		break
+	}
+
+	// Create conn profile cm for this organization
+	yamlBinaryData, err := profile.Marshal(connector.YAML)
+	if err != nil {
+		return err
+	}
+	jsonBinaryData, err := profile.Marshal(connector.JSON)
+	if err != nil {
+		return err
+	}
+	cm := &corev1.ConfigMap{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      instance.GetConnectionPorfile(),
+			Namespace: org,
+		},
+		BinaryData: map[string][]byte{
+			"profile.yaml": yamlBinaryData,
+			"profile.json": jsonBinaryData,
+		},
+	}
+	err = baseChan.Client.CreateOrUpdate(context.TODO(), cm, controllerclient.CreateOrUpdateOption{
+		Owner:  instance,
+		Scheme: baseChan.Scheme,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (baseChan *BaseChannel) GetOrgAdminCredentials(org string) (connector.User, error) {
+	var err error
+	organization := &current.Organization{}
+	err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: org}, organization)
+	if err != nil {
+		return connector.User{}, errors.Wrap(err, "failed to find organization")
+	}
+	orgMSPSecret := &corev1.Secret{}
+	err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Namespace: org, Name: fmt.Sprintf("%s-msp-crypto", org)}, orgMSPSecret)
+	if err != nil {
+		return connector.User{}, errors.Wrap(err, "failed to get org's msp secret")
+	}
+	adminUser := connector.User{
+		Name: organization.Spec.Admin,
+		Key: connector.Pem{
+			Pem: string(orgMSPSecret.Data["admin-keystore"]),
+		},
+		Cert: connector.Pem{
+			Pem: string(orgMSPSecret.Data["admin-signcert"]),
+		},
+	}
+	return adminUser, nil
 }
 
 // GetLabels from instance.GetLabels

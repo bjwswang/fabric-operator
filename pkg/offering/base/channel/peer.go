@@ -73,6 +73,7 @@ func (baseChan *BaseChannel) ReconcilePeer(instance *current.Channel, peer curre
 	} else {
 		condition.Type = current.PeerJoined
 		condition.Status = v1.ConditionTrue
+		condition.Reason = string(current.PeerJoined)
 		condition.LastTransitionTime = v1.Now()
 	}
 
@@ -151,12 +152,12 @@ func (baseChan *BaseChannel) ConnectorProfile(channelID string, peer current.Nam
 		var err error
 
 		cm := &corev1.ConfigMap{}
-		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Namespace: baseChan.Config.Operator.Namespace, Name: fmt.Sprintf("chan-%s-connection-profile", channelID)}, cm)
+		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Namespace: peer.Namespace, Name: fmt.Sprintf("chan-%s-connection-profile", channelID)}, cm)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get channel connection profile")
 		}
 		profile := &connector.Profile{}
-		err = profile.Unmarshal(cm.BinaryData["profile.yaml"])
+		err = profile.Unmarshal(cm.BinaryData["profile.yaml"], connector.YAML)
 		if err != nil {
 			return nil, errors.Wrap(err, "invalid channel connection profile")
 		}
@@ -172,6 +173,6 @@ func (baseChan *BaseChannel) ConnectorProfile(channelID string, peer current.Nam
 			return nil, errors.Wrap(err, "failed to add current peer into connection profile")
 		}
 
-		return profile.Marshal()
+		return profile.Marshal(connector.YAML)
 	}
 }

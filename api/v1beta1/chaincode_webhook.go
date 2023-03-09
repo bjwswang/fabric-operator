@@ -21,6 +21,9 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"strings"
+	"time"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,6 +35,33 @@ import (
 // log is for logging in this package.
 var ccLogger = logf.Log.WithName("chaincode-resource")
 
+const (
+	minLength, maxLength = 10, 30
+
+	//https://github.com/hyperledger/fabric/blob/main/core/chaincode/persistence/chaincode_package.go#L248
+	alnum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_.+-"
+)
+
+func genLabel() string {
+	seed := rand.NewSource(time.Now().UnixNano())
+	rr := rand.New(seed)
+
+	// total a-zA-Z0-9
+	base := 62
+	targetLength := rr.Intn(21) + minLength
+
+	buf := strings.Builder{}
+	for i := 0; i < targetLength; i++ {
+		pickItem := rr.Intn(base)
+		buf.WriteByte(alnum[pickItem])
+		if i == 0 {
+			// _.+-
+			base += 4
+		}
+	}
+	return buf.String()
+}
+
 //+kubebuilder:webhook:path=/mutate-ibp-com-v1beta1-chaincode,mutating=true,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=chaincodes,verbs=create;update,versions=v1beta1,name=chaincode.mutate.webhook,admissionReviewVersions=v1
 
 var _ defaulter = &Chaincode{}
@@ -39,6 +69,9 @@ var _ defaulter = &Chaincode{}
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Chaincode) Default(ctx context.Context, client client.Client, user authenticationv1.UserInfo) {
 	ccLogger.Info("default", "name", r.Name, "user", user.String())
+	if r.Spec.Label == "" {
+		r.Spec.Label = genLabel()
+	}
 }
 
 //+kubebuilder:webhook:path=/validate-ibp-com-v1beta1-chaincode,mutating=false,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=chaincodes,verbs=create;update;delete,versions=v1beta1,name=chaincode.validate.webhook,admissionReviewVersions=v1

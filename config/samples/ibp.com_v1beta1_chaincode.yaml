@@ -6,7 +6,6 @@ spec:
   license:
     accept: true
   channel: channel-sample
-  label: "chaincode1"
   initRequired: false
   endorsePolicyRef:
     name: e-policy

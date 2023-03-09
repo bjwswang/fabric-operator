@@ -70,8 +70,9 @@ type ChaincodeSpec struct {
 	// chaincode id
 	ID string `json:"id,omitempty"`
 	// current version
-	Version      string `json:"version,omitempty"`
-	Label        string `json:"label"`
+	Version string `json:"version,omitempty"`
+	// +kubebuilder:validation:Pattern:=`^[[:alnum:]][[:alnum:]_.+-]*$`
+	Label        string `json:"label,omitempty"`
 	InitRequired bool   `json:"initRequired"`
 
 	EndorsePolicyRef `json:"endorsePolicyRef"`

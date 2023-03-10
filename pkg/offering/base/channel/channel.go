@@ -45,7 +45,6 @@ var log = logf.Log.WithName("base_channel")
 type Update interface {
 	SpecUpdated() bool
 	MemberUpdated() bool
-	NetworkUpdated() bool
 	PeerUpdated() bool
 }
 
@@ -164,6 +163,14 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 		return err
 	}
 
+	// member changed
+	if update.MemberUpdated() {
+		err = baseChan.ReconcileConnectionProfile(instance, update)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Reconcile peer if peer updated
 	// - join new peer into channel
 	if update.PeerUpdated() {
@@ -173,10 +180,7 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 				return errors.Wrap(err, "failed to patch channel status")
 			}
 		}
-	}
-
-	// Channel changed or network changed or peer updated
-	if update.SpecUpdated() || update.NetworkUpdated() || update.PeerUpdated() {
+		// Update connection profile after peer updated
 		err = baseChan.ReconcileConnectionProfile(instance, update)
 		if err != nil {
 			return err
@@ -283,11 +287,16 @@ func (baseChan *BaseChannel) GenerateChannelConnProfile(clientOrg string, channe
 	// Channel
 	profile.SetChannel(channel.GetChannelID(), channel.Spec.Peers...)
 
+	peersInSpec := make(map[string]bool)
+	for _, p := range channel.Spec.Peers {
+		peersInSpec[p.String()] = true
+	}
 	// Peers
 	peers := make(map[string][]string)
 	for _, p := range channel.Status.PeerConditions {
 		// only joined peer can be appended into connection profile
-		if p.Type != current.PeerJoined {
+		// only peer in spec can be appended into connection profile
+		if p.Type != current.PeerJoined || !peersInSpec[p.String()] {
 			continue
 		}
 		err = profile.SetPeer(baseChan.Client, p.NamespacedName)

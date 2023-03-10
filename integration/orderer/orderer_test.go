@@ -68,9 +68,9 @@ var (
 
 var (
 	defaultRequestsOrderer = corev1.ResourceList{
-		corev1.ResourceCPU:              resource.MustParse("20m"),
-		corev1.ResourceMemory:           resource.MustParse("40M"),
-		corev1.ResourceEphemeralStorage: resource.MustParse("100M"),
+		corev1.ResourceCPU:              resource.MustParse("2m"),
+		corev1.ResourceMemory:           resource.MustParse("4M"),
+		corev1.ResourceEphemeralStorage: resource.MustParse("10M"),
 	}
 
 	defaultLimitsOrderer = corev1.ResourceList{
@@ -80,9 +80,9 @@ var (
 	}
 
 	defaultRequestsProxy = corev1.ResourceList{
-		corev1.ResourceCPU:              resource.MustParse("10m"),
-		corev1.ResourceMemory:           resource.MustParse("20M"),
-		corev1.ResourceEphemeralStorage: resource.MustParse("100M"),
+		corev1.ResourceCPU:              resource.MustParse("1m"),
+		corev1.ResourceMemory:           resource.MustParse("2M"),
+		corev1.ResourceEphemeralStorage: resource.MustParse("10M"),
 	}
 
 	defaultLimitsProxy = corev1.ResourceList{
@@ -260,9 +260,9 @@ var _ = Describe("Interaction between IBP-Operator and Kubernetes cluster", func
 
 				BeforeEach(func() {
 					newResourceRequestsOrderer = map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:              resource.MustParse("240m"),
-						corev1.ResourceMemory:           resource.MustParse("480M"),
-						corev1.ResourceEphemeralStorage: resource.MustParse("100M"),
+						corev1.ResourceCPU:              resource.MustParse("24m"),
+						corev1.ResourceMemory:           resource.MustParse("48M"),
+						corev1.ResourceEphemeralStorage: resource.MustParse("10M"),
 					}
 					newResourceLimitsOrderer = map[corev1.ResourceName]resource.Quantity{
 						corev1.ResourceCPU:              resource.MustParse("240m"),
@@ -271,9 +271,9 @@ var _ = Describe("Interaction between IBP-Operator and Kubernetes cluster", func
 					}
 
 					newResourceRequestsProxy = map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceCPU:              resource.MustParse("90m"),
-						corev1.ResourceMemory:           resource.MustParse("180M"),
-						corev1.ResourceEphemeralStorage: resource.MustParse("100M"),
+						corev1.ResourceCPU:              resource.MustParse("9m"),
+						corev1.ResourceMemory:           resource.MustParse("18M"),
+						corev1.ResourceEphemeralStorage: resource.MustParse("10M"),
 					}
 					newResourceLimitsProxy = map[corev1.ResourceName]resource.Quantity{
 						corev1.ResourceCPU:              resource.MustParse("90m"),
@@ -916,6 +916,10 @@ func GetOrderer() (*Orderer, []Orderer) {
 				},
 			},
 			Resources: &current.OrdererResources{
+				Init: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
+				},
 				Orderer: &corev1.ResourceRequirements{
 					Requests: defaultRequestsOrderer,
 					Limits:   defaultLimitsOrderer,
@@ -923,6 +927,10 @@ func GetOrderer() (*Orderer, []Orderer) {
 				GRPCProxy: &corev1.ResourceRequirements{
 					Requests: defaultRequestsProxy,
 					Limits:   defaultLimitsProxy,
+				},
+				Enroller: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
 				},
 			},
 			ConfigOverride: &runtime.RawExtension{Raw: configBytes},
@@ -1000,6 +1008,10 @@ func GetOrderer2() (*Orderer, []Orderer) {
 			Zone:   "select",
 			Region: "select",
 			Resources: &current.OrdererResources{
+				Init: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
+				},
 				Orderer: &corev1.ResourceRequirements{
 					Requests: defaultRequestsOrderer,
 					Limits:   defaultLimitsOrderer,
@@ -1007,6 +1019,10 @@ func GetOrderer2() (*Orderer, []Orderer) {
 				GRPCProxy: &corev1.ResourceRequirements{
 					Requests: defaultRequestsProxy,
 					Limits:   defaultLimitsProxy,
+				},
+				Enroller: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
 				},
 			},
 			DisableNodeOU: pointer.Bool(true),
@@ -1104,6 +1120,24 @@ func GetOrderer3() (*Orderer, []Orderer) {
 					Region: "us-south2",
 				},
 			},
+			Resources: &current.OrdererResources{
+				Init: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
+				},
+				Orderer: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
+				},
+				GRPCProxy: &corev1.ResourceRequirements{
+					Requests: defaultRequestsProxy,
+					Limits:   defaultLimitsProxy,
+				},
+				Enroller: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
+				},
+			},
 			DisableNodeOU: pointer.Bool(true),
 			FabricVersion: integration.FabricVersion + "-1",
 		},
@@ -1178,6 +1212,10 @@ func GetOrderer4() (*Orderer, []Orderer) {
 			Zone:   "select",
 			Region: "select",
 			Resources: &current.OrdererResources{
+				Init: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
+				},
 				Orderer: &corev1.ResourceRequirements{
 					Requests: defaultRequestsOrderer,
 					Limits:   defaultLimitsOrderer,
@@ -1185,6 +1223,10 @@ func GetOrderer4() (*Orderer, []Orderer) {
 				GRPCProxy: &corev1.ResourceRequirements{
 					Requests: defaultRequestsProxy,
 					Limits:   defaultLimitsProxy,
+				},
+				Enroller: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
 				},
 			},
 			DisableNodeOU: pointer.Bool(true),
@@ -1275,6 +1317,10 @@ func GetOrderer5() (*Orderer, []Orderer) {
 				},
 			},
 			Resources: &current.OrdererResources{
+				Init: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
+				},
 				Orderer: &corev1.ResourceRequirements{
 					Requests: defaultRequestsOrderer,
 					Limits:   defaultLimitsOrderer,
@@ -1282,6 +1328,10 @@ func GetOrderer5() (*Orderer, []Orderer) {
 				GRPCProxy: &corev1.ResourceRequirements{
 					Requests: defaultRequestsProxy,
 					Limits:   defaultLimitsProxy,
+				},
+				Enroller: &corev1.ResourceRequirements{
+					Requests: defaultRequestsOrderer,
+					Limits:   defaultLimitsOrderer,
 				},
 			},
 			DisableNodeOU: pointer.Bool(true),

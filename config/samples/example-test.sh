@@ -29,6 +29,7 @@ InstallDirPath=${TempFilePath}/installer
 DefaultPassWord=${DefaultPassWord:-'passw0rd'}
 LOG_DIR=${LOG_DIR:-"/tmp/fabric-operator-example-test/logs"}
 ComponentImageFile=${ComponentImageFile:-"/tmp/all.image.tar"}
+RootPath=$(dirname -- "$(readlink -f -- "$0")")/../..
 
 Timeout="${TimeoutSeconds}s"
 mkdir ${TempFilePath} || true
@@ -132,9 +133,11 @@ fi
 
 info "2. install component in kubernetes..."
 info "2.1 install u4a component and u4a services"
-export IGNORE_FABRIC_OPERATOR=YES
-. ./scripts/e2e.sh
-cd -
+. ./scripts/e2e.sh --u4a
+. ./scripts/e2e.sh --minio
+. ./scripts/e2e.sh --tekton-operator
+. ./scripts/e2e.sh --tekton-task-pipeline
+cd ${RootPath}
 
 info "2.2 install fabric-operator"
 docker tag hyperledgerk8s/fabric-operator:latest hyperledgerk8s/fabric-operator:example-e2e
@@ -365,7 +368,7 @@ function waitNetwork() {
 			Type=$(kubectl get network ${networkName} --token=${token} --ignore-not-found=true -o json | jq -r '.status.type')
 			if [[ $Type == "NetworkDissolved" ]]; then
 				break
-			fi			
+			fi
 		elif [[ $want == "Ready" ]]; then
 			Type=$(kubectl get network ${networkName} --token=${token} --ignore-not-found=true -o json | jq -r '.status.type')
 			if [[ $Type == "Deployed" ]]; then
@@ -541,8 +544,8 @@ function waitPeerJoined() {
 				break
 			fi
 		else
-            break
-        fi
+			break
+		fi
 		CURRENT_TIME=$(date +%s)
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
 		if [ $ELAPSED_TIME -gt 60 ]; then

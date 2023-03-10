@@ -20,9 +20,12 @@ package v1beta1
 
 import (
 	"context"
+	"fmt"
 
+	iam "github.com/IBM-Blockchain/fabric-operator/api/iam/v1alpha1"
 	"github.com/pkg/errors"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -31,6 +34,8 @@ import (
 var (
 	errAdminIsEmpty      = errors.New("the organization's admin is empty")
 	errAdminCantBeClient = errors.New("user can't be admin and client at the same time")
+	errUserNotFound      = errors.New("user not found")
+	errUserDuplicated    = errors.New("found more than one user with same username")
 	errHasNetwork        = errors.New("the organization is initiator of one network")
 	errHasFederation     = errors.New("the organization is initiator of one federation")
 )
@@ -66,6 +71,9 @@ func (r *Organization) ValidateCreate(ctx context.Context, client client.Client,
 			if orgClient == r.Spec.Admin {
 				return errAdminCantBeClient
 			}
+			if err := r.validateUser(ctx, client, orgClient); err != nil {
+				return errors.Wrap(err, "client add")
+			}
 		}
 	}
 
@@ -82,11 +90,19 @@ func (r *Organization) ValidateUpdate(ctx context.Context, client client.Client,
 	if r.Spec.Admin == "" {
 		return errAdminIsEmpty
 	}
+	if oldOrg.Spec.Admin != r.Spec.Admin {
+		if err := r.validateUser(ctx, client, r.Spec.Admin); err != nil {
+			return errors.Wrap(err, "admin update")
+		}
+	}
 
 	if len(r.Spec.Clients) != 0 {
 		for _, orgClient := range r.Spec.Clients {
 			if orgClient == r.Spec.Admin {
 				return errAdminCantBeClient
+			}
+			if err := r.validateUser(ctx, client, orgClient); err != nil {
+				return errors.Wrap(err, "client update")
 			}
 		}
 	}
@@ -125,4 +141,33 @@ func (r *Organization) ValidateDelete(ctx context.Context, c client.Client, user
 		}
 	}
 	return nil
+}
+
+func (r *Organization) validateUser(ctx context.Context, c client.Client, username string) error {
+	_, err := r.getUser(ctx, c, username)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Organization) getUser(ctx context.Context, c client.Client, username string) (*iam.User, error) {
+	selector, err := labels.Parse(fmt.Sprintf("t7d.io.username=%s", username))
+	if err != nil {
+		return nil, err
+	}
+	userList := &iam.UserList{}
+	err = c.List(context.TODO(), userList, &client.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(userList.Items) == 0 {
+		return nil, errors.Wrapf(errUserNotFound, "user: %s", username)
+	}
+	if len(userList.Items) > 1 {
+		return nil, errors.Wrapf(errUserDuplicated, "user: %s", username)
+	}
+	return &userList.Items[0], nil
 }

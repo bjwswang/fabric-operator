@@ -166,6 +166,7 @@ rules:
       - votes.ibp.com
       - networks.ibp.com
       - channels.ibp.com
+      - chaincodebuilds.ibp.com
       - ibpcas
       - ibppeers
       - ibporderers
@@ -176,6 +177,9 @@ rules:
       - votes
       - networks
       - channels
+      - chaincodes
+      - chaincodebuilds
+      - endorsepolicies
       - ibpcas/finalizers
       - ibppeers/finalizers
       - ibporderers/finalizers
@@ -186,6 +190,7 @@ rules:
       - votes/finalizers
       - networks/finalizers
       - channels/finalizers
+      - chaincodebuilds/finalizers
       - ibpcas/status
       - ibppeers/status
       - ibporderers/status
@@ -196,6 +201,9 @@ rules:
       - votes/status
       - networks/status
       - channels/status
+      - chaincodebuilds/status
+      - chaincodes/status
+      - endorsepolicies/status
     verbs:
       - get
       - list
@@ -221,3 +229,44 @@ rules:
       - watch
       - delete
       - deletecollection
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - iam.tenxcloud.com
+    resources:
+      - users.iam.tenxcloud.com
+      - users
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - patch
+      - watch
+      - delete
+      - deletecollection
+  - apiGroups:
+      - tekton.dev
+    resources:
+      - pipelineruns
+      - taskruns
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch

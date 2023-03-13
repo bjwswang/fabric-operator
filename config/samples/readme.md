@@ -2921,6 +2921,7 @@ metadata:
   uid: 222672f0-829b-4d64-ba94-4d1b3e78bc92
 spec:
   channel: channel-sample
+  displayName: 展示名称
   value: OR('org1.member','org2.member')
 ```
 

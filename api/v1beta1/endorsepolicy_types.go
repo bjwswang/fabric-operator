@@ -21,6 +21,7 @@ type EndorsePolicySpec struct {
 	Channel     string `json:"channel"`
 	Value       string `json:"value"`
 	Description string `json:"description,omitempty"`
+	DisplayName string `json:"displayName"`
 }
 
 type EndorsePolicyStatus struct {

@@ -3,5 +3,6 @@ kind: EndorsePolicy
 metadata:
   name: e-policy
 spec:
+  displayName: "展示名称"
   channel: channel-sample
   value: "OR('org1.member','org2.member')"

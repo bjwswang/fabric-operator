@@ -26,10 +26,9 @@ import (
 
 // Update defines a list of elements that we detect spec updates on
 type Update struct {
-	specUpdated    bool
-	memberUpdated  bool
-	networkUpdated bool
-	peerUpdated    bool
+	specUpdated   bool
+	memberUpdated bool
+	peerUpdated   bool
 }
 
 func (u *Update) SpecUpdated() bool {
@@ -38,10 +37,6 @@ func (u *Update) SpecUpdated() bool {
 
 func (u *Update) MemberUpdated() bool {
 	return u.memberUpdated
-}
-
-func (u *Update) NetworkUpdated() bool {
-	return u.networkUpdated
 }
 
 func (u *Update) PeerUpdated() bool {
@@ -58,10 +53,6 @@ func (u *Update) GetUpdateStackWithTrues() string {
 
 	if u.memberUpdated {
 		stack += "memberUpdated "
-	}
-
-	if u.networkUpdated {
-		stack += "networkUpdated "
 	}
 
 	if u.peerUpdated {

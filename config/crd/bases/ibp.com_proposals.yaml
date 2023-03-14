@@ -128,6 +128,32 @@ spec:
                 required:
                 - channel
                 type: object
+              updateChannelMember:
+                properties:
+                  channel:
+                    type: string
+                  members:
+                    items:
+                      description: Member in a Fedeartion
+                      properties:
+                        initiator:
+                          type: boolean
+                        joinedAt:
+                          description: JoinedAt is the proposal succ time
+                          format: date-time
+                          type: string
+                        joinedBy:
+                          description: JoinedBy is the proposal name which joins this
+                            member into federation
+                          type: string
+                        name:
+                          type: string
+                      type: object
+                    type: array
+                required:
+                - channel
+                - members
+                type: object
               upgradeChaincode:
                 properties:
                   chaincode:

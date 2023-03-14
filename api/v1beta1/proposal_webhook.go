@@ -32,15 +32,16 @@ import (
 )
 
 var (
-	errChangeProposalPurpose  = errors.New("the purpose of the proposal cannot be changed")
-	errNullProposalPurpose    = errors.New("the proposal should have a purpose")
-	errMoreProposalPurpose    = errors.New("the proposal should have only one purpose")
-	errChangeInitiator        = errors.New("the initiator of the proposal cannot be changed")
-	errChangeFederation       = errors.New("the federation of the proposal cannot be changed")
-	errChannelNotFound        = errors.New("the relevant channel in the proposal cannot be found")
-	errChannelInError         = errors.New("the relevant channel in the proposal is in Error status")
-	errChannelAlreadyArchived = errors.New("the relevant channel in the proposal is already archived")
-	errChannelNotArchivedYet  = errors.New("the relevant channel in the proposal not archived yet")
+	errChangeProposalPurpose   = errors.New("the purpose of the proposal cannot be changed")
+	errNullProposalPurpose     = errors.New("the proposal should have a purpose")
+	errMoreProposalPurpose     = errors.New("the proposal should have only one purpose")
+	errChangeInitiator         = errors.New("the initiator of the proposal cannot be changed")
+	errChangeFederation        = errors.New("the federation of the proposal cannot be changed")
+	errChannelNotFound         = errors.New("the relevant channel in the proposal cannot be found")
+	errChannelInError          = errors.New("the relevant channel in the proposal is in Error status")
+	errChannelAlreadyArchived  = errors.New("the relevant channel in the proposal is already archived")
+	errChannelNotArchivedYet   = errors.New("the relevant channel in the proposal not archived yet")
+	errChannelHasMemberAlready = errors.New("the relevant channel already has members to add")
 )
 
 // log is for logging in this package.
@@ -150,13 +151,19 @@ func (r *Proposal) ValidateDelete(ctx context.Context, client client.Client, use
 
 func validateProposalSource(ctx context.Context, c client.Client, proposalSource ProposalSource) error {
 	if proposalSource.ArchiveChannel != nil {
-		if err := validateChannel(ctx, c, proposalSource.ArchiveChannel.Channel, ArchiveChannelProposal); err != nil {
+		if err := validateChannel(ctx, c, proposalSource.ArchiveChannel.Channel, proposalSource); err != nil {
 			return err
 		}
 	}
 
 	if proposalSource.UnarchiveChannel != nil {
-		if err := validateChannel(ctx, c, proposalSource.UnarchiveChannel.Channel, UnarchiveChannelProposal); err != nil {
+		if err := validateChannel(ctx, c, proposalSource.UnarchiveChannel.Channel, proposalSource); err != nil {
+			return err
+		}
+	}
+
+	if proposalSource.UpdateChannelMember != nil {
+		if err := validateChannel(ctx, c, proposalSource.UpdateChannelMember.Channel, proposalSource); err != nil {
 			return err
 		}
 	}
@@ -164,7 +171,7 @@ func validateProposalSource(ctx context.Context, c client.Client, proposalSource
 	return nil
 }
 
-func validateChannel(ctx context.Context, c client.Client, channel string, purpose uint) error {
+func validateChannel(ctx context.Context, c client.Client, channel string, proposalSource ProposalSource) error {
 	ch := &Channel{}
 	ch.Name = channel
 	err := c.Get(ctx, client.ObjectKeyFromObject(ch), ch)
@@ -179,7 +186,7 @@ func validateChannel(ctx context.Context, c client.Client, channel string, purpo
 		return errChannelInError
 	}
 
-	switch purpose {
+	switch proposalSource.GetPurpose() {
 	case ArchiveChannelProposal:
 		if ch.Status.Type == ChannelArchived {
 			return errChannelAlreadyArchived
@@ -187,6 +194,20 @@ func validateChannel(ctx context.Context, c client.Client, channel string, purpo
 	case UnarchiveChannelProposal:
 		if ch.Status.Type != ChannelArchived {
 			return errChannelNotArchivedYet
+		}
+	case UpdateChannelMemberProposal:
+		if ch.Status.Type == ChannelArchived {
+			return errChannelAlreadyArchived
+		}
+		for _, t := range proposalSource.UpdateChannelMember.Members {
+			for _, m := range ch.Spec.Members {
+				if t.Name == m.Name {
+					return errChannelHasMemberAlready
+				}
+			}
+		}
+		if err := validateMemberInNetwork(ctx, c, ch.Spec.Network, proposalSource.UpdateChannelMember.Members); err != nil {
+			return err
 		}
 	}
 

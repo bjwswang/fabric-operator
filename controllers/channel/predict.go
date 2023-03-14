@@ -30,6 +30,7 @@ import (
 	"gopkg.in/yaml.v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
@@ -68,6 +69,11 @@ func (r *ReconcileChannel) CreateFunc(e event.CreateEvent) bool {
 
 		added, removed := current.DifferMembers(existingChannel.Spec.Members, channel.Spec.Members)
 		if len(added) != 0 || len(removed) != 0 {
+			if len(removed) != 0 {
+				// TODO: support deleting members from channel later
+				log.Error(fmt.Errorf("deleting members from a channel is not yet supported"), "Deleting members from a channel is not yet supported.", "channel", channel.GetName())
+				return false
+			}
 			log.Info(fmt.Sprintf("Channel '%s' members was updated while operator was down", channel.GetName()))
 			log.Info(fmt.Sprintf("Difference detected: added members %v", added))
 			log.Info(fmt.Sprintf("Difference detected: removed members %v", removed))
@@ -113,6 +119,10 @@ func (r *ReconcileChannel) UpdateFunc(e event.UpdateEvent) bool {
 
 	added, removed := current.DifferMembers(oldChan.GetMembers(), newChan.GetMembers())
 	if len(added) != 0 || len(removed) != 0 {
+		if len(removed) != 0 {
+			log.Error(fmt.Errorf("deleting members from a channel is not yet supported"), "Deleting members from a channel is not yet supported.", "channel", newChan.GetName())
+			return false
+		}
 		log.Info(fmt.Sprintf("Difference detected: added members %v", added))
 		log.Info(fmt.Sprintf("Difference detected: removed members %v", removed))
 		update.memberUpdated = true
@@ -160,6 +170,23 @@ func (r *ReconcileChannel) ProposalUpdateFunc(e event.UpdateEvent) bool {
 					err = r.PatchProposalStatus(targetChannel, newProposal.GetName(), current.UnarchiveChannelProposal)
 					if err != nil {
 						log.Error(err, "patch channel status by proposal succ", "proposal", newProposal.GetName())
+					}
+				case current.UpdateChannelMemberProposal:
+					targetChannel = newProposal.Spec.UpdateChannelMember.Channel
+					ch := &current.Channel{}
+					if err := r.client.Get(context.TODO(), types.NamespacedName{Name: targetChannel}, ch); err != nil {
+						log.Error(err, "get channel error", "proposal", newProposal.GetName())
+						return false
+					}
+					for i, m := range newProposal.Spec.UpdateChannelMember.Members {
+						now := metav1.Now()
+						m.JoinedAt = &now
+						m.JoinedBy = newProposal.GetName()
+						newProposal.Spec.UpdateChannelMember.Members[i] = m
+					}
+					ch.Spec.Members = append(ch.Spec.Members, newProposal.Spec.UpdateChannelMember.Members...)
+					if err = r.client.Update(context.TODO(), ch); err != nil {
+						log.Error(err, "update channel memeber error", "proposal", newProposal.GetName())
 					}
 				default:
 					return false

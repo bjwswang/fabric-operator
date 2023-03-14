@@ -74,7 +74,7 @@ func (c *baseChaincode) PackageForK8s(instance *current.Chaincode) (string, erro
 		},
 	}
 	log.Info(fmt.Sprintf("%s starting to compress first level", method))
-	log.V(5).Info(fmt.Sprintf("%s compressItems %+v\n", method, compressItems))
+	log.Info(fmt.Sprintf("%s compressItems %+v\n", method, compressItems))
 	if err = compressFiles(tw, gw, compressItems); err != nil {
 		return err.Error(), err
 	}
@@ -96,7 +96,7 @@ func (c *baseChaincode) PackageForK8s(instance *current.Chaincode) (string, erro
 	}
 
 	log.Info(fmt.Sprintf("%s starting to compress second level", method))
-	log.V(5).Info(fmt.Sprintf("%s compressItems %+v\n", method, compressItems))
+	log.Info(fmt.Sprintf("%s compressItems %+v\n", method, compressItems))
 	if err = compressFiles(nextTw, nextGW, compressItems); err != nil {
 		return err.Error(), err
 	}

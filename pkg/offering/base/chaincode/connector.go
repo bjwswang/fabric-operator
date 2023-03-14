@@ -21,13 +21,10 @@ package chaincode
 import (
 	"context"
 	"fmt"
-	"os"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/connector"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
-	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,29 +35,6 @@ const (
 	DefaultEndorsementPlugin = "escc"
 	DefaultValidationPlugin  = "vscc"
 )
-
-func ProfileProvider(cli controllerclient.Client, channelID string) (*connector.Profile, error) {
-	var err error
-	operatorNamespace := os.Getenv("WATCH_NAMESPACE")
-	if operatorNamespace == "" {
-		operatorNamespace = os.Getenv("OPERATOR_NAMESPACE")
-	}
-	cm := &corev1.ConfigMap{}
-	err = cli.Get(context.TODO(), types.NamespacedName{
-		Namespace: operatorNamespace,
-		Name:      fmt.Sprintf("chan-%s-connection-profile", channelID)},
-		cm)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get channel connection profile")
-	}
-	profile := &connector.Profile{}
-	err = profile.Unmarshal(cm.BinaryData["profile.yaml"], connector.YAML)
-	if err != nil {
-		return nil, errors.Wrap(err, "invalid channel connection profile")
-	}
-	return profile, nil
-}
 
 func ProfileFn(p *connector.Profile) func() ([]byte, error) {
 	return func() ([]byte, error) {

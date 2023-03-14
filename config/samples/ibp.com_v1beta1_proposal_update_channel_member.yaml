@@ -1,0 +1,13 @@
+---
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  name: update-channel-member
+spec:
+  federation: federation-sample
+  policy: All
+  initiatorOrganization: org1
+  updateChannelMember:
+    channel: channel-sample
+    members:
+      - name: org3

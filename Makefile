@@ -84,7 +84,7 @@ CRD_OPTIONS ?= "crd:crdVersions=v1"
 
 # KIND cluster for local development, integration, and E2E testing
 KIND_CLUSTER_NAME ?= fabric
-KIND_KUBE_VERSION ?= v1.20.15								# Matches integ IKS cluster rev.  v1.23.4 is current
+KIND_KUBE_VERSION ?= v1.24.4								# Matches integ IKS cluster rev.  v1.23.4 is current
 KIND_NODE_IMAGE   ?= kindest/node:$(KIND_KUBE_VERSION)
 
 # Integration test parameters

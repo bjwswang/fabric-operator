@@ -70,9 +70,27 @@ jobs:
 
       - name: Set up KIND k8s cluster
         run: |
+          function debug() {
+            kubectl describe node -A
+            kubectl describe po -A
+            kubectl get po -A
+            exit 1
+          }
+          trap debug ERR
+          RootPath=$(dirname -- "$(readlink -f -- "$0")")/../..
           make kind
           kubectl config view --raw > /tmp/kubeconfig.yaml
-
+          InstallDirPath="/tmp/installer"
+          git clone https://github.com/bestchains/installer.git ${InstallDirPath}
+          cd ${InstallDirPath}
+          kubectl create namespace baas-system
+          cd fabric-operator/charts
+          helm --wait --timeout=600s -nbaas-system install --set consoleIngress.enabled=false --set resources.requests.memory=1Mi fabric-minio minio
+          helm --wait --timeout=600s -nbaas-system install fabric-tekton tekton-operator
+          cd ../..
+          sleep 100; # wait tekton-operator ready.
+          find tekton -type f -name "*.yaml" ! -path "*/sample/*" | xargs -n 1 kubectl apply -f
+          cd ${RootPath}
       - name: Install Fabric CRDs
         run: |
           kubectl kustomize config/crd | kubectl apply -f -

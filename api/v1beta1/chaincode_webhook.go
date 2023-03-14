@@ -38,8 +38,9 @@ var ccLogger = logf.Log.WithName("chaincode-resource")
 const (
 	minLength, maxLength = 10, 30
 
-	//https://github.com/hyperledger/fabric/blob/main/core/chaincode/persistence/chaincode_package.go#L248
-	alnum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_.+-"
+	// https://github.com/hyperledger/fabric/blob/main/core/chaincode/persistence/chaincode_package.go#L248
+	// remove the underscore, the name of the pod does not support the use of underscores.
+	alnum = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-"
 )
 
 func genLabel() string {
@@ -55,8 +56,8 @@ func genLabel() string {
 		pickItem := rr.Intn(base)
 		buf.WriteByte(alnum[pickItem])
 		if i == 0 {
-			// _.+-
-			base += 4
+			// -
+			base += 1
 		}
 	}
 	return buf.String()

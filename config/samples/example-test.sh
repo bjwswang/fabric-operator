@@ -129,24 +129,22 @@ if [ -f $ComponentImageFile ]; then
 	info "reload component images from cache."
 	source ${InstallDirPath}/scripts/cache-image.sh
 	load_all_images $KindName /tmp/all.image.tar
+
+	docker tag hyperledgerk8s/fabric-operator:latest hyperledgerk8s/fabric-operator:example-e2e
+	kind load docker-image --name=${KindName} hyperledgerk8s/fabric-operator:example-e2e
+	info "update helm fabric operator image"
+	cat ${InstallDirPath}/fabric-operator/values.yaml |
+		sed -e  "s/hyperledgerk8s\/fabric-operator:[a-zA-Z0-9_][a-zA-Z0-9.-]\{0,127\}/hyperledgerk8s\/fabric-operator:example-e2e/g" \
+		> ${InstallDirPath}/tmp.yaml
+	cat ${InstallDirPath}/tmp.yaml > ${InstallDirPath}/fabric-operator/values.yaml 
+	rm -rf ${InstallDirPath}/tmp.yaml
 fi
+
 
 info "2. install component in kubernetes..."
 info "2.1 install u4a component and u4a services"
-. ./scripts/e2e.sh --u4a
-. ./scripts/e2e.sh --minio
-. ./scripts/e2e.sh --tekton-operator
-. ./scripts/e2e.sh --tekton-task-pipeline
+. ./scripts/e2e.sh --all
 cd ${RootPath}
-
-info "2.2 install fabric-operator"
-docker tag hyperledgerk8s/fabric-operator:latest hyperledgerk8s/fabric-operator:example-e2e
-kind load docker-image --name=${KindName} hyperledgerk8s/fabric-operator:example-e2e
-export IMG=hyperledgerk8s/fabric-operator:example-e2e
-export IMAGE_PULL_POLICY=IfNotPresent
-make deploy
-kubectl set env -n operator-system deployment/operator-controller-manager OPERATOR_INGRESS_DOMAIN=${ingressNodeIP}.nip.io
-kubectl wait deploy -n operator-system operator-controller-manager --for condition=Available=True
 
 info "3. create user and get user's token"
 info "3.1 create all test users"
@@ -591,6 +589,125 @@ waitProposalSucceeded unarchive-channel-sample ${Admin1Token}
 
 info "4.7.13 channel=channel-sample become Archived"
 waitChannelReady channel-sample "ChannelCreated" ${Admin1Token}
+
+info "4.8 upload contract to minio"
+
+cat << EOF | kubectl --token=${Admin1Token} apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dockerhub-secret
+data:
+  config.json: $(echo -n "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$(echo -n 'hyperledgerk8stest:Passw0rd!' | base64)\"}}}" | base64 | tr -d \\n)
+EOF
+
+ak=$(kubectl -nbaas-system get secret fabric-minio -ojson|jq -r '.data.rootUser'|base64 -d)
+sk=$(kubectl -nbaas-system get secret fabric-minio -ojson|jq -r '.data.rootPassword'|base64 -d)
+
+cat ${InstallDirPath}/tekton/pipelines/sample/pre_sample_minio.yaml|sed "s/admin/${ak}/g" |
+	sed "s/passw0rd/${sk}/g" | kubectl --token=${Admin1Token} apply -f -
+
+function waitPipelineRun() {
+	pipelinerunName=$1
+	token=$2
+	want=$3
+	START_TIME=$(date +%s)
+	while true; do
+		if [[ $want != "" ]]; then
+			Type=$(kubectl get pipelinerun --token=${token} $pipelinerunName --ignore-not-found=true -o json | jq -r ".status.conditions[0].type")
+			Result=$(kubectl get pipelinerun --token=${token} $pipelinerunName --ignore-not-found=true -o json | jq -r ".status.conditions[0].status")
+			if [[ $Type == $want && $Result == "True" ]]; then
+				break
+			fi
+		else
+			break
+		fi
+		CURRENT_TIME=$(date +%s)
+		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+		if [ $ELAPSED_TIME -gt 1800 ]; then
+			error "Timeout reached"
+			kubectl describe --token=${token} pipelinerun ${pipelinerunName}
+			exit 1
+		fi
+		sleep 5
+	done
+}
+waitPipelineRun pre-sample-minio ${Admin1Token} "Succeeded"
+
+
+info "4.9 chaincodebuild"
+cat config/samples/ibp.com_v1beta1_chaincodebuild_minio.yaml | sed "s/hyperledgerk8s\/go-contract/hyperledgerk8stest\/go-contract/g" | kubectl  --token=${Admin1Token} apply -f -
+
+function waitchaincodebuildImage() {
+	chaincodebuildName=$1
+	token=$2
+	expect_len=$3
+	START_TIME=$(date +%s)
+	while true; do
+		if [[ $expect_len != "0" ]]; then
+			result=$(kubectl get chaincodebuild --token=${token} $chaincodebuildName --ignore-not-found=true -o json | jq -r ".status.pipelineResults")
+			result_len=`(echo $result|jq -r 'length')`
+			if [[ $result_len == $expect_len ]]; then
+				expect_two=`(echo $result|jq -r 'map(select(.value|length >0)) |length')`
+				if [[ $expect_two == $expect_len ]]; then
+					break
+				fi
+			fi
+		else
+			break
+		fi
+		CURRENT_TIME=$(date +%s)
+		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+		if [ $ELAPSED_TIME -gt 1800 ]; then
+			error "Timeout reached"
+			kubectl describe --token=${token} chaincodebuild ${chaincodebuildName}
+			exit 1
+		fi
+		sleep 5
+	done
+}
+waitchaincodebuildImage chaincodebuild-sample-minio $Admin1Token 2
+
+info "4.10 install chaincode"
+info "4.10.1 create endorsepolicy e-policy"
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincode_endorse_policy.yaml
+info "4.10.2 create chaincode chaincode-sample"
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincode.yaml
+info "4.10.3 create proposal create-chaincode"
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_create_chaincode.yaml
+info "4.10.4 patch vote vote-org2-create-chaincode"
+
+waitVoteExist org2 create-chaincode ${Admin2Token}
+kubectl --token=${Admin2Token} patch vote -n org2 vote-org2-create-chaincode --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
+
+function watiChaincodeRunning() {
+	chaincodeName=$1
+	token=$2
+	want=$3
+	START_TIME=$(date +%s)
+	while true; do
+		if [[ $want != "" ]]; then
+			Type=$(kubectl get cc --token=${token} $chaincodeName --ignore-not-found=true -o json | jq -r ".status.phase")
+			if [[ $Type == $want ]]; then
+				break
+			fi
+		else
+			break
+		fi
+		CURRENT_TIME=$(date +%s)
+		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+		if [ $ELAPSED_TIME -gt 1800 ]; then
+			error "Timeout reached"
+			kubectl describe --token=${token} chaincode ${chaincodeName}
+			exit 1
+		fi
+		sleep 5
+	done
+}
+
+info "4.10.5 wait chaincode running"
+
+watiChaincodeRunning chaincode-sample $Admin1Token "ChaincodeRunning"
 
 info "cache component image"
 source ${InstallDirPath}/scripts/cache-image.sh

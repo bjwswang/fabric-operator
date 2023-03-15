@@ -16,5 +16,5 @@ spec:
     dockerBuild:
       pushSecret: "dockerhub-secret"
       appImage: hyperledgerk8s/go-contract
-      dockerfile: bestchains/go-contract/Dockerfile.optimized
-      context: bestchains/go-contract
+      dockerfile: Dockerfile.optimized
+      context: bestchains/go-contract/samples/go-contract/

@@ -110,6 +110,10 @@ spec:
                   fieldPath: metadata.name
             - name: CLUSTERTYPE
               value: K8S
+            - name: OPERATOR_INGRESS_CLASS
+              value: nginx
+            - name: OPERATOR_USER_TYPE
+              value: sa
           resources:
             requests:
               cpu: 10m

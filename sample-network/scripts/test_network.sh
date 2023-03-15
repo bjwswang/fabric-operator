@@ -84,7 +84,19 @@ function wait_for() {
   # this only works for k8s v1.23 or later, update to a more general approach
   # kubectl -n $NS wait $type $name --for jsonpath='{.status.type}'=Deployed --timeout=60s
   deployed=""
-  while [ "$deployed" != "Deployed" ]; do deployed=$(kubectl -n $NS get ibpca org0-ca -o=jsonpath='{.status.type}');sleep 2;done
+  START_TIME=$(date +%s)
+  while [ "$deployed" != "Deployed" ];do
+    CURRENT_TIME=$(date +%s)
+  	ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+  	if [[ $ELAPSED_TIME -gt 100 ]]; then
+  			log "Timeout reached for wait_for ${type} ${name}"
+  			kubectl describe -n $NS $type $name
+  			kubectl logs -n $NS -l name=fabric-operator
+  			exit 1
+  	fi
+    deployed=$(kubectl -n $NS get $type $name -o=jsonpath='{.status.type}')
+    sleep 2
+  done
 
   # wait for the deployment to reach Ready
   kubectl -n $NS rollout status deploy $name

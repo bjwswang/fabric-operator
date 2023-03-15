@@ -114,6 +114,7 @@ function cluster_init() {
   if [ "${CLUSTER_RUNTIME}" == "kind" ]; then
     apply_nginx_ingress
     wait_for_nginx_ingress
+    addon_install
   fi
 
   if [ "${COREDNS_DOMAIN_OVERRIDE}" == true ]; then
@@ -229,4 +230,21 @@ EOF
 function cluster_clean() {
   delete_fabric_crds
   delete_nginx_ingress
+}
+
+function addon_install() {
+  push_fn "Install fabric addons."
+  previous_path=$(pwd)
+  install_dir_path="/tmp/installer"
+  git clone https://github.com/bestchains/installer.git ${install_dir_path}
+  cd ${install_dir_path}
+  kubectl create namespace baas-system
+  cd fabric-operator/charts
+  helm --wait --timeout=600s -nbaas-system install --set consoleIngress.enabled=false --set resources.requests.memory=1Mi fabric-minio minio
+  helm --wait --timeout=600s -nbaas-system install fabric-tekton tekton-operator
+  cd ../..
+  sleep 100; # wait tekton-operator ready.
+  find tekton -type f -name "*.yaml" ! -path "*/sample/*" | xargs -n 1 kubectl apply -f
+  cd ${previous_path}
+  pop_fn
 }

@@ -192,8 +192,28 @@ func (r *ReconcileChaincode) Reconcile(ctx context.Context, request reconcile.Re
 
 func (r ReconcileChaincode) CreateFunc(e event.CreateEvent) bool {
 	x := e.Object.(*current.Chaincode)
-	log.Info(fmt.Sprintf("chaincode:%s create proposal for creating chaincode", x.GetName()))
-	return true
+	cr := &current.Chaincode{}
+	if err := r.client.Get(context.TODO(),
+		types.NamespacedName{Name: x.GetName()}, cr); err != nil {
+		log.Error(err, fmt.Sprintf("failed to get chaincode %s ", x.GetName()))
+		return false
+	}
+	if cr.Status.Phase == "" {
+		cr.Status.Phase = current.ChaincodePhasePending
+		cr.Status.Sequence = 1
+		if err := r.client.Patch(context.TODO(), cr, nil, k8sclient.PatchOption{
+			Resilient: &k8sclient.ResilientPatch{
+				Retry:    3,
+				Into:     &current.Chaincode{},
+				Strategy: client.MergeFrom,
+			},
+		}); err != nil {
+			log.Error(err, fmt.Sprintf("failed to patch chaincode %s spec", cr.GetName()))
+		}
+	} else {
+		log.Info(fmt.Sprintf("chaincode:%s's create events behind proposal's update events", x.GetName()))
+	}
+	return false
 }
 
 func (r *ReconcileChaincode) UpdateFunc(e event.UpdateEvent) bool {
@@ -316,6 +336,11 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 		}
 	}
 
+	// https://github.com/bestchains/fabric-operator/issues/196
+	if cr.Status.Sequence == 0 {
+		log.Info(fmt.Sprintf("proposal %s' update event is ahead of chiancode create events.", newProposal.GetName()))
+		cr.Status.Sequence++
+	}
 	if err := r.client.PatchStatus(context.TODO(), cr, nil, k8sclient.PatchOption{
 		Resilient: &k8sclient.ResilientPatch{
 			Retry:    3,

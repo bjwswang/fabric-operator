@@ -21,12 +21,14 @@ package v1beta1
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -92,7 +94,7 @@ func (r *Proposal) ValidateCreate(ctx context.Context, client client.Client, use
 		return err
 	}
 
-	return nil
+	return validateChaincodeBuild(ctx, client, r.Spec.ProposalSource)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -125,7 +127,7 @@ func (r *Proposal) ValidateUpdate(ctx context.Context, client client.Client, old
 		return err
 	}
 
-	return nil
+	return validateChaincodeBuild(ctx, client, r.Spec.ProposalSource)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -191,4 +193,22 @@ func validateChannel(ctx context.Context, c client.Client, channel string, purpo
 	}
 
 	return nil
+}
+
+func validateChaincodeBuild(ctx context.Context, c client.Client, proposalSource ProposalSource) error {
+	if proposalSource.DeployChaincode != nil && proposalSource.UpgradeChaincode != nil {
+		return fmt.Errorf("the deployChaincode and upgradeChaincode cannot co-exist")
+	}
+	if proposalSource.UpgradeChaincode == nil {
+		return nil
+	}
+	ccbName := proposalSource.UpgradeChaincode.ExternalBuilder
+	if ccbName == "" {
+		return fmt.Errorf("empty chaincodebuild name")
+	}
+	chaincodebuild := &ChaincodeBuild{}
+	if err := c.Get(ctx, types.NamespacedName{Name: ccbName}, chaincodebuild); err != nil {
+		return err
+	}
+	return chaincodebuild.HasImage()
 }

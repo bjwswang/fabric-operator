@@ -77,8 +77,7 @@ type ChaincodeSpec struct {
 
 	EndorsePolicyRef `json:"endorsePolicyRef"`
 	// ExternalBuilder used, default is k8s
-	// +optional
-	ExternalBuilder string `json:"externalBuilder,omitempty"`
+	ExternalBuilder string `json:"externalBuilder"`
 	// the image used by the current version of chaincode
 	Images ChaincodeImage `json:"images,omitempty"`
 }

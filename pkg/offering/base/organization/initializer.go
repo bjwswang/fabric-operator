@@ -107,7 +107,16 @@ func (i *Initializer) ReconcileCrypto(instance *current.Organization) error {
 		return err
 	}
 	// Eroll admin to get clientauth & tls certificates
-	resp, err := i.EnrollAdmin(instance, profile)
+	try := 10
+	var resp *commonconfig.CryptoResponse
+	for n := 0; n <= try; n++ {
+		resp, err = i.EnrollAdmin(instance, profile)
+		if err == nil {
+			break
+		}
+		log.Error(err, fmt.Sprintf("%dth enrollAdmin %s get error", n, instance.GetName()))
+		time.Sleep(time.Second * 10)
+	}
 	if err != nil {
 		return err
 	}

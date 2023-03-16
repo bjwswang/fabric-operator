@@ -16,7 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#set -x
+if [[ $RUNNER_DEBUG -eq 1 ]] || [[ $GITHUB_RUN_ATTEMPT -gt 1 ]]; then
+	# use [debug logging](https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/enabling-debug-logging)
+	# or run the same test multiple times.
+	set -x
+fi
 export TERM=xterm-color
 
 KindName="kind"
@@ -28,7 +32,7 @@ KindConfigPath=${TempFilePath}/kind-config.yaml
 InstallDirPath=${TempFilePath}/installer
 DefaultPassWord=${DefaultPassWord:-'passw0rd'}
 LOG_DIR=${LOG_DIR:-"/tmp/fabric-operator-example-test/logs"}
-ComponentImageFile=${ComponentImageFile:-"/tmp/all.image.tar"}
+ComponentImageDir=${ComponentImageDir:-"/home/runner/work/fabric-operator/fabric-operator/tmp/images/"}
 RootPath=$(dirname -- "$(readlink -f -- "$0")")/../..
 
 Timeout="${TimeoutSeconds}s"
@@ -125,21 +129,20 @@ git clone https://github.com/bestchains/installer.git ${InstallDirPath}
 cd ${InstallDirPath}
 export IGNORE_FIXED_IMAGE_LOAD=YES
 . ./scripts/kind.sh
-if [ -f $ComponentImageFile ]; then
+if [ -d $ComponentImageDir ] && [ -n "$(ls $ComponentImageDir)" ]; then
 	info "reload component images from cache."
 	source ${InstallDirPath}/scripts/cache-image.sh
-	load_all_images $KindName /tmp/all.image.tar
-
-	docker tag hyperledgerk8s/fabric-operator:latest hyperledgerk8s/fabric-operator:example-e2e
-	kind load docker-image --name=${KindName} hyperledgerk8s/fabric-operator:example-e2e
-	info "update helm fabric operator image"
-	cat ${InstallDirPath}/fabric-operator/values.yaml |
-		sed -e  "s/hyperledgerk8s\/fabric-operator:[a-zA-Z0-9_][a-zA-Z0-9.-]\{0,127\}/hyperledgerk8s\/fabric-operator:example-e2e/g" \
-		> ${InstallDirPath}/tmp.yaml
-	cat ${InstallDirPath}/tmp.yaml > ${InstallDirPath}/fabric-operator/values.yaml 
-	rm -rf ${InstallDirPath}/tmp.yaml
+	load_all_images $KindName $ComponentImageDir
 fi
 
+docker tag hyperledgerk8s/fabric-operator:latest hyperledgerk8s/fabric-operator:example-e2e
+kind load docker-image --name=${KindName} hyperledgerk8s/fabric-operator:example-e2e
+info "update helm fabric operator image"
+cat ${InstallDirPath}/fabric-operator/values.yaml |
+	sed -e "s/hyperledgerk8s\/fabric-operator:[a-zA-Z0-9_][a-zA-Z0-9.-]\{0,127\}/hyperledgerk8s\/fabric-operator:example-e2e/g" \
+		>${InstallDirPath}/tmp.yaml
+cat ${InstallDirPath}/tmp.yaml >${InstallDirPath}/fabric-operator/values.yaml
+rm -rf ${InstallDirPath}/tmp.yaml
 
 info "2. install component in kubernetes..."
 info "2.1 install u4a component and u4a services"
@@ -592,7 +595,7 @@ waitChannelReady channel-sample "ChannelCreated" ${Admin1Token}
 
 info "4.8 upload contract to minio"
 
-cat << EOF | kubectl --token=${Admin1Token} apply -f -
+cat <<EOF | kubectl --token=${Admin1Token} apply -f -
 apiVersion: v1
 kind: Secret
 metadata:
@@ -601,10 +604,10 @@ data:
   config.json: $(echo -n "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$(echo -n 'hyperledgerk8stest:Passw0rd!' | base64)\"}}}" | base64 | tr -d \\n)
 EOF
 
-ak=$(kubectl -nbaas-system get secret fabric-minio -ojson|jq -r '.data.rootUser'|base64 -d)
-sk=$(kubectl -nbaas-system get secret fabric-minio -ojson|jq -r '.data.rootPassword'|base64 -d)
+ak=$(kubectl -nbaas-system get secret fabric-minio -ojson | jq -r '.data.rootUser' | base64 -d)
+sk=$(kubectl -nbaas-system get secret fabric-minio -ojson | jq -r '.data.rootPassword' | base64 -d)
 
-cat ${InstallDirPath}/tekton/pipelines/sample/pre_sample_minio.yaml|sed "s/admin/${ak}/g" |
+cat ${InstallDirPath}/tekton/pipelines/sample/pre_sample_minio.yaml | sed "s/admin/${ak}/g" |
 	sed "s/passw0rd/${sk}/g" | kubectl --token=${Admin1Token} apply -f -
 
 function waitPipelineRun() {
@@ -634,9 +637,8 @@ function waitPipelineRun() {
 }
 waitPipelineRun pre-sample-minio ${Admin1Token} "Succeeded"
 
-
 info "4.9 chaincodebuild"
-cat config/samples/ibp.com_v1beta1_chaincodebuild_minio.yaml | sed "s/hyperledgerk8s\/go-contract/hyperledgerk8stest\/go-contract/g" | kubectl  --token=${Admin1Token} apply -f -
+cat config/samples/ibp.com_v1beta1_chaincodebuild_minio.yaml | sed "s/hyperledgerk8s\/go-contract/hyperledgerk8stest\/go-contract/g" | kubectl --token=${Admin1Token} apply -f -
 
 function waitchaincodebuildImage() {
 	chaincodebuildName=$1
@@ -646,9 +648,9 @@ function waitchaincodebuildImage() {
 	while true; do
 		if [[ $expect_len != "0" ]]; then
 			result=$(kubectl get chaincodebuild --token=${token} $chaincodebuildName --ignore-not-found=true -o json | jq -r ".status.pipelineResults")
-			result_len=`(echo $result|jq -r 'length')`
+			result_len=$(echo $result | jq -r 'length')
 			if [[ $result_len == $expect_len ]]; then
-				expect_two=`(echo $result|jq -r 'map(select(.value|length >0)) |length')`
+				expect_two=$(echo $result | jq -r 'map(select(.value|length >0)) |length')
 				if [[ $expect_two == $expect_len ]]; then
 					break
 				fi
@@ -711,7 +713,7 @@ watiChaincodeRunning chaincode-sample $Admin1Token "ChaincodeRunning"
 
 info "cache component image"
 source ${InstallDirPath}/scripts/cache-image.sh
-save_all_images /tmp/all.image.tar /tmp/all.image.list
+save_all_images /home/runner/work/fabric-operator/fabric-operator/tmp/images/ /home/runner/work/fabric-operator/fabric-operator/tmp/all.image.list
 info "Do we need to update the cache image? $UPLOAD_IMAGE"
 echo "UPLOAD_IMAGE=${UPLOAD_IMAGE}" >>$GITHUB_ENV
 

@@ -53,12 +53,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	KIND                    = "Network"
-	NETWORK_INITIATOR_LABEL = "bestchains.network.initiator"
+	KIND = "Network"
 )
 
 var log = logf.Log.WithName("controller_network")
@@ -202,17 +200,7 @@ func (r *ReconcileNetwork) Reconcile(ctx context.Context, request reconcile.Requ
 		return reconcile.Result{}, err
 	}
 
-	if instance.Labels == nil {
-		instance.Labels = make(map[string]string)
-	}
-
-	if _, ok := instance.Labels[NETWORK_INITIATOR_LABEL]; !ok {
-		for _, member := range instance.Spec.Members {
-			if member.Initiator {
-				instance.Labels[NETWORK_INITIATOR_LABEL] = member.Name
-				break
-			}
-		}
+	if r.preCheck(instance) {
 		err = r.client.Update(context.TODO(), instance)
 		return reconcile.Result{Requeue: true}, err
 	}
@@ -253,6 +241,36 @@ func (r *ReconcileNetwork) Reconcile(ctx context.Context, request reconcile.Requ
 	return reconcile.Result{}, nil
 }
 
+func (r *ReconcileNetwork) preCheck(instance *current.Network) bool {
+	if instance.Labels == nil {
+		instance.Labels = make(map[string]string)
+	}
+	update := false
+	if err := instance.HaveSameMembers(context.TODO(), nil, r.client, true); err != nil {
+		if err != current.MemberMisMatchError {
+			return false
+		}
+		update = true
+	}
+
+	initiator := instance.Labels[current.NETWORK_INITIATOR_LABEL]
+	for _, member := range instance.GetMembers() {
+		if member.Initiator {
+			if member.Name != initiator {
+				update = true
+				instance.Labels[current.NETWORK_INITIATOR_LABEL] = member.Name
+			}
+			break
+		}
+	}
+	if v, ok := instance.Labels[current.NETWORK_FEDERATION_LABEL]; !ok || v != instance.Spec.Federation {
+		update = true
+		instance.Labels[current.NETWORK_FEDERATION_LABEL] = instance.Spec.Federation
+	}
+
+	return update
+}
+
 // TODO: NetworkStatus relevant
 func (r *ReconcileNetwork) SetStatus(instance *current.Network, reconcileStatus *current.CRStatus) error {
 	var err error
@@ -277,7 +295,7 @@ func (r *ReconcileNetwork) SetStatus(instance *current.Network, reconcileStatus 
 			status.Status = current.True
 			status.Reason = reconcileStatus.Reason
 			status.Message = reconcileStatus.Message
-			status.LastHeartbeatTime = v1.Now()
+			status.LastHeartbeatTime = metav1.Now()
 
 			instance.Status = current.NetworkStatus{
 				CRStatus: status,
@@ -316,7 +334,7 @@ func (r *ReconcileNetwork) SetErrorStatus(instance *current.Network, reconcileEr
 	status.Status = current.True
 	status.Reason = "errorOccurredDuringReconcile"
 	status.Message = reconcileErr.Error()
-	status.LastHeartbeatTime = v1.Now()
+	status.LastHeartbeatTime = metav1.Now()
 	status.ErrorCode = operatorerrors.GetErrorCode(reconcileErr)
 
 	instance.Status = current.NetworkStatus{

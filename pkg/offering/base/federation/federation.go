@@ -19,6 +19,7 @@
 package federation
 
 import (
+	"context"
 	"fmt"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
@@ -30,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -143,6 +145,29 @@ func (federation *BaseFederation) ReconcileManagers(instance *current.Federation
 		err := federation.RBACManager.Reconcile(bcrbac.Federation, instance, bcrbac.ResourceUpdate)
 		if err != nil {
 			return err
+		}
+
+		networkList := &current.NetworkList{}
+		if err := federation.Client.List(context.TODO(), networkList); err != nil {
+			log.Error(err, fmt.Sprintf("failed to list networks by selector %s=%s",
+				current.NETWORK_FEDERATION_LABEL, instance.GetName()))
+			return err
+		}
+		log.Info(fmt.Sprintf("sync federation %s members", instance.GetName()))
+		for i, n := range networkList.Items {
+			if n.Labels == nil || n.Labels[current.NETWORK_FEDERATION_LABEL] != instance.GetName() {
+				continue
+			}
+			networkList.Items[i].MergeMembers(instance.Spec.Members)
+			log.Info(fmt.Sprintf("merge network %s' members", n.GetName()))
+			if err = federation.Client.Patch(context.TODO(), &networkList.Items[i], nil, controllerclient.PatchOption{
+				Resilient: &controllerclient.ResilientPatch{
+					Retry:    3,
+					Into:     &current.Network{},
+					Strategy: client.MergeFrom,
+				}}); err != nil {
+				log.Error(err, fmt.Sprintf("federtion %s member update, failed to update network %s's member", instance.GetName(), n.GetName()))
+			}
 		}
 	}
 	return nil

@@ -129,7 +129,7 @@ type CreateFederation struct {
 }
 type DeployChaincodeProposal struct {
 	Chaincode       string   `json:"chaincode"`
-	ExternalBuilder string   `json:"externalBuilder"`
+	ExternalBuilder string   `json:"externalBuilder,omitempty"`
 	Members         []Member `json:"members"`
 }
 

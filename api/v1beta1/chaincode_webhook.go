@@ -93,6 +93,10 @@ func checkChAndEp(c client.Client, chName, epName string) error {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Chaincode) ValidateCreate(ctx context.Context, client client.Client, user authenticationv1.UserInfo) error {
 	ccLogger.Info("validate create", "name", r.Name, "user", user.String())
+	if err := checkChaincodeBuildImage(ctx, client, r.Spec.ExternalBuilder); err != nil {
+		ccLogger.Error(err, "")
+		return err
+	}
 	return checkChAndEp(client, r.Spec.Channel, r.Spec.EndorsePolicyRef.Name)
 }
 
@@ -100,6 +104,10 @@ func (r *Chaincode) ValidateCreate(ctx context.Context, client client.Client, us
 func (r *Chaincode) ValidateUpdate(ctx context.Context, client client.Client, old runtime.Object, user authenticationv1.UserInfo) error {
 	ccLogger.Info("validate update", "name", r.Name, "user", user.String())
 	oldcc := old.(*Chaincode)
+	if err := checkChaincodeBuildImage(ctx, client, r.Spec.ExternalBuilder); err != nil {
+		ccLogger.Error(err, "")
+		return err
+	}
 	return checkChAndEp(client, oldcc.Spec.Channel, oldcc.Spec.EndorsePolicyRef.Name)
 }
 
@@ -113,4 +121,13 @@ func (r *Chaincode) ValidateDelete(ctx context.Context, c client.Client, user au
 		return fmt.Errorf("it can only be deleted if the vote is not approved")
 	}
 	return nil
+}
+
+func checkChaincodeBuildImage(ctx context.Context, c client.Client, chaincodebuildName string) error {
+	ccb := &ChaincodeBuild{}
+	if err := c.Get(ctx, types.NamespacedName{Name: chaincodebuildName}, ccb); err != nil {
+		return err
+	}
+
+	return ccb.HasImage()
 }

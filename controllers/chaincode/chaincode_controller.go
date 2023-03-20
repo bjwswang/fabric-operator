@@ -266,28 +266,29 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 	}
 
 	if cr.Status.Phase == current.ChaincodePhaseApproved {
+		chaincodeBuildName := cr.Spec.ExternalBuilder
 		upgrade := false
-		ccDef := newProposal.Spec.DeployChaincode
-		if ccDef == nil {
+		if newProposal.Spec.UpgradeChaincode != nil {
 			upgrade = true
-			ccDef = newProposal.Spec.UpgradeChaincode
+			chaincodeBuildName = newProposal.Spec.UpgradeChaincode.ExternalBuilder
 		}
+
 		if !upgrade && len(cr.Status.History) > 0 {
 			log.Error(fmt.Errorf("already deployed chaincode is not allowed to be redeployed"), "")
 			return false
 		}
 
-		image, digest, version, id, err := r.PickUpImageFromBuilder(ccDef.ExternalBuilder)
+		image, digest, version, id, err := r.PickUpImageFromBuilder(chaincodeBuildName)
 		if err != nil {
 			log.Error(err, "the proposal passed, but failed to get the mirror information.")
 			return false
 		}
 		originSpec := cr.Spec
-		cr.Spec.ExternalBuilder = ccDef.ExternalBuilder
 		cr.Spec.Images.Name = image
 		cr.Spec.Images.Digest = digest
 		cr.Spec.Version = version
 		cr.Spec.ID = id
+		cr.Spec.ExternalBuilder = chaincodeBuildName
 
 		if err := r.client.Patch(context.TODO(), cr, nil, k8sclient.PatchOption{
 			Resilient: &k8sclient.ResilientPatch{
@@ -327,7 +328,7 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 				cr.Status.History = append(cr.Status.History, current.ChaincodeHistory{
 					Version:         cr.Spec.Version,
 					Image:           cr.Spec.Images,
-					ExternalBuilder: ccDef.ExternalBuilder,
+					ExternalBuilder: chaincodeBuildName,
 					UpgradeTime:     v1.Now(),
 				})
 			}

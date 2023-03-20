@@ -20,6 +20,7 @@ package v1beta1
 
 import (
 	"errors"
+	"fmt"
 
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
@@ -153,4 +154,20 @@ func (p Dockerbuild) ToPipelineParams() []pipelinev1beta1.Param {
 			Value: *pipelinev1beta1.NewArrayOrString(p.Context),
 		},
 	}
+}
+
+func (ccb *ChaincodeBuild) HasImage() error {
+	url, digest := "", ""
+	for _, item := range ccb.Status.PipelineRunResults {
+		if item.Name == IMAGE_URL {
+			url = item.Value
+		}
+		if item.Name == IMAGE_DIGEST {
+			digest = item.Value
+		}
+	}
+	if url == "" || digest == "" {
+		return fmt.Errorf("chaincodebuild %s's image don't exist image: '%s', digest: '%s'", ccb.GetName(), url, digest)
+	}
+	return nil
 }

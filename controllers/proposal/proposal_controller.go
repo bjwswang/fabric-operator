@@ -479,7 +479,7 @@ func (r *ReconcileProposal) VoteUpdateFunc(e event.UpdateEvent) bool {
 
 	voteResult := current.VoteResult{
 		NamespacedName: newVote.GetNamespacedName(),
-		Organization:   newVote.GetOrganization(), // todo vote -> org name
+		Organization:   newVote.GetOrganization(),
 		Decision:       newVote.Spec.Decision,
 		Description:    newVote.Spec.Description,
 		Phase:          newVote.Status.Phase,

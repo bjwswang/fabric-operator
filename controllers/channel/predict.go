@@ -137,7 +137,7 @@ func (r *ReconcileChannel) ProposalUpdateFunc(e event.UpdateEvent) bool {
 
 	oldProposal := e.ObjectOld.(*current.Proposal)
 	newProposal := e.ObjectNew.(*current.Proposal)
-	log.Info(fmt.Sprintf("Update event detected for proposal '%s'", oldProposal.Spec.Federation))
+	log.Info(fmt.Sprintf("Update event detected for proposal '%s'", oldProposal.GetName()))
 
 	if reflect.DeepEqual(oldProposal.Spec, newProposal.Spec) && reflect.DeepEqual(oldProposal.Status, newProposal.Status) {
 		return false

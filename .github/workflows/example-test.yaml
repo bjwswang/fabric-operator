@@ -67,8 +67,8 @@ jobs:
           key: component-image-cache-${{ github.sha }}
           restore-keys: component-image-cache-
           path: |
-            /tmp/all.image.tar
-            /tmp/all.image.list
+            /home/runner/work/fabric-operator/fabric-operator/tmp/images/
+            /home/runner/work/fabric-operator/fabric-operator/tmp/all.image.list
       - name: Load fabric-operator image to docker
         run: |
          docker load --input /tmp/operator.image.tar
@@ -86,5 +86,5 @@ jobs:
         with:
           key: component-image-cache-${{ github.sha }}
           path: |
-            /tmp/all.image.tar
-            /tmp/all.image.list
+            /home/runner/work/fabric-operator/fabric-operator/tmp/images/
+            /home/runner/work/fabric-operator/fabric-operator/tmp/all.image.list

@@ -20,8 +20,10 @@ package v1beta1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,7 +88,7 @@ func (r *Federation) ValidateUpdate(ctx context.Context, client client.Client, o
 		return err
 	}
 
-	return nil
+	return validateMembers(ctx, client, oldFederation.Spec.Members, r.Spec.Members)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -108,6 +110,41 @@ func (r *Federation) ValidateDelete(ctx context.Context, client client.Client, u
 	return nil
 }
 
+// validateMembers If a member is deleted, he is the initiator of the network or a member of the channel,
+// the operation is not allowed
+func validateMembers(ctx context.Context, c client.Client, oldMembers, newMembers []Member) error {
+	deleted := make(map[string]struct{})
+	for _, member := range newMembers {
+		deleted[member.Name] = struct{}{}
+	}
+	chList := &ChannelList{}
+	if err := c.List(ctx, chList); err != nil && !errors2.IsNotFound(err) {
+		return err
+	}
+	networkList := &NetworkList{}
+	if err := c.List(ctx, networkList); err != nil && !errors2.IsNotFound(err) {
+		return err
+	}
+
+	for _, member := range oldMembers {
+		if _, ok := deleted[member.Name]; !ok {
+			for _, i := range networkList.Items {
+				if i.Labels != nil && i.Labels[NETWORK_INITIATOR_LABEL] == member.Name {
+					return fmt.Errorf("can't remove federation member %s, it's the initiator of some netowrks", member.Name)
+				}
+			}
+
+			for _, ch := range chList.Items {
+				for _, chMember := range ch.Spec.Members {
+					if member.Name == chMember.Name {
+						return fmt.Errorf("can't remove federation member %s, it's the member of channel %s", member.Name, ch.GetName())
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
 func validateInitiator(ctx context.Context, c client.Client, user authenticationv1.UserInfo, members []Member) error {
 	org := &Organization{}
 	for _, m := range members {

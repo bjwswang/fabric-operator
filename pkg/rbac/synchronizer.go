@@ -215,7 +215,7 @@ func syncClusterRoleOnce(c controllerclient.Client, key types.NamespacedName, ru
 		newClusterRole := &rbacv1.ClusterRole{}
 		err := c.Get(context.TODO(), key, newClusterRole)
 		diff := cmp.Diff(oldClusterRole, newClusterRole)
-		rbaclog.Error(err, "name", clusterRole.Name, "diff", diff)
+		rbaclog.Error(err, "", "name", clusterRole.Name, "diff", diff)
 		return err
 	}
 

@@ -47,6 +47,7 @@ var _ = Describe("ReconcileFederation", func() {
 		k8soffering *mockedreconcile.NetworkReconcile
 		request     reconcile.Request
 		network     *current.Network
+		fed         *current.Federation
 	)
 
 	BeforeEach(func() {
@@ -54,14 +55,41 @@ var _ = Describe("ReconcileFederation", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "network-sample",
 				Namespace: "org1",
+				Labels: map[string]string{
+					current.NETWORK_FEDERATION_LABEL: "federation-sample",
+					current.NETWORK_INITIATOR_LABEL:  "org1",
+				},
 			},
 			Spec: current.NetworkSpec{
-				Federation: "fedeartion-sample",
+				Federation: "federation-sample",
 				Members: []current.Member{
 					{Name: "org1", Initiator: true},
 					{Name: "org2", Initiator: false},
 				},
 				OrderSpec: current.IBPOrdererSpec{},
+			},
+		}
+		fed = &current.Federation{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "federation-sample",
+				Labels: map[string]string{
+					"bestchains.federation.initiator": "org1",
+				},
+			},
+			Spec: current.FederationSpec{
+				License: current.License{
+					Accept: true,
+				},
+				Members: []current.Member{
+					{
+						Name:      "org1",
+						Initiator: true,
+					},
+					{
+						Name: "org2",
+					},
+				},
+				Policy: current.ALL,
 			},
 		}
 		client = &mocks.Client{
@@ -72,8 +100,13 @@ var _ = Describe("ReconcileFederation", func() {
 					obj.Namespace = network.Namespace
 					obj.Spec = network.Spec
 					obj.Labels = map[string]string{
-						NETWORK_INITIATOR_LABEL: "org1",
+						current.NETWORK_FEDERATION_LABEL: "federation-sample",
+						current.NETWORK_INITIATOR_LABEL:  "org1",
 					}
+
+				case *current.Federation:
+					obj.Name = fed.GetName()
+					obj.Spec = *fed.Spec.DeepCopy()
 				}
 				return nil
 			},

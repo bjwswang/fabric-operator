@@ -64,6 +64,8 @@ spec:
                 - name
                 type: object
               initRequired:
+                enum:
+                - false
                 type: boolean
               label:
                 pattern: ^[[:alnum:]][[:alnum:]-]*$

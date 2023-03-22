@@ -95,12 +95,24 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 		for _, o := range ch.Spec.Members {
 			orgs = append(orgs, o.Name)
 		}
-	case DeployChaincodeProposal1:
+	case DeployChaincodeProposal:
 		for _, member := range p.Spec.DeployChaincode.Members {
 			orgs = append(orgs, member.Name)
 		}
-	case UpgradeChaincodeProposal1:
+	case UpgradeChaincodeProposal:
 		for _, member := range p.Spec.UpgradeChaincode.Members {
+			orgs = append(orgs, member.Name)
+		}
+	case UpdateChannelMemberProposal:
+		channel := p.Spec.ProposalSource.UpdateChannelMember.Channel
+		ch := &Channel{}
+		if err := client.Get(ctx, types.NamespacedName{Name: channel}, ch); err != nil {
+			return nil, err
+		}
+		for _, member := range ch.Spec.Members {
+			orgs = append(orgs, member.Name)
+		}
+		for _, member := range p.Spec.UpdateChannelMember.Members {
 			orgs = append(orgs, member.Name)
 		}
 	}
@@ -115,38 +127,46 @@ const (
 	DissolveNetworkProposal
 	ArchiveChannelProposal
 	UnarchiveChannelProposal
-	DeployChaincodeProposal1
-	UpgradeChaincodeProposal1
+	DeployChaincodeProposal
+	UpgradeChaincodeProposal
+	UpdateChannelMemberProposal
 )
 
 func (p *Proposal) GetPurpose() uint {
+	return p.Spec.ProposalSource.GetPurpose()
+}
+
+func (p *ProposalSource) GetPurpose() uint {
 	var t uint = 0
-	if p.Spec.CreateFederation != nil {
+	if p.CreateFederation != nil {
 		t = t | CreateFederationProposal
 	}
-	if p.Spec.AddMember != nil {
+	if p.AddMember != nil {
 		t = t | AddMemberProposal
 	}
-	if p.Spec.DeleteMember != nil {
+	if p.DeleteMember != nil {
 		t = t | DeleteMemberProposal
 	}
-	if p.Spec.DissolveFederation != nil {
+	if p.DissolveFederation != nil {
 		t = t | DissolveFederationProposal
 	}
-	if p.Spec.DissolveNetwork != nil {
+	if p.DissolveNetwork != nil {
 		t = t | DissolveNetworkProposal
 	}
-	if p.Spec.ArchiveChannel != nil {
+	if p.ArchiveChannel != nil {
 		t = t | ArchiveChannelProposal
 	}
-	if p.Spec.UnarchiveChannel != nil {
+	if p.UnarchiveChannel != nil {
 		t = t | UnarchiveChannelProposal
 	}
-	if p.Spec.DeployChaincode != nil {
-		t = t | DeployChaincodeProposal1
+	if p.DeployChaincode != nil {
+		t = t | DeployChaincodeProposal
 	}
-	if p.Spec.UpgradeChaincode != nil {
-		t = t | UpgradeChaincodeProposal1
+	if p.UpgradeChaincode != nil {
+		t = t | UpgradeChaincodeProposal
+	}
+	if p.UpdateChannelMember != nil {
+		t = t | UpdateChannelMemberProposal
 	}
 	return t
 }
@@ -171,10 +191,12 @@ func (p *Proposal) SelfType() string {
 		return "ArchiveChannelProposal"
 	case UnarchiveChannelProposal:
 		return "UnarchiveChannelProposal"
-	case DeployChaincodeProposal1:
+	case DeployChaincodeProposal:
 		return "DeployChaincode"
-	case UpgradeChaincodeProposal1:
+	case UpgradeChaincodeProposal:
 		return "UpgradeChaincode"
+	case UpdateChannelMemberProposal:
+		return "UpdateChannelMember"
 	default:
 		return ""
 	}

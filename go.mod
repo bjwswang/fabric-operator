@@ -9,8 +9,10 @@ require (
 	github.com/go-logr/logr v1.2.2
 	github.com/go-test/deep v1.0.2
 	github.com/gogo/protobuf v1.3.2
+	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.7
 	github.com/hyperledger/fabric v1.4.11
+	github.com/hyperledger/fabric-config v0.0.5
 	github.com/hyperledger/fabric-protos-go v0.0.0-20211118165945-23d738fc3553
 	github.com/hyperledger/fabric-sdk-go v0.0.0-20221020141211-7af45cede6af
 	github.com/imdario/mergo v0.3.12
@@ -82,7 +84,6 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/certificate-transparency-go v1.1.1 // indirect
@@ -103,7 +104,6 @@ require (
 	github.com/hashicorp/go-version v1.3.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hyperledger/fabric-amcl v0.0.0-20210603140002-2670f91851c8 // indirect
-	github.com/hyperledger/fabric-config v0.0.5 // indirect
 	github.com/hyperledger/fabric-lib-go v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect

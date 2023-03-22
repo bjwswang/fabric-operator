@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/connector"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	lcpackager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/lifecycle"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -62,7 +63,7 @@ func (c *baseChaincode) ApproveChaincode(instance *current.Chaincode) (string, e
 		return err.Error(), err
 	}
 
-	connectProfile, err := ProfileProvider(c.client, instance.Spec.Channel)
+	connectProfile, err := connector.ChannelProfile(c.client, instance.Spec.Channel)
 	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
@@ -108,6 +109,7 @@ func (c *baseChaincode) ApproveChaincode(instance *current.Chaincode) (string, e
 		log.Error(err, fmt.Sprintf("%s chaincode get new connector error", method))
 		return "chaincode get new connector error", err
 	}
+	defer peerConnector.Close()
 
 	buf := strings.Builder{}
 	var finalErr error

@@ -19,6 +19,7 @@
 package channel
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -26,10 +27,20 @@ import (
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/connector"
 	chaninit "github.com/IBM-Blockchain/fabric-operator/pkg/initializer/channel"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/initializer/orderer/configtx"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/offering/common"
 	bcrbac "github.com/IBM-Blockchain/fabric-operator/pkg/rbac"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	"github.com/IBM-Blockchain/fabric-operator/version"
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-config/protolator"
+	proto_common "github.com/hyperledger/fabric-protos-go/common"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,12 +106,12 @@ func New(client controllerclient.Client, scheme *runtime.Scheme, config *config.
 	return base
 }
 
-func (channel *BaseChannel) CreateManagers() {
-	channel.RBACManager = bcrbac.NewRBACManager(channel.Client, nil)
+func (baseChan *BaseChannel) CreateManagers() {
+	baseChan.RBACManager = bcrbac.NewRBACManager(baseChan.Client, nil)
 }
 
 // PreReconcileChecks on Channel upon Update
-func (channel *BaseChannel) PreReconcileChecks(instance *current.Channel, update Update) error {
+func (baseChan *BaseChannel) PreReconcileChecks(instance *current.Channel, update Update) error {
 	var err error
 	log.Info(fmt.Sprintf("PreReconcileChecks on Channel %s", instance.GetName()))
 
@@ -114,7 +125,7 @@ func (channel *BaseChannel) PreReconcileChecks(instance *current.Channel, update
 
 	// make sure channel members is the subset of network's members
 	network := &current.Network{}
-	err = channel.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Network}, network)
+	err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Network}, network)
 	if err != nil {
 		return errors.Wrap(err, "get channel's network")
 	}
@@ -169,6 +180,13 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 		if err != nil {
 			return err
 		}
+		if instance.HasType() {
+			// Initializer.CreateChannel done
+			err = baseChan.ReconcileChannelMember(instance)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	// Reconcile peer if peer updated
@@ -177,7 +195,7 @@ func (baseChan *BaseChannel) ReconcileManagers(instance *current.Channel, update
 		for _, p := range instance.Spec.Peers {
 			err = baseChan.ReconcilePeer(instance, p)
 			if err != nil {
-				return errors.Wrap(err, "failed to patch channel status")
+				return errors.Wrap(err, "failed to reconcile channel peer")
 			}
 		}
 		// Update connection profile after peer updated
@@ -436,4 +454,198 @@ func (baseChan *BaseChannel) GetOrgAdminCredentials(org string) (connector.User,
 // GetLabels from instance.GetLabels
 func (baseChan *BaseChannel) GetLabels(instance v1.Object) map[string]string {
 	return instance.GetLabels()
+}
+
+func (baseChan *BaseChannel) ReconcileChannelMember(instance *current.Channel) (err error) {
+	org, err := baseChan.GetNetworkInitiatorOrg(instance)
+	if err != nil {
+		return errors.Wrap(err, "cant get network initiator org")
+	}
+	con, err := baseChan.GetChannelConnector(baseChan.Client, instance, org.GetName())
+	if err != nil {
+		return errors.Wrap(err, "cant get channel connector")
+	}
+	defer con.Close()
+	client, channelConfig, err := baseChan.GetChannelConfig(con, instance, org)
+	if err != nil {
+		return errors.Wrap(err, "cant get channel config")
+	}
+	log.Info(fmt.Sprintf("channelConfig:%+v", channelConfig), "channel", instance.GetName())
+	newMembers := make([]string, 0)
+	for _, m := range instance.Spec.Members {
+		if exist := baseChan.IsMemberInChanConfig(channelConfig, m); exist {
+			continue
+		}
+		newMembers = append(newMembers, m.GetName())
+	}
+	if len(newMembers) == 0 {
+		return
+	}
+	log.Info(fmt.Sprintf("newMembers:%s", newMembers), "channel", instance.GetName())
+	if err = baseChan.AddMemberToChan(client, instance, channelConfig, newMembers); err != nil {
+		return errors.Wrap(err, "cant add member to channel config")
+	}
+	return
+}
+
+func (baseChan *BaseChannel) GetNetworkInitiatorOrg(instance *current.Channel) (org *current.Organization, err error) {
+	network := &current.Network{}
+	if err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Network}, network); err != nil {
+		return
+	}
+	orgName := ""
+	for _, m := range network.Spec.Members {
+		if m.Initiator {
+			orgName = m.Name
+			break
+		}
+	}
+	org = &current.Organization{}
+	if err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: orgName}, org); err != nil {
+		return
+	}
+	return
+}
+
+func (baseChan *BaseChannel) GetChannelConnector(c controllerclient.Client, instance *current.Channel, org string) (*connector.Connector, error) {
+	profile, err := connector.ChannelProfile(c, instance.GetChannelID())
+	if err != nil {
+		return nil, err
+	}
+	profileFunc := func() (b []byte, err error) {
+		profile.Client.Organization = org
+		return profile.Marshal(connector.YAML)
+	}
+	con, err := connector.NewConnector(profileFunc)
+	if err != nil {
+		return nil, err
+	}
+	return con, err
+}
+
+func (baseChan *BaseChannel) GetChannelConfig(con *connector.Connector, instance *current.Channel, org *current.Organization) (client *resmgmt.Client, config *proto_common.Config, err error) {
+	adminContext := con.SDK().Context(fabsdk.WithUser(org.Spec.Admin), fabsdk.WithOrg(org.GetName()))
+	client, err = resmgmt.New(adminContext)
+	if err != nil {
+		return
+	}
+	var block *proto_common.Block
+	block, err = client.QueryConfigBlockFromOrderer(instance.GetChannelID())
+	if err != nil {
+		return
+	}
+	config, err = resource.ExtractConfigFromBlock(block)
+	return
+}
+
+func (baseChan *BaseChannel) IsMemberInChanConfig(config *proto_common.Config, m current.Member) (exist bool) {
+	group := config.ChannelGroup.Groups[channelconfig.ApplicationGroupKey].Groups
+	_, exist = group[m.GetName()]
+	return
+}
+
+func (baseChan *BaseChannel) AddMemberToChan(client *resmgmt.Client, instance *current.Channel, currentConfig *proto_common.Config, orgNames []string) error {
+	// Make a deep copy of the raw config as the basis for modified config
+	modifiedConfig := &proto_common.Config{}
+	modifiedConfigBytes, err := proto.Marshal(currentConfig)
+	if err != nil {
+		return errors.Wrap(err, "marshal currentConfig error")
+	}
+	err = proto.Unmarshal(modifiedConfigBytes, modifiedConfig)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal currentConfig error")
+	}
+
+	// add new org to modified config
+	applicationGroup := modifiedConfig.ChannelGroup.Groups[channelconfig.ApplicationGroupKey]
+	for _, orgName := range orgNames {
+		msg := fmt.Sprintf("org: %s ", orgName)
+		org, err := baseChan.Initializer.GetApplicationOrganization(instance, orgName)
+		if err != nil {
+			return errors.Wrap(err, msg+"get Application organization config error")
+		}
+		applicationGroup.Groups[orgName], err = configtx.NewApplicationOrgGroup(org)
+		if err != nil {
+			return errors.Wrap(err, msg+"create application org error")
+		}
+	}
+
+	// calculate  configUpdate and get its envlope bytes
+	configUpdate, err := resmgmt.CalculateConfigUpdate(instance.GetChannelID(), currentConfig, modifiedConfig)
+	if err != nil {
+		return errors.Wrap(err, "calculate config update error")
+	}
+	configEnvelopeBytes, err := GetConfigEnvelopeBytes(configUpdate)
+	if err != nil {
+		return errors.Wrap(err, "get config envelope bytes error")
+	}
+	configReader := bytes.NewReader(configEnvelopeBytes)
+
+	// get all signingIdentities needed
+	signIdentities := make([]msp.SigningIdentity, 0)
+	orgCon, err := baseChan.GetChannelConnector(baseChan.Client, instance, "")
+	if err != nil {
+		return errors.Wrap(err, "get channel connector error")
+	}
+	defer orgCon.Close()
+	for _, member := range instance.Spec.Members {
+		if util.ContainsValue(member.Name, orgNames) {
+			log.Info("skip org sign config update, because of new org to channel", "org", member.GetName())
+			continue
+		}
+		msg := fmt.Sprintf("org: %s ", member.GetName())
+		organization := &current.Organization{}
+		organization.Name = member.GetName()
+		if err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Name: organization.GetName()}, organization); err != nil {
+			return errors.Wrap(err, msg+"get org error")
+		}
+		clientContext := orgCon.SDK().Context(fabsdk.WithUser(organization.Spec.Admin), fabsdk.WithOrg(organization.GetName()))
+		cctx, err := clientContext()
+		if err != nil {
+			return err
+		}
+		signIdentities = append(signIdentities, cctx)
+	}
+
+	// update channel config
+	txID, err := client.SaveChannel(resmgmt.SaveChannelRequest{
+		ChannelID:         instance.GetChannelID(),
+		ChannelConfig:     configReader,
+		SigningIdentities: signIdentities,
+	})
+	if err != nil {
+		return errors.Wrap(err, "save channel error")
+	}
+	log.Info(fmt.Sprintf("update channel config to update member in txID:%s", txID.TransactionID), "channel", instance.GetName(), "newMember", orgNames)
+	return nil
+}
+
+func GetConfigEnvelopeBytes(configUpdate *proto_common.ConfigUpdate) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := protolator.DeepMarshalJSON(&buf, configUpdate); err != nil {
+		return nil, err
+	}
+	channelConfigBytes, err := proto.Marshal(configUpdate)
+	if err != nil {
+		return nil, err
+	}
+	configUpdateEnvelope := &proto_common.ConfigUpdateEnvelope{
+		ConfigUpdate: channelConfigBytes,
+		Signatures:   nil,
+	}
+	configUpdateEnvelopeBytes, err := proto.Marshal(configUpdateEnvelope)
+	if err != nil {
+		return nil, err
+	}
+	payload := &proto_common.Payload{
+		Data: configUpdateEnvelopeBytes,
+	}
+	payloadBytes, err := proto.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	configEnvelope := &proto_common.Envelope{
+		Payload: payloadBytes,
+	}
+	return proto.Marshal(configEnvelope)
 }

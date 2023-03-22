@@ -54,7 +54,7 @@ func (c *baseChaincode) InstallChaincode(instance *current.Chaincode) (string, e
 		return err.Error(), err
 	}
 
-	connectProfile, err := ProfileProvider(c.client, instance.Spec.Channel)
+	connectProfile, err := connector.ChannelProfile(c.client, instance.Spec.Channel)
 	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
@@ -108,6 +108,7 @@ func (c *baseChaincode) InstallChaincode(instance *current.Chaincode) (string, e
 		log.Error(err, fmt.Sprintf("%s chaincode get new connector error", method))
 		return err.Error(), err
 	}
+	defer peerConnector.Close()
 
 	buf := strings.Builder{}
 	var finalErr error

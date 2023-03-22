@@ -26,11 +26,13 @@ import (
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
+	"github.com/IBM-Blockchain/fabric-operator/pkg/util"
 	"github.com/IBM-Blockchain/fabric-operator/pkg/util/pointer"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Profile contasins all we need to connect with a blockchain network. Currently we use embeded pem by default
@@ -406,4 +408,24 @@ func (profile *Profile) Unmarshal(in []byte, format Format) error {
 		return json.Unmarshal(in, profile)
 	}
 	return yaml.Unmarshal(in, profile)
+}
+
+func ChannelProfile(cli controllerclient.Client, channelID string) (p *Profile, err error) {
+	operatorNamespace, err := util.GetNamespace()
+	if err != nil {
+		return nil, err
+	}
+	channel := current.Channel{}
+	channel.Name = channelID
+	cm := &corev1.ConfigMap{}
+	cm.Name = channel.GetConnectionPorfile()
+	cm.Namespace = operatorNamespace
+	if err = cli.Get(context.TODO(), client.ObjectKeyFromObject(cm), cm); err != nil {
+		return nil, errors.Wrap(err, "failed to get channel connection profile")
+	}
+	profile := &Profile{}
+	if err = profile.Unmarshal(cm.BinaryData["profile.yaml"], YAML); err != nil {
+		return nil, errors.Wrap(err, "invalid channel connection profile")
+	}
+	return profile, nil
 }

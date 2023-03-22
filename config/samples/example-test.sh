@@ -145,9 +145,13 @@ cat ${InstallDirPath}/tmp.yaml >${InstallDirPath}/fabric-operator/values.yaml
 rm -rf ${InstallDirPath}/tmp.yaml
 
 info "2. install component in kubernetes..."
-info "2.1 install u4a component and u4a services"
+
+info "2.1 install u4a component, u4a services and fabric-operator"
 . ./scripts/e2e.sh --all
 cd ${RootPath}
+
+info "2.2 install latest crd in dev"
+kubectl kustomize config/crd | kubectl apply -f -
 
 info "3. create user and get user's token"
 info "3.1 create all test users"
@@ -278,6 +282,11 @@ function waitFed() {
 			if [ "$status" == "FederationActivated" ]; then
 				break
 			fi
+		elif [[ $check == "MembersUpdateTo3" ]]; then
+			n=$(kubectl get fed --token=${token} $fedName -o json | jq -r '.spec.members | length')
+			if [[ $n -eq 3 ]]; then
+				break
+			fi
 		fi
 		CURRENT_TIME=$(date +%s)
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
@@ -354,10 +363,9 @@ kubectl create -f config/samples/ibp.com_v1beta1_network.yaml --dry-run=client -
 	kubectl create --token=${Admin1Token} -f -
 function waitNetwork() {
 	networkName=$1
-	orderNs=$2
-	want=$3
-	channelName=$4
-	token=$5
+	want=$2
+	channelName=$3
+	token=$4
 	START_TIME=$(date +%s)
 	while true; do
 		if [[ $want == "NoExist" ]]; then
@@ -381,6 +389,11 @@ function waitNetwork() {
 				fi
 				break
 			fi
+		elif [[ $want == "MembersUpdateTo3" ]]; then
+			n=$(kubectl get network ${networkName} --token=${token} --ignore-not-found=true -o json | jq -r '.spec.members | length')
+			if [[ $n -eq 3 ]]; then
+				break
+			fi
 		fi
 		CURRENT_TIME=$(date +%s)
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
@@ -392,14 +405,14 @@ function waitNetwork() {
 		sleep 5
 	done
 }
-waitNetwork network-sample "org1" "Ready" "" ${Admin1Token}
+waitNetwork network-sample "Ready" "" ${Admin1Token}
 
 info "4.4.2 create 3 orderer node network"
 sed -i -e "s/<org1AdminToken>/${Admin1Token}/g" config/samples/ibp.com_v1beta1_network_size_3.yaml
 kubectl create -f config/samples/ibp.com_v1beta1_network_size_3.yaml --dry-run=client -o json |
 	jq '.spec.orderSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.orderSpec.storage.orderer.class = "'$StorageClassName'"' |
 	kubectl create --token=${Admin1Token} -f -
-waitNetwork network-sample3 "org1" "Ready" "" ${Admin1Token}
+waitNetwork network-sample3 "Ready" "" ${Admin1Token}
 
 info "4.4.3 delete network need create a federation dissolve network proposal for fed=federation-sample network=network-sample"
 
@@ -414,11 +427,11 @@ info "4.4.3.3 pro=dissolve-network-sample become Activated"
 waitProposalSucceeded dissolve-network-sample ${Admin2Token}
 
 info "4.4.3.4 network=network-sample status.type become Dissolved, dissolve finished"
-waitNetwork network-sample "" "Dissolved" "" ${Admin2Token}
+waitNetwork network-sample "Dissolved" "" ${Admin2Token}
 
 info "4.4.3.5 delete network-sample after dissolved"
 kubectl delete -f config/samples/ibp.com_v1beta1_network.yaml --token=${Admin1Token}
-waitNetwork network-sample "" "NoExist" "" ${Admin2Token}
+waitNetwork network-sample "NoExist" "" ${Admin2Token}
 
 info "4.7 channel management"
 info "4.7.1 create channel channel=channel-sample"
@@ -437,6 +450,11 @@ function waitChannelReady() {
 		elif [[ $want == "ChannelArchived" ]]; then
 			Type=$(kubectl get channel --token=${token} $channelName --ignore-not-found=true -o json | jq -r '.status.type')
 			if [[ $Type == $want ]]; then
+				break
+			fi
+		elif [[ $want == "MembersUpdateTo3" ]]; then
+			n=$(kubectl get channel --token=${token} $channelName --ignore-not-found=true -o json | jq -r '.spec.members | length')
+			if [[ $n -eq 3 ]]; then
 				break
 			fi
 		fi
@@ -549,7 +567,7 @@ function waitPeerJoined() {
 		fi
 		CURRENT_TIME=$(date +%s)
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
-		if [ $ELAPSED_TIME -gt 60 ]; then
+		if [ $ELAPSED_TIME -gt $TimeoutSeconds ]; then
 			error "Timeout reached"
 			kubectl describe --token=${token} channels ${channelName}
 			exit 1
@@ -558,12 +576,10 @@ function waitPeerJoined() {
 	done
 }
 waitPeerJoined channel-sample 0 PeerJoined ${Admin1Token}
-sleep 5
 
 info "4.7.5 add peer node to channel peer=org2peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml --token=${Admin2Token}
 waitPeerJoined channel-sample 1 PeerJoined ${Admin2Token}
-sleep 5
 
 info "4.7.6 create a proposal to archive channel-sample"
 kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_archive_channel.yaml
@@ -711,6 +727,87 @@ info "4.10.5 wait chaincode running"
 
 watiChaincodeRunning chaincode-sample $Admin1Token "ChaincodeRunning"
 
+info "4.11 update federation member for fed=federation-sample"
+
+info "4.11.1 create proposal pro=add-member-federation-sample"
+kubectl create -f config/samples/ibp.com_v1beta1_proposal_add_member.yaml --token=${Admin1Token}
+
+info "4.11.2 user=org2admin vote for pro=add-member-federation-sample"
+waitVoteExist org2 add-member-federation-sample ${Admin2Token}
+kubectl patch vote -n org2 vote-org2-add-member-federation-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
+
+info "4.11.3 user=org3admin vote for pro=add-member-federation-sample"
+waitVoteExist org3 add-member-federation-sample ${Admin3Token}
+kubectl patch vote -n org3 vote-org3-add-member-federation-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin3Token}
+
+info "4.11.4 pro=add-member-federation-sample become Succeeded"
+waitProposalSucceeded add-member-federation-sample ${Admin1Token}
+
+info "4.11.5 fed=federation-sample member update, federation member update finish!"
+waitFed federation-sample "MembersUpdateTo3" ${Admin1Token}
+
+info "4.12 update channel member, add org3 to channel=channel-sample"
+
+info "4.12.1 wait network sync member from federation"
+waitNetwork network-sample3 "MembersUpdateTo3" "" ${Admin1Token}
+
+info "4.12.2 need create proposal=update-channel-member"
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_proposal_update_channel_member.yaml
+
+info "4.12.3 user=org2admin vote for proposal=update-channel-member"
+waitVoteExist org2 update-channel-member ${Admin2Token}
+kubectl patch vote -n org2 vote-org2-update-channel-member --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
+
+info "4.12.4 user=org3admin vote for proposal=update-channel-member"
+waitVoteExist org3 update-channel-member ${Admin3Token}
+kubectl patch vote -n org3 vote-org3-update-channel-member --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin3Token}
+
+info "4.12.5 channel=channel-sample members update"
+waitChannelReady channel-sample "MembersUpdateTo3" ${Admin1Token}
+function waitOperatorLog() {
+	log=$1
+	START_TIME=$(date +%s)
+	while true; do
+		line=$(kubectl logs -n baas-system -l control-plane=controller-manager | grep "$log")
+		if [[ -n $line ]]; then
+			echo "$line"
+			break
+		fi
+		CURRENT_TIME=$(date +%s)
+		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+		if [ $ELAPSED_TIME -gt $TimeoutSeconds ]; then
+			error "Timeout reached"
+			kubectl logs -n baas-system -l control-plane=controller-manager
+			exit 1
+		fi
+		sleep 5
+	done
+}
+waitOperatorLog 'update channel config to update member in txID'
+
+info "4.7.3 create peer node peer=org3peer1"
+Org3CaCert=$(kubectl get cm --token=${Admin3Token} -norg3 org3-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.tls.cert')
+Org3CaURI=$(kubectl get cm --token=${Admin3Token} -norg3 org3-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.endpoints.api')
+parseURI ${Org3CaURI}
+Org3CaHost=${host}
+Org3CaPort=${port}
+sed -i -e "s/<org3AdminToken>/${Admin3Token}/g" config/samples/peers/ibp.com_v1beta1_peer_org3peer1.yaml
+sed -i -e "s/<org3-ca-cert>/${Org3CaCert}/g" config/samples/peers/ibp.com_v1beta1_peer_org3peer1.yaml
+kubectl create -f config/samples/peers/ibp.com_v1beta1_peer_org3peer1.yaml --dry-run=client -o json |
+	jq '.spec.domain = "'$ingressNodeIP'.nip.io"' | jq '.spec.ingress.class = "'$IngressClassName'"' |
+	jq '.spec.storage.peer.class = "'$StorageClassName'"' | jq '.spec.storage.statedb.class = "'$StorageClassName'"' |
+	jq '.spec.secret.enrollment.component.cahost = "'$Org3CaHost'"' | jq '.spec.secret.enrollment.tls.cahost = "'$Org3CaHost'"' |
+	jq '.spec.secret.enrollment.component.caport = "'$Org3CaPort'"' | jq '.spec.secret.enrollment.tls.caport = "'$Org3CaPort'"' |
+	kubectl create --token=${Admin3Token} -f -
+waitPeerReady org3peer1 org3 "" ${Admin3Token}
+
+info "4.12.6 add peer node to channel peer=org3peer1 channel=channel-sample"
+kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org3.yaml --token=${Admin3Token}
+waitPeerJoined channel-sample 2 PeerJoined ${Admin3Token}
+
+################################################################################
 info "cache component image"
 source ${InstallDirPath}/scripts/cache-image.sh
 save_all_images /home/runner/work/fabric-operator/fabric-operator/tmp/images/ /home/runner/work/fabric-operator/fabric-operator/tmp/all.image.list

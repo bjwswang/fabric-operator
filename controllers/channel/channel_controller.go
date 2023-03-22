@@ -132,6 +132,8 @@ func proposal2channelMap(object client.Object) []reconcile.Request {
 		targetChannel = proposal.Spec.ArchiveChannel.Channel
 	case current.UnarchiveChannelProposal:
 		targetChannel = proposal.Spec.UnarchiveChannel.Channel
+	case current.UpdateChannelMemberProposal:
+		targetChannel = proposal.Spec.UpdateChannelMember.Channel
 	}
 	return []reconcile.Request{
 		{

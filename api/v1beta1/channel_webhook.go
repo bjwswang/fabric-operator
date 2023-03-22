@@ -50,6 +50,9 @@ func (r *Channel) Default(ctx context.Context, client client.Client, user authen
 	channellog.Info("default", "name", r.Name, "user", user.String())
 
 	for index := range r.Spec.Members {
+		if r.Spec.Members[index].JoinedAt != nil {
+			continue
+		}
 		now := metav1.Now()
 		r.Spec.Members[index].JoinedAt = &now
 	}
@@ -96,7 +99,9 @@ func (r *Channel) ValidateUpdate(ctx context.Context, c client.Client, old runti
 	// forbid to update channel members directly
 	added, removed := DifferMembers(oldChannel.Spec.Members, r.Spec.Members)
 	if len(added) != 0 || len(removed) != 0 {
-		return errUpdateChannelMember
+		if !isSuperUser(ctx, user) {
+			return errUpdateChannelMember
+		}
 	}
 
 	// forbid to update peers which not belongs to user's organizations

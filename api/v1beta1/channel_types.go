@@ -77,10 +77,11 @@ type ChannelStatus struct {
 	PeerConditions []PeerCondition `json:"peerConditions,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,shortName=chan;chans
-
+// +genclient
+// +genclient:nonNamespaced
 // Channel is the Schema for the channels API
 type Channel struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -90,7 +91,7 @@ type Channel struct {
 	Status ChannelStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // ChannelList contains a list of Channel
 type ChannelList struct {

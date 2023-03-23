@@ -90,10 +90,11 @@ type ChaincodeBuildStatus struct {
 	PipelineRunResults []pipelinev1beta1.PipelineRunResult `json:"pipelineResults,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,shortName=ccb;ccbs
-
+// +genclient
+// +genclient:nonNamespaced
 // ChaincodeBuild is the Schema for the chaincodebuilds API
 type ChaincodeBuild struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -103,7 +104,7 @@ type ChaincodeBuild struct {
 	Status ChaincodeBuildStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // ChaincodeBuildList contains a list of ChaincodeBuild
 type ChaincodeBuildList struct {

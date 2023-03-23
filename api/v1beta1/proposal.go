@@ -192,11 +192,11 @@ func (p *Proposal) SelfType() string {
 	case UnarchiveChannelProposal:
 		return "UnarchiveChannelProposal"
 	case DeployChaincodeProposal:
-		return "DeployChaincode"
+		return "DeployChaincodeProposal"
 	case UpgradeChaincodeProposal:
-		return "UpgradeChaincode"
+		return "UpgradeChaincodeProposal"
 	case UpdateChannelMemberProposal:
-		return "UpdateChannelMember"
+		return "UpdateChannelMemberProposal"
 	default:
 		return ""
 	}

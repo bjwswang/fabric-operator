@@ -42,6 +42,8 @@ const (
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,shortName=cc
+// +genclient
+// +genclient:nonNamespaced
 type Chaincode struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

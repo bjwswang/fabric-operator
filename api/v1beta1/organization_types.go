@@ -64,10 +64,11 @@ type OrganizationStatus struct {
 	Federations []string `json:"federations,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:resource:scope=Cluster,shortName=org;orgs
-
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:scope=Cluster,shortName=org;orgs
+// +genclient
+// +genclient:nonNamespaced
 // Organization is the Schema for the organizations API
 type Organization struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -77,8 +78,7 @@ type Organization struct {
 	Status OrganizationStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-
+// +kubebuilder:object:root=true
 // OrganizationList contains a list of Organization
 type OrganizationList struct {
 	metav1.TypeMeta `json:",inline"`

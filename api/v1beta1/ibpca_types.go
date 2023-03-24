@@ -167,6 +167,7 @@ type IBPCAStatus struct {
 // +operator-sdk:gen-csv:customresourcedefinitions.resources=`IBPPeer,v1beta1,""`
 // +operator-sdk:gen-csv:customresourcedefinitions.resources=`IBPOrderer,v1beta1,""`
 // +operator-sdk:gen-csv:customresourcedefinitions.resources=`IBPConsole,v1beta1,""`
+// +genclient
 type IBPCA struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -66,6 +66,8 @@ type FederationStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster,shortName=fed;feds
+// +genclient
+// +genclient:nonNamespaced
 // Federation is the Schema for the federations API
 type Federation struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -75,8 +77,7 @@ type Federation struct {
 	Status FederationStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-
+// +kubebuilder:object:root=true
 // FederationList contains a list of Federation
 type FederationList struct {
 	metav1.TypeMeta `json:",inline"`

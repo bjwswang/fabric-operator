@@ -22,6 +22,7 @@ const (
 // +k8s:deepcopy-gen=true
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
+// +genclient
 type Vote struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -187,6 +187,7 @@ type IBPPeerStatus struct {
 // +operator-sdk:gen-csv:customresourcedefinitions.resources=`IBPOrderer,v1beta1,""`
 // +operator-sdk:gen-csv:customresourcedefinitions.resources=`IBPConsole,v1beta1,""`
 // +operator-sdk:gen-csv:customresourcedefinitions.resources=`clusterversions,v1,""`
+// +genclient
 type IBPPeer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

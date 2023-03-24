@@ -56,6 +56,8 @@ type NetworkStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster
 // Network is the Schema for the networks API
+// +genclient
+// +genclient:nonNamespaced
 type Network struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -64,8 +66,7 @@ type Network struct {
 	Status NetworkStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-
+// +kubebuilder:object:root=true
 // NetworkList contains a list of Network
 type NetworkList struct {
 	metav1.TypeMeta `json:",inline"`

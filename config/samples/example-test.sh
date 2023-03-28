@@ -807,6 +807,17 @@ info "4.12.6 add peer node to channel peer=org3peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org3.yaml --token=${Admin3Token}
 waitPeerJoined channel-sample 2 PeerJoined ${Admin3Token}
 
+info "5. Checking restarting operator will not have any side effects on the spec of the resource."
+kubectl get all --all-namespaces -o json | jq -c '.items | sort_by(.metadata.name, .metadata.namespace)[] | select(.metadata.namespace != "tekton-pipelines" and (.metadata.name | startswith("controller-manager-") | not) and .metadata.namespace != "baas-system") | .spec' >old.json
+kubectl scale --current-replicas=1 --replicas=0 deployment/controller-manager -n baas-system
+sleep 5
+kubectl scale --current-replicas=0 --replicas=1 deployment/controller-manager -n baas-system
+sleep 5
+kubectl get all --all-namespaces -o json | jq -c '.items | sort_by(.metadata.name, .metadata.namespace)[] | select(.metadata.namespace != "tekton-pipelines" and (.metadata.name | startswith("controller-manager-") | not) and .metadata.namespace != "baas-system") | .spec' >new.json
+git diff --color-words --no-index old.json new.json && same=0 || same=1
+if [[ $same -eq 1 ]]; then
+	exit 1
+fi
 ################################################################################
 info "cache component image"
 source ${InstallDirPath}/scripts/cache-image.sh

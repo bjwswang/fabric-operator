@@ -182,15 +182,20 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 				case current.CreateFederationProposal:
 					update.proposalActivated = true
 					for _, m := range fed.Spec.Members {
-						m.JoinedBy = newProposal.GetName()
-						m.JoinedAt = &now
+						if m.JoinedBy == "" {
+							m.JoinedBy = newProposal.GetName()
+							m.JoinedAt = &now
+						}
 						newMember = append(newMember, m)
 					}
 				case current.AddMemberProposal:
 					newMember = append(newMember, fed.Spec.Members...)
-					memberName := make(map[string]bool, len(newMember))
+					hasAddMemberName := make(map[string]bool, len(newMember)+len(newProposal.Spec.AddMember.Members))
+					for _, m := range fed.Spec.Members {
+						hasAddMemberName[m.Name] = true
+					}
 					for _, m := range newProposal.Spec.AddMember.Members {
-						if memberName[m] {
+						if hasAddMemberName[m] {
 							continue
 						}
 						newMember = append(newMember, current.Member{
@@ -199,7 +204,7 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 							JoinedBy:  newProposal.GetName(),
 							JoinedAt:  &now,
 						})
-						memberName[m] = true
+						hasAddMemberName[m] = true
 					}
 				case current.DeleteMemberProposal:
 					for _, m := range fed.Spec.Members {
@@ -225,20 +230,22 @@ func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 						log.Error(err, fmt.Sprintf("cant find network %s", newProposal.Spec.DissolveNetwork.Name))
 						return false
 					}
-					network.Status.CRStatus.Type = current.NetworkDissoleved
-					network.Status.Status = current.True
-					network.Status.Reason = "DissolveNetworkProposal"
-					network.Status.Message = "Proposal to dissolve this network succeeded"
-					network.Status.LastHeartbeatTime = metav1.Now()
-					if err := r.client.PatchStatus(context.TODO(), network, nil, k8sclient.PatchOption{
-						Resilient: &k8sclient.ResilientPatch{
-							Retry:    2,
-							Into:     &current.Network{},
-							Strategy: client.MergeFrom,
-						},
-					}); err != nil {
-						log.Error(err, fmt.Sprintf("cant patch network %s status to %s", newProposal.Spec.DissolveNetwork.Name, current.NetworkDissoleved))
-						return false
+					if network.Status.CRStatus.Type != current.NetworkDissoleved {
+						network.Status.CRStatus.Type = current.NetworkDissoleved
+						network.Status.Status = current.True
+						network.Status.Reason = "DissolveNetworkProposal"
+						network.Status.Message = "Proposal to dissolve this network succeeded"
+						network.Status.LastHeartbeatTime = metav1.Now()
+						if err := r.client.PatchStatus(context.TODO(), network, nil, k8sclient.PatchOption{
+							Resilient: &k8sclient.ResilientPatch{
+								Retry:    2,
+								Into:     &current.Network{},
+								Strategy: client.MergeFrom,
+							},
+						}); err != nil {
+							log.Error(err, fmt.Sprintf("cant patch network %s status to %s", newProposal.Spec.DissolveNetwork.Name, current.NetworkDissoleved))
+							return false
+						}
 					}
 				}
 			case current.ProposalFailed:

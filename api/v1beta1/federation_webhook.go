@@ -110,11 +110,14 @@ func (r *Federation) ValidateDelete(ctx context.Context, client client.Client, u
 	return nil
 }
 
-// validateMembers If a member is deleted, he is the initiator of the network or a member of the channel,
-// the operation is not allowed
+// validateMembers ensure the initiator of a network or members of a channel are not allowed to be deleted.
+// Duplicate members are also not allowed among newMembers.
 func validateMembers(ctx context.Context, c client.Client, oldMembers, newMembers []Member) error {
 	deleted := make(map[string]struct{})
 	for _, member := range newMembers {
+		if _, exist := deleted[member.Name]; exist {
+			return fmt.Errorf("has multiple members with the same name: %s", member.Name)
+		}
 		deleted[member.Name] = struct{}{}
 	}
 	chList := &ChannelList{}

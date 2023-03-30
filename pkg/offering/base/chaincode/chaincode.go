@@ -21,6 +21,7 @@ package chaincode
 import (
 	"context"
 	"fmt"
+	"time"
 
 	current "github.com/IBM-Blockchain/fabric-operator/api/v1beta1"
 	config "github.com/IBM-Blockchain/fabric-operator/operatorconfig"
@@ -274,6 +275,13 @@ func (c *baseChaincode) Commit(instance *current.Chaincode) error {
 func (c *baseChaincode) R(instance *current.Chaincode) error {
 	method := fmt.Sprintf("%s base.chaincode.R", stepPrefix)
 	conditions := instance.Status.Conditions
+	if len(conditions) > 0 {
+		lastCondition := conditions[len(conditions)-1]
+		if lastCondition.LastTransitionTime.Unix() == time.Now().Unix() {
+			// only compare second
+			time.Sleep(time.Second)
+		}
+	}
 	expectCond := current.ChaincodeCondition{
 		Type:               current.ChaincodeCondRunning,
 		Status:             metav1.ConditionTrue,

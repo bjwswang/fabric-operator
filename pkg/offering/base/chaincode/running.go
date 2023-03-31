@@ -62,14 +62,14 @@ func (c *baseChaincode) RunningChecker(instance *current.Chaincode) (string, err
 	packageID := lcpackager.ComputePackageID(instance.Spec.Label, chaincodeBytes)
 	log.Info(fmt.Sprintf("%s chaincode package id %s", method, packageID))
 
-	ch := &current.Channel{}
+	ch, err := instance.GetChannel(c.client)
 	log.Info(fmt.Sprintf("%s get channel %s info", method, instance.Spec.Channel))
-	if err := c.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Channel}, ch); err != nil {
+	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
 	}
 
-	connectProfile, err := connector.ChannelProfile(c.client, instance.Spec.Channel)
+	connectProfile, err := connector.ChannelProfile(c.client, ch.GetName())
 	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
@@ -143,7 +143,7 @@ func (c *baseChaincode) RunningChecker(instance *current.Chaincode) (string, err
 		targetPoints = append(targetPoints, peer.String())
 	}
 
-	lcd, err := pc.LifecycleQueryCommittedCC(instance.Spec.Channel,
+	lcd, err := pc.LifecycleQueryCommittedCC(ch.GetChannelID(),
 		resmgmt.LifecycleQueryCommittedCCRequest{Name: instance.Spec.ID}, resmgmt.WithTargetEndpoints(peer.String()))
 	if err != nil {
 		log.Error(err, "")

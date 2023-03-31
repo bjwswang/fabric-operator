@@ -246,7 +246,7 @@ func (r *ReconcileNetwork) preCheck(instance *current.Network) bool {
 		instance.Labels = make(map[string]string)
 	}
 	update := false
-	if err := instance.HaveSameMembers(context.TODO(), nil, r.client, true); err != nil {
+	if err := instance.HaveSameMembers(context.TODO(), r.client, true); err != nil {
 		if err != current.MemberMisMatchError {
 			return false
 		}

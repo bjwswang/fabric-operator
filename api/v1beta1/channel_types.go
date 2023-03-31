@@ -28,6 +28,10 @@ type ChannelSpec struct {
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	License License `json:"license"`
 
+	// ID Channel ID
+	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
+	ID string `json:"id"`
+
 	// Network which this channel belongs to
 	// +operator-sdk:gen-csv:customresourcedefinitions.specDescriptors=true
 	Network string `json:"network"`

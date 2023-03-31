@@ -108,7 +108,7 @@ func (i *Initializer) CreateChannel(instance *current.Channel) error {
 	}
 	for _, target := range clusterNodes.Items {
 		// make sure orderer not joined yet
-		resp, err := osn.Query(target.GetName(), instance.GetName())
+		resp, err := osn.Query(target.GetName(), instance.GetChannelID())
 		if err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func (i *Initializer) CreateGenesisBlock(instance *current.Channel, ordererorg s
 		}
 	}
 
-	channelID := instance.GetName()
+	channelID := instance.GetChannelID()
 	block, err := profile.GenerateBlock(channelID, mspConfigs)
 	if err != nil {
 		return nil, err

@@ -20,12 +20,15 @@ package v1beta1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -36,6 +39,7 @@ var (
 	errMemberNotInNetwork   = errors.New("some channel member not in network")
 	errNoPermOperatePeer    = errors.New("no permission to operate peer")
 	errUpdateChannelNetwork = errors.New("cant update channel's network")
+	errUpdateChannelID      = errors.New("can not update channels' id")
 	errUpdateChannelMember  = errors.New("cant update channel's members directly(must use proposal-vote)")
 	errChannelHasPeers      = errors.New("channel still have peers joined")
 )
@@ -81,8 +85,7 @@ func (r *Channel) ValidateCreate(ctx context.Context, c client.Client, user auth
 	if err != nil {
 		return err
 	}
-
-	return nil
+	return validateChannelID(ctx, c, r.Spec.Network, r.Spec.ID)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -94,6 +97,9 @@ func (r *Channel) ValidateUpdate(ctx context.Context, c client.Client, old runti
 	// forbid to udpate channel network
 	if oldChannel.Spec.Network != r.Spec.Network {
 		return errUpdateChannelNetwork
+	}
+	if oldChannel.Spec.ID != r.Spec.ID {
+		return errUpdateChannelID
 	}
 
 	// forbid to update channel members directly
@@ -204,6 +210,26 @@ func validatePeersOwnership(ctx context.Context, c client.Client, ownerOrgs []st
 			return errors.Errorf("peer %s has error %s:%s", peer.String(), p.Status.Reason, p.Status.Message)
 		case Deploying:
 			return errors.Errorf("peer %s still deploying. cannot be used to join channel", peer.String())
+		}
+	}
+	return nil
+}
+
+func validateChannelID(ctx context.Context, c client.Client, network, channelID string) error {
+	selector := labels.NewSelector()
+	req, _ := labels.NewRequirement(CHANNEL_NETWORK_LABEL, selection.In, []string{network})
+	selector = selector.Add(*req)
+	listOption := client.ListOptions{
+		LabelSelector: selector,
+	}
+	channelList := &ChannelList{}
+	if err := c.List(ctx, channelList, &listOption); err != nil {
+		return err
+	}
+	for _, ch := range channelList.Items {
+		channellog.Info(fmt.Sprintf("by selector %s, get ch %s", selector.String(), ch.GetName()))
+		if ch.Spec.ID == channelID {
+			return fmt.Errorf("channel id %s already exists in channel %s", channelID, ch.GetName())
 		}
 	}
 	return nil

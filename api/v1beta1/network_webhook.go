@@ -67,7 +67,7 @@ var _ validator = &Network{}
 func (r *Network) ValidateCreate(ctx context.Context, client client.Client, user authenticationv1.UserInfo) error {
 	networklog.Info("validate create", "name", r.Name, "user", user.String())
 
-	if err := r.HaveSameMembers(ctx, client, nil, false); err != nil {
+	if err := r.HaveSameMembers(ctx, client, false); err != nil {
 		return err
 	}
 	if err := validateInitiator(ctx, client, user, r.Spec.Members); err != nil {
@@ -80,7 +80,7 @@ func (r *Network) ValidateCreate(ctx context.Context, client client.Client, user
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *Network) ValidateUpdate(ctx context.Context, client client.Client, old runtime.Object, user authenticationv1.UserInfo) error {
 	networklog.Info("validate update", "name", r.Name, "user", user.String())
-	if err := r.HaveSameMembers(ctx, client, nil, false); err != nil {
+	if err := r.HaveSameMembers(ctx, client, false); err != nil {
 		return err
 	}
 

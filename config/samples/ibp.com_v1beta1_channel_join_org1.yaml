@@ -6,6 +6,7 @@ spec:
   license:
     accept: true
   network: "network-sample3"
+  id: channelid
   members:
     - name: org1
     - name: org2

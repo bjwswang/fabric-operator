@@ -204,6 +204,20 @@ func (r *ReconcileChannel) Reconcile(ctx context.Context, request reconcile.Requ
 		return reconcile.Result{}, err
 	}
 
+	updateLabel := false
+	if instance.Labels == nil {
+		instance.Labels = make(map[string]string)
+	}
+	if v, ok := instance.Labels[current.CHANNEL_NETWORK_LABEL]; !ok || v != instance.Spec.Network {
+		updateLabel = true
+		instance.Labels[current.CHANNEL_NETWORK_LABEL] = instance.Spec.Network
+	}
+
+	if updateLabel {
+		err = r.client.Update(context.TODO(), instance)
+		return reconcile.Result{Requeue: true}, err
+	}
+
 	update := r.GetUpdateStatus(instance)
 	reqLogger.Info(fmt.Sprintf("Reconciling Channel '%s' with update values of [ %+v ]", instance.GetName(), update.GetUpdateStackWithTrues()))
 

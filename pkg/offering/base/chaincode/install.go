@@ -48,19 +48,19 @@ func (c *baseChaincode) InstallChaincode(instance *current.Chaincode) (string, e
 	packagePath := fmt.Sprintf("%s/%s", ChaincodeStorageDir("", instance), ChaincodePacakgeFile(instance))
 	log.Info(fmt.Sprintf("%s full packagePath %s", method, packagePath))
 
-	ch := &current.Channel{}
-	if err := c.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Channel}, ch); err != nil {
-		log.Error(err, "")
-		return err.Error(), err
-	}
-
-	connectProfile, err := connector.ChannelProfile(c.client, instance.Spec.Channel)
+	ch, err := instance.GetChannel(c.client)
 	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
 	}
 
-	info := connectProfile.GetChannel(instance.Spec.Channel)
+	connectProfile, err := connector.ChannelProfile(c.client, ch.GetName())
+	if err != nil {
+		log.Error(err, "")
+		return err.Error(), err
+	}
+
+	info := connectProfile.GetChannel(ch.GetChannelID())
 	peerOrgAdmin := make(map[string]string)
 	log.Info(fmt.Sprintf("%s configure the endpoint of all peer nodes and the admin of their group", method))
 
@@ -68,7 +68,7 @@ func (c *baseChaincode) InstallChaincode(instance *current.Chaincode) (string, e
 	for _, peer := range ch.Status.PeerConditions {
 		if peer.Type != current.PeerJoined {
 			log.Info(fmt.Sprintf("%s peer node %s does not join channel %s",
-				method, peer.Name, instance.Spec.Channel))
+				method, peer.Name, ch.GetChannelID()))
 			continue
 		}
 
@@ -93,7 +93,7 @@ func (c *baseChaincode) InstallChaincode(instance *current.Chaincode) (string, e
 		peerOrgAdmin[peer.String()] = org.Spec.Admin
 	}
 
-	connectProfile.Channels[instance.Spec.Channel] = info
+	connectProfile.Channels[ch.GetChannelID()] = info
 
 	chaincodeBytes, err := os.ReadFile(packagePath)
 	if err != nil {
@@ -114,7 +114,7 @@ func (c *baseChaincode) InstallChaincode(instance *current.Chaincode) (string, e
 	var finalErr error
 	for _, peer := range ch.Status.PeerConditions {
 		if peer.Type != current.PeerJoined {
-			log.Info(fmt.Sprintf("%s peer node %s has not yet joined the channel %s", method, peer.Name, instance.Spec.Channel))
+			log.Info(fmt.Sprintf("%s peer node %s has not yet joined the channel %s", method, peer.Name, ch.GetName()))
 			continue
 		}
 		orgAdminCtx := peerConnector.SDK().Context(fabsdk.WithUser(peerOrgAdmin[peer.String()]), fabsdk.WithOrg(peer.Namespace))

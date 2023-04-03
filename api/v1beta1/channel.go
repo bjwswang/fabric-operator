@@ -22,12 +22,14 @@ func init() {
 	SchemeBuilder.Register(&Channel{}, &ChannelList{})
 }
 
+const CHANNEL_NETWORK_LABEL = "bestchains.channel.network"
+
 func (channel *Channel) GetConnectionPorfile() string {
 	return "chan-" + channel.GetName() + "-connection-profile"
 }
 
 func (channel *Channel) GetChannelID() string {
-	return channel.GetName()
+	return channel.Spec.ID
 }
 
 func (channel *Channel) GetMembers() []Member {

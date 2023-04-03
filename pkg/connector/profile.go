@@ -410,13 +410,13 @@ func (profile *Profile) Unmarshal(in []byte, format Format) error {
 	return yaml.Unmarshal(in, profile)
 }
 
-func ChannelProfile(cli controllerclient.Client, channelID string) (p *Profile, err error) {
+func ChannelProfile(cli controllerclient.Client, channelName string) (p *Profile, err error) {
 	operatorNamespace, err := util.GetNamespace()
 	if err != nil {
 		return nil, err
 	}
 	channel := current.Channel{}
-	channel.Name = channelID
+	channel.Name = channelName
 	cm := &corev1.ConfigMap{}
 	cm.Name = channel.GetConnectionPorfile()
 	cm.Namespace = operatorNamespace

@@ -42,14 +42,14 @@ func (c *baseChaincode) CommitChaincode(instance *current.Chaincode) (string, er
 		return err.Error(), err
 	}
 
-	ch := &current.Channel{}
+	ch, err := instance.GetChannel(c.client)
 	log.Info(fmt.Sprintf("%s get channel %s info", method, instance.Spec.Channel))
-	if err := c.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Channel}, ch); err != nil {
+	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
 	}
 
-	connectProfile, err := connector.ChannelProfile(c.client, instance.Spec.Channel)
+	connectProfile, err := connector.ChannelProfile(c.client, ch.GetName())
 	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
@@ -132,7 +132,7 @@ func (c *baseChaincode) CommitChaincode(instance *current.Chaincode) (string, er
 		SignaturePolicy:   signedPoilciy,
 		InitRequired:      instance.Spec.InitRequired,
 	}
-	resp, _ := pc.LifecycleCheckCCCommitReadiness(instance.Spec.Channel, ccReadinessReq, resmgmt.WithTargetEndpoints(peer.String()))
+	resp, _ := pc.LifecycleCheckCCCommitReadiness(ch.GetChannelID(), ccReadinessReq, resmgmt.WithTargetEndpoints(peer.String()))
 	if len(resp.Approvals) == 0 {
 		return "there are no organizations with approved chaincode", fmt.Errorf("there are no organizations with approved chaincode")
 	}
@@ -153,7 +153,7 @@ func (c *baseChaincode) CommitChaincode(instance *current.Chaincode) (string, er
 	log.Info(fmt.Sprintf("%s commitReadiness check successful, start to commit", method))
 
 	log.Info(fmt.Sprintf("%s try to find out if the package committed", method))
-	lcd, err := pc.LifecycleQueryCommittedCC(instance.Spec.Channel,
+	lcd, err := pc.LifecycleQueryCommittedCC(ch.GetChannelID(),
 		resmgmt.LifecycleQueryCommittedCCRequest{Name: instance.Spec.ID}, resmgmt.WithTargetEndpoints(peer.String()))
 	if err != nil {
 		log.Error(err, "")
@@ -176,7 +176,7 @@ func (c *baseChaincode) CommitChaincode(instance *current.Chaincode) (string, er
 		SignaturePolicy:   signedPoilciy,
 		InitRequired:      instance.Spec.InitRequired,
 	}
-	if _, err = pc.LifecycleCommitCC(instance.Spec.Channel, req,
+	if _, err = pc.LifecycleCommitCC(ch.GetChannelID(), req,
 		resmgmt.WithOrdererEndpoint(selectOne),
 		resmgmt.WithTargetEndpoints(targetPoints...)); err != nil {
 		log.Error(err, fmt.Sprintf("%s failed to committed chaincode %s with req %+v\n", method, instance.GetName(), req))

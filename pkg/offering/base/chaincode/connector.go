@@ -62,7 +62,7 @@ func getOrderNodes(cli controllerclient.Client, namespace, parentNode string) (*
 func SetChannelPeerProfile(cli controllerclient.Client, p *connector.Profile, ch *current.Channel) (map[string]current.IBPPeer, map[string]string, error) {
 	orgPeers := make(map[string]current.IBPPeer)
 	peerAdmin := make(map[string]string)
-	info := p.GetChannel(ch.GetName())
+	info := p.GetChannel(ch.GetChannelID())
 	for _, memberOrg := range ch.GetMembers() {
 		org := &current.Organization{}
 		if err := cli.Get(context.TODO(), types.NamespacedName{Name: memberOrg.Name}, org); err != nil {
@@ -88,6 +88,6 @@ func SetChannelPeerProfile(cli controllerclient.Client, p *connector.Profile, ch
 		peerAdmin[cur.String()] = org.Spec.Admin
 	}
 
-	p.Channels[ch.GetName()] = info
+	p.Channels[ch.GetChannelID()] = info
 	return orgPeers, peerAdmin, nil
 }

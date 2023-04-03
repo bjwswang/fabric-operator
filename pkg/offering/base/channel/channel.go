@@ -508,7 +508,7 @@ func (baseChan *BaseChannel) GetNetworkInitiatorOrg(instance *current.Channel) (
 }
 
 func (baseChan *BaseChannel) GetChannelConnector(c controllerclient.Client, instance *current.Channel, org string) (*connector.Connector, error) {
-	profile, err := connector.ChannelProfile(c, instance.GetChannelID())
+	profile, err := connector.ChannelProfile(c, instance.GetName())
 	if err != nil {
 		return nil, err
 	}

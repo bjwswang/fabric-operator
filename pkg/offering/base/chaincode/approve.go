@@ -56,14 +56,14 @@ func (c *baseChaincode) ApproveChaincode(instance *current.Chaincode) (string, e
 	packageID := lcpackager.ComputePackageID(instance.Spec.Label, packageBytes)
 	log.Info(fmt.Sprintf("%s calculate packageID %s", method, packageID))
 
-	ch := &current.Channel{}
+	ch, err := instance.GetChannel(c.client)
 	log.Info(fmt.Sprintf("%s get channel %s info", method, instance.Spec.Channel))
-	if err := c.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.Channel}, ch); err != nil {
+	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
 	}
 
-	connectProfile, err := connector.ChannelProfile(c.client, instance.Spec.Channel)
+	connectProfile, err := connector.ChannelProfile(c.client, ch.GetName())
 	if err != nil {
 		log.Error(err, "")
 		return err.Error(), err
@@ -126,7 +126,7 @@ func (c *baseChaincode) ApproveChaincode(instance *current.Chaincode) (string, e
 		}
 
 		log.Info(fmt.Sprintf("%s try to find out if the pacakge %s approved on the peer %s org %s", method, packageID, peer.String(), orgName))
-		_, err = pc.LifecycleQueryApprovedCC(instance.Spec.Channel, resmgmt.LifecycleQueryApprovedCCRequest{
+		_, err = pc.LifecycleQueryApprovedCC(ch.GetChannelID(), resmgmt.LifecycleQueryApprovedCCRequest{
 			Name:     instance.Spec.ID,
 			Sequence: instance.Status.Sequence,
 		}, resmgmt.WithTargetEndpoints(peer.String()))
@@ -148,7 +148,7 @@ func (c *baseChaincode) ApproveChaincode(instance *current.Chaincode) (string, e
 			SignaturePolicy:   signedPolicy,
 		}
 
-		if _, err = pc.LifecycleApproveCC(instance.Spec.Channel, req,
+		if _, err = pc.LifecycleApproveCC(ch.GetChannelID(), req,
 			resmgmt.WithTargetEndpoints(peer.String()), resmgmt.WithOrdererEndpoint(selectOne)); err != nil {
 			finalErr = err
 			log.Error(err, fmt.Sprintf("%s failed to approve chaincode %s with req %+v\n", method, instance.GetName(), req))

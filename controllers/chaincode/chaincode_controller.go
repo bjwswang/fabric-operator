@@ -201,7 +201,7 @@ func (r ReconcileChaincode) CreateFunc(e event.CreateEvent) bool {
 	if cr.Status.Phase == "" {
 		cr.Status.Phase = current.ChaincodePhasePending
 		cr.Status.Sequence = 1
-		if err := r.client.Patch(context.TODO(), cr, nil, k8sclient.PatchOption{
+		if err := r.client.PatchStatus(context.TODO(), cr, nil, k8sclient.PatchOption{
 			Resilient: &k8sclient.ResilientPatch{
 				Retry:    3,
 				Into:     &current.Chaincode{},

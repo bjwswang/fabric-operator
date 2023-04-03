@@ -63,7 +63,7 @@ func (baseChan *BaseChannel) ReconcilePeer(instance *current.Channel, peer curre
 		return nil
 	}
 
-	err = baseChan.JoinChannel(instance.GetName(), peer)
+	err = baseChan.JoinChannel(instance.GetName(), instance.GetChannelID(), peer)
 	if err != nil && !strings.Contains(err.Error(), errPeerAlreadyJoined.Error()) {
 		log.Error(err, "failed to reconcile peer", "peer", peer.String())
 		condition.Type = current.PeerError
@@ -122,8 +122,8 @@ func (baseChan *BaseChannel) CheckPeer(peer current.NamespacedName) error {
 }
 
 // JoinChannel calls peer api to join it into a existing channel
-func (baseChan *BaseChannel) JoinChannel(channelID string, peer current.NamespacedName) error {
-	c, err := connector.NewConnector(baseChan.ConnectorProfile(channelID, peer))
+func (baseChan *BaseChannel) JoinChannel(channelName, channelID string, peer current.NamespacedName) error {
+	c, err := connector.NewConnector(baseChan.ConnectorProfile(channelName, channelID, peer))
 	if err != nil {
 		return err
 	}
@@ -147,12 +147,12 @@ func (baseChan *BaseChannel) JoinChannel(channelID string, peer current.Namespac
 }
 
 // ConnectorProfile customizes channel connection profile with peer info
-func (baseChan *BaseChannel) ConnectorProfile(channelID string, peer current.NamespacedName) connector.ProfileFunc {
+func (baseChan *BaseChannel) ConnectorProfile(channelName, channelID string, peer current.NamespacedName) connector.ProfileFunc {
 	return func() ([]byte, error) {
 		var err error
 
 		cm := &corev1.ConfigMap{}
-		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Namespace: peer.Namespace, Name: fmt.Sprintf("chan-%s-connection-profile", channelID)}, cm)
+		err = baseChan.Client.Get(context.TODO(), types.NamespacedName{Namespace: peer.Namespace, Name: fmt.Sprintf("chan-%s-connection-profile", channelName)}, cm)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get channel connection profile")
 		}

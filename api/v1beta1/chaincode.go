@@ -1,5 +1,12 @@
 package v1beta1
 
+import (
+	"context"
+
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
 const (
 	// ChaincodeProposalLabel the main purpose of this label is to make it easier to clean up the proposal when the chaincode is deleted.
 	ChaincodeProposalLabel         = "bestchains.chaincode.delete.proposal"
@@ -33,4 +40,13 @@ func NextCond(instance *Chaincode) ChaincodeConditionType {
 		}
 	}
 	return condOrder[exp]
+}
+
+// GetChannel
+func (i *Chaincode) GetChannel(r client.Reader) (*Channel, error) {
+	ch := &Channel{}
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: i.Spec.Channel}, ch); err != nil {
+		return nil, err
+	}
+	return ch, nil
 }

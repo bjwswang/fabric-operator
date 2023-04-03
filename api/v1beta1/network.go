@@ -3,10 +3,8 @@ package v1beta1
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
-	"github.com/IBM-Blockchain/fabric-operator/pkg/k8s/controllerclient"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -148,20 +146,10 @@ func (network *Network) MergeMembers(members []Member) {
 // there are two clustered clients here, as there may be some structures that contain different clients.
 // the update parameter is whether to update the members of the network when the network does not match the members of the federation
 // If the members do not match the function will return an error, even if update is true, otherwise it will return nil.
-func (network *Network) HaveSameMembers(ctx context.Context, c1 client.Client, c2 controllerclient.Client, updateMembers bool) error {
-	if c1 == nil && c2 == nil {
-		return fmt.Errorf("no client provided")
-	}
-
+func (network *Network) HaveSameMembers(ctx context.Context, r client.Reader, updateMembers bool) error {
 	fed := &Federation{}
-	if c1 != nil {
-		if err := c1.Get(ctx, types.NamespacedName{Name: network.Spec.Federation}, fed); err != nil {
-			return err
-		}
-	} else if c2 != nil {
-		if err := c2.Get(ctx, types.NamespacedName{Name: network.Spec.Federation}, fed); err != nil {
-			return err
-		}
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: network.Spec.Federation}, fed); err != nil {
+		return err
 	}
 
 	// If the member list lengths are different, there must be a mismatch

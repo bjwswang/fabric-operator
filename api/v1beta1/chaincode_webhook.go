@@ -80,14 +80,13 @@ func (r *Chaincode) Default(ctx context.Context, client client.Client, user auth
 var _ validator = &Chaincode{}
 
 // checkChAndEp Check if both ch and ep are present
-func checkChAndEp(c client.Client, chName, epName string) error {
-	ch := &Channel{}
-	if err := c.Get(context.TODO(), types.NamespacedName{Name: chName}, ch); err != nil {
+func (r *Chaincode) checkChAndEp(c client.Client) error {
+	_, err := r.GetChannel(c)
+	if err != nil {
 		return err
 	}
-
 	ep := &EndorsePolicy{}
-	return c.Get(context.TODO(), types.NamespacedName{Name: epName}, ep)
+	return c.Get(context.TODO(), types.NamespacedName{Name: r.Spec.EndorsePolicyRef.Name}, ep)
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
@@ -97,7 +96,7 @@ func (r *Chaincode) ValidateCreate(ctx context.Context, client client.Client, us
 		ccLogger.Error(err, "")
 		return err
 	}
-	return checkChAndEp(client, r.Spec.Channel, r.Spec.EndorsePolicyRef.Name)
+	return r.checkChAndEp(client)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -108,13 +107,13 @@ func (r *Chaincode) ValidateUpdate(ctx context.Context, client client.Client, ol
 		ccLogger.Error(err, "")
 		return err
 	}
-	return checkChAndEp(client, oldcc.Spec.Channel, oldcc.Spec.EndorsePolicyRef.Name)
+	return oldcc.checkChAndEp(client)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *Chaincode) ValidateDelete(ctx context.Context, c client.Client, user authenticationv1.UserInfo) error {
 	ccLogger.Info("validate delete", "name", r.Name, "user", user.String())
-	if err := checkChAndEp(c, r.Spec.Channel, r.Spec.EndorsePolicyRef.Name); err != nil {
+	if err := r.checkChAndEp(c); err != nil {
 		return err
 	}
 	if r.Status.Phase != ChaincodePhaseUnapproved {

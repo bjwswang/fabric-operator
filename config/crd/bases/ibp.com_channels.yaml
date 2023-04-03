@@ -41,6 +41,9 @@ spec:
               description:
                 description: Description for this Channel
                 type: string
+              id:
+                description: ID Channel ID
+                type: string
               license:
                 description: License should be accepted by the user to be able to
                   setup console
@@ -84,6 +87,7 @@ spec:
                   type: object
                 type: array
             required:
+            - id
             - license
             - members
             - network

@@ -159,7 +159,7 @@ func (c *baseChaincode) CommitChaincode(instance *current.Chaincode) (string, er
 		log.Error(err, "")
 	}
 	for _, item := range lcd {
-		if item.Name == instance.Spec.ID {
+		if item.Name == instance.Spec.ID && item.Sequence == instance.Status.Sequence {
 			log.Info(fmt.Sprintf("%s chaincode %s has been committed", http.MethodHead, instance.GetName()))
 			return "", nil
 		}

@@ -1,0 +1,17 @@
+apiVersion: ibp.com/v1beta1
+kind: Proposal
+metadata:
+  name: upgrade-chaincode
+  labels:
+    bestchains.chaincode.delete.proposal: chaincode-sample
+spec:
+  federation: federation-sample
+  policy: All
+  initiatorOrganization: org1
+  upgradeChaincode:
+    chaincode: chaincode-sample
+    externalBuilder: chaincodebuild-sample-minio-upgrade-chaincode
+    members:
+    - name: org1
+      initiator: true
+    - name: org2

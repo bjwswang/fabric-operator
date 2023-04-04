@@ -654,7 +654,7 @@ function waitPipelineRun() {
 waitPipelineRun pre-sample-minio ${Admin1Token} "Succeeded"
 
 info "4.9 chaincodebuild"
-cat config/samples/ibp.com_v1beta1_chaincodebuild_minio.yaml | sed "s/hyperledgerk8s\/go-contract/hyperledgerk8stest\/go-contract/g" | kubectl --token=${Admin1Token} apply -f -
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincodebuild_minio.yaml
 
 function waitchaincodebuildImage() {
 	chaincodebuildName=$1
@@ -686,6 +686,14 @@ function waitchaincodebuildImage() {
 }
 waitchaincodebuildImage chaincodebuild-sample-minio $Admin1Token 2
 
+info "chaincode chaincodebuild-sample-minio done!"
+
+info "4.9.1 chaincodebuild for upgrade chaincode"
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincodebuild_minio_upgrade_chaincode.yaml
+
+waitchaincodebuildImage chaincodebuild-sample-minio-upgrade-chaincode $Admin1Token 2
+info "chaincode chaincodebuild-sample-minio-upgrade-chaincode done!"
+
 info "4.10 install chaincode"
 info "4.10.1 create endorsepolicy e-policy"
 kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincode_endorse_policy.yaml
@@ -698,7 +706,7 @@ info "4.10.4 patch vote vote-org2-create-chaincode"
 waitVoteExist org2 create-chaincode ${Admin2Token}
 kubectl --token=${Admin2Token} patch vote -n org2 vote-org2-create-chaincode --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
 
-function watiChaincodeRunning() {
+function waitChaincodeRunning() {
 	chaincodeName=$1
 	token=$2
 	want=$3
@@ -723,9 +731,21 @@ function watiChaincodeRunning() {
 	done
 }
 
-info "4.10.5 wait chaincode running"
+info "4.10.5 wait deploy-chaincode running"
+waitChaincodeRunning chaincode-sample $Admin1Token "ChaincodeRunning"
 
-watiChaincodeRunning chaincode-sample $Admin1Token "ChaincodeRunning"
+info "4.10.6 upgrade chaincode to erc20"
+info "4.10.7 create proposal upgrade-chaincode"
+kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_upgrade_chaincode.yaml
+
+info "4.10.8 wait vote vote-org2-upgrade-chaincode"
+waitVoteExist org2 upgrade-chaincode ${Admin2Token}
+
+kubectl --token=${Admin2Token} patch vote -n org2 vote-org2-upgrade-chaincode --type='json' -p='[{"op": "replace", "path": "/spec/decision", "value": true}]'
+# To wait for the phase of the chaincode to become pending before starting the waiting logic.
+sleep 3
+info "4.10.9 wait upgrade-chaincode running"
+waitChaincodeRunning chaincode-sample $Admin1Token "ChaincodeRunning"
 
 info "4.11 update federation member for fed=federation-sample"
 

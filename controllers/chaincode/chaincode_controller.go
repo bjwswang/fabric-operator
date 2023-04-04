@@ -271,6 +271,26 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 		if newProposal.Spec.UpgradeChaincode != nil {
 			upgrade = true
 			chaincodeBuildName = newProposal.Spec.UpgradeChaincode.ExternalBuilder
+
+			// https://github.com/bestchains/fabric-operator/issues/222
+			// If the status of cr is not set to pending,
+			// then the process will be executed incorrectly when the spec section is updated.
+			cr.Status.Phase = current.ChaincodePhasePending
+			if err := r.client.PatchStatus(context.TODO(), cr, nil, k8sclient.PatchOption{
+				Resilient: &k8sclient.ResilientPatch{
+					Retry:    3,
+					Into:     &current.Chaincode{},
+					Strategy: client.MergeFrom,
+				},
+			}); err != nil {
+				log.Error(err, fmt.Sprintf("the upgrade proposal, failed to patch chaincode %s status", cr.GetName()))
+				return false
+			}
+			if err := r.client.Get(context.TODO(),
+				types.NamespacedName{Name: newProposal.Labels[current.ChaincodeProposalLabel]}, cr); err != nil {
+				log.Error(err, "the upgraded proposaol, after patch chaincode status, failed to get the chaincode %s.", newProposal.Labels[current.ChaincodeProposalLabel])
+				return false
+			}
 		}
 
 		if !upgrade && len(cr.Status.History) > 0 {
@@ -283,6 +303,7 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 			log.Error(err, "the proposal passed, but failed to get the mirror information.")
 			return false
 		}
+
 		originSpec := cr.Spec
 		cr.Spec.Images.Name = image
 		cr.Spec.Images.Digest = digest
@@ -326,9 +347,9 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 			}
 			if appendHistory {
 				cr.Status.History = append(cr.Status.History, current.ChaincodeHistory{
-					Version:         cr.Spec.Version,
-					Image:           cr.Spec.Images,
-					ExternalBuilder: chaincodeBuildName,
+					Version:         originSpec.Version,
+					Image:           originSpec.Images,
+					ExternalBuilder: originSpec.ExternalBuilder,
 					UpgradeTime:     v1.Now(),
 				})
 			}
@@ -341,6 +362,7 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 	if cr.Status.Sequence == 0 {
 		log.Info(fmt.Sprintf("proposal %s' update event is ahead of chiancode create events.", newProposal.GetName()))
 		cr.Status.Sequence++
+		cr.Status.Conditions = make([]current.ChaincodeCondition, 0)
 	}
 	if err := r.client.PatchStatus(context.TODO(), cr, nil, k8sclient.PatchOption{
 		Resilient: &k8sclient.ResilientPatch{
@@ -349,7 +371,7 @@ func (r *ReconcileChaincode) ProposalUpdateFunc(e event.UpdateEvent) bool {
 			Strategy: client.MergeFrom,
 		},
 	}); err != nil {
-		log.Error(err, fmt.Sprintf("failed to patch chaincode %s status", cr.GetName()))
+		log.Error(err, fmt.Sprintf("finally, failed to patch chaincode %s status", cr.GetName()))
 	}
 	return false
 }

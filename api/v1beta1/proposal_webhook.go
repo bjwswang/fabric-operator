@@ -91,11 +91,7 @@ func (r *Proposal) ValidateCreate(ctx context.Context, client client.Client, use
 		return err
 	}
 
-	if err := validateProposalSource(ctx, client, r.Spec.ProposalSource); err != nil {
-		return err
-	}
-
-	return validateChaincodeBuild(ctx, client, r.Spec.ProposalSource)
+	return validateProposalSource(ctx, client, r.Spec.ProposalSource)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -128,7 +124,7 @@ func (r *Proposal) ValidateUpdate(ctx context.Context, client client.Client, old
 		return err
 	}
 
-	return validateChaincodeBuild(ctx, client, r.Spec.ProposalSource)
+	return nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -166,6 +162,17 @@ func validateProposalSource(ctx context.Context, c client.Client, proposalSource
 
 	if proposalSource.UpdateChannelMember != nil {
 		if err := validateChannel(ctx, c, proposalSource.UpdateChannelMember.Channel, proposalSource); err != nil {
+			return err
+		}
+	}
+	if proposalSource.UpgradeChaincode != nil && proposalSource.DeployChaincode != nil {
+		return fmt.Errorf("the deployChaincode and upgradeChaincode cannot co-exist")
+	}
+	if proposalSource.UpgradeChaincode != nil {
+		if err := validateChaincodePhase(ctx, c, proposalSource.UpgradeChaincode.Chaincode); err != nil {
+			return err
+		}
+		if err := checkChaincodeBuildImage(ctx, c, proposalSource.UpgradeChaincode.ExternalBuilder); err != nil {
 			return err
 		}
 	}
@@ -216,20 +223,14 @@ func validateChannel(ctx context.Context, c client.Client, channel string, propo
 	return nil
 }
 
-func validateChaincodeBuild(ctx context.Context, c client.Client, proposalSource ProposalSource) error {
-	if proposalSource.DeployChaincode != nil && proposalSource.UpgradeChaincode != nil {
-		return fmt.Errorf("the deployChaincode and upgradeChaincode cannot co-exist")
-	}
-	if proposalSource.UpgradeChaincode == nil {
-		return nil
-	}
-	ccbName := proposalSource.UpgradeChaincode.ExternalBuilder
-	if ccbName == "" {
-		return fmt.Errorf("empty chaincodebuild name")
-	}
-	chaincodebuild := &ChaincodeBuild{}
-	if err := c.Get(ctx, types.NamespacedName{Name: ccbName}, chaincodebuild); err != nil {
+func validateChaincodePhase(ctx context.Context, c client.Client, chaincode string) error {
+	cc := &Chaincode{}
+	if err := c.Get(context.TODO(), types.NamespacedName{Name: chaincode}, cc); err != nil {
 		return err
 	}
-	return chaincodebuild.HasImage()
+	if cc.Status.Phase != ChaincodePhaseRunning {
+		return fmt.Errorf("you can only upgrade when the phase of the chaincode is %s, current phase is %s", ChaincodePhaseRunning, cc.Status.Phase)
+	}
+
+	return nil
 }

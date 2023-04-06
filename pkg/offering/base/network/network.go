@@ -228,12 +228,14 @@ func (network *BaseNetwork) ReconcileUser(instance *current.Network, update Upda
 		return err
 	}
 	targetUser := org.Spec.Admin
-	for i := 0; i < instance.Spec.OrderSpec.ClusterSize; i++ {
-		enrollID := fmt.Sprintf("%s%d", instance.Name, i)
-		err = user.Reconcile(network.Client, targetUser, org.Name, enrollID, user.ORDERER, user.Add)
-		if err != nil {
-			return err
-		}
+	size := instance.Spec.OrderSpec.ClusterSize
+	enrollIDs := make([]string, size)
+	for i := range enrollIDs {
+		enrollIDs[i] = fmt.Sprintf("%s%d", instance.Name, i)
+	}
+	err = user.ReconcileMultiple(network.Client, targetUser, org.Name, user.ORDERER, user.Add, enrollIDs...)
+	if err != nil {
+		return err
 	}
 	return nil
 }

@@ -131,12 +131,14 @@ func (r *ReconcileNetwork) DeleteFunc(e event.DeleteEvent) bool {
 		return false
 	}
 	targetUser := org.Spec.Admin
-	for i := 0; i < network.Spec.OrderSpec.ClusterSize; i++ {
-		enrollID := fmt.Sprintf("%s%d", network.Name, i)
-		err = user.Reconcile(r.client, targetUser, org.Name, enrollID, user.ORDERER, user.Remove)
-		if err != nil {
-			log.Error(err, "failed to reconcile user when network delete")
-		}
+	size := network.Spec.OrderSpec.ClusterSize
+	enrollIDs := make([]string, size)
+	for i := range enrollIDs {
+		enrollIDs[i] = fmt.Sprintf("%s%d", network.Name, i)
+	}
+	err = user.ReconcileMultiple(r.client, targetUser, org.Name, user.ORDERER, user.Remove, enrollIDs...)
+	if err != nil {
+		log.Error(err, "failed to reconcile user when network delete")
 	}
 	return false
 }

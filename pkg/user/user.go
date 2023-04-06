@@ -39,6 +39,14 @@ const (
 // - set blockchain annotation
 // - add blockchain organization label
 func Reconcile(c controllerclient.Client, targetUser string, organization, enrollmentID string, idType IDType, action UnaryAction) error {
+	return ReconcileMultiple(c, targetUser, organization, idType, action, enrollmentID)
+}
+
+// ReconcileMultiple targetUser by `organization` and its `id type`
+// - set blockchain annotation
+// - add blockchain organization label
+// **note: these enrollmentID must has same idType**
+func ReconcileMultiple(c controllerclient.Client, targetUser, organization string, idType IDType, action UnaryAction, enrollmentIDs ...string) error {
 	var err error
 
 	u, err := GetUser(c, targetUser)
@@ -48,13 +56,19 @@ func Reconcile(c controllerclient.Client, targetUser string, organization, enrol
 
 	switch action {
 	case Add:
-		err = ReconcileAdd(u, organization, enrollmentID, idType)
+		for _, enrollmentID := range enrollmentIDs {
+			err = ReconcileAdd(u, organization, enrollmentID, idType)
+			if err != nil {
+				return err
+			}
+		}
 	case Remove:
-		_, err = ReconcileRemove(u, organization, enrollmentID, idType)
-	}
-
-	if err != nil {
-		return err
+		for _, enrollmentID := range enrollmentIDs {
+			_, err = ReconcileRemove(u, organization, enrollmentID, idType)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	err = PatchUsers(c, *u)

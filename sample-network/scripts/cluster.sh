@@ -244,7 +244,7 @@ function addon_install() {
   helm --wait --timeout=600s -nbaas-system install fabric-tekton tekton-operator
   cd ../..
   sleep 100; # wait tekton-operator ready.
-  find tekton -type f -name "*.yaml" ! -path "*/sample/*" | xargs -n 1 kubectl apply -f
+  find fabric-operator/tekton -type f -name "*.yaml" ! -path "*/sample/*" | xargs -n 1 kubectl apply -f
   cd ${previous_path}
   pop_fn
 }

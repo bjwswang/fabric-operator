@@ -25,7 +25,7 @@ import (
 	"time"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -91,7 +91,7 @@ func (r *Proposal) ValidateCreate(ctx context.Context, client client.Client, use
 		return err
 	}
 
-	return validateProposalSource(ctx, client, r.Spec.ProposalSource)
+	return validateProposalSource(ctx, client, r.Spec.ProposalSource, r.GetName())
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -120,7 +120,7 @@ func (r *Proposal) ValidateUpdate(ctx context.Context, client client.Client, old
 		return err
 	}
 
-	if err := validateProposalSource(ctx, client, r.Spec.ProposalSource); err != nil {
+	if err := validateProposalSource(ctx, client, r.Spec.ProposalSource, r.GetName()); err != nil {
 		return err
 	}
 
@@ -147,37 +147,24 @@ func (r *Proposal) ValidateDelete(ctx context.Context, client client.Client, use
 	return nil
 }
 
-func validateProposalSource(ctx context.Context, c client.Client, proposalSource ProposalSource) error {
-	if proposalSource.ArchiveChannel != nil {
-		if err := validateChannel(ctx, c, proposalSource.ArchiveChannel.Channel, proposalSource); err != nil {
+func validateProposalSource(ctx context.Context, c client.Client, proposalSource ProposalSource, federationName string) (err error) {
+	switch proposalSource.GetPurpose() {
+	case ArchiveChannelProposal:
+		err = validateChannel(ctx, c, proposalSource.ArchiveChannel.Channel, proposalSource)
+	case UnarchiveChannelProposal:
+		err = validateChannel(ctx, c, proposalSource.UnarchiveChannel.Channel, proposalSource)
+	case UpdateChannelMemberProposal:
+		err = validateChannel(ctx, c, proposalSource.UpdateChannelMember.Channel, proposalSource)
+	case UpgradeChaincodeProposal:
+		err = validateChaincodePhase(ctx, c, proposalSource.UpgradeChaincode.Chaincode)
+		if err != nil {
 			return err
 		}
+		err = checkChaincodeBuildImage(ctx, c, proposalSource.UpgradeChaincode.ExternalBuilder)
+	case DeleteMemberProposal:
+		err = validateDeleteFedMember(ctx, c, proposalSource.DeleteMember.Member, federationName)
 	}
-
-	if proposalSource.UnarchiveChannel != nil {
-		if err := validateChannel(ctx, c, proposalSource.UnarchiveChannel.Channel, proposalSource); err != nil {
-			return err
-		}
-	}
-
-	if proposalSource.UpdateChannelMember != nil {
-		if err := validateChannel(ctx, c, proposalSource.UpdateChannelMember.Channel, proposalSource); err != nil {
-			return err
-		}
-	}
-	if proposalSource.UpgradeChaincode != nil && proposalSource.DeployChaincode != nil {
-		return fmt.Errorf("the deployChaincode and upgradeChaincode cannot co-exist")
-	}
-	if proposalSource.UpgradeChaincode != nil {
-		if err := validateChaincodePhase(ctx, c, proposalSource.UpgradeChaincode.Chaincode); err != nil {
-			return err
-		}
-		if err := checkChaincodeBuildImage(ctx, c, proposalSource.UpgradeChaincode.ExternalBuilder); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return err
 }
 
 func validateChannel(ctx context.Context, c client.Client, channel string, proposalSource ProposalSource) error {
@@ -185,7 +172,7 @@ func validateChannel(ctx context.Context, c client.Client, channel string, propo
 	ch.Name = channel
 	err := c.Get(ctx, client.ObjectKeyFromObject(ch), ch)
 	if err != nil {
-		if k8serrors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return errChannelNotFound
 		}
 		return err
@@ -232,5 +219,41 @@ func validateChaincodePhase(ctx context.Context, c client.Client, chaincode stri
 		return fmt.Errorf("you can only upgrade when the phase of the chaincode is %s, current phase is %s", ChaincodePhaseRunning, cc.Status.Phase)
 	}
 
+	return nil
+}
+
+func validateDeleteFedMember(ctx context.Context, c client.Client, deleteMember, federationName string) error {
+	chList := &ChannelList{}
+	if err := c.List(ctx, chList); err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+	networkList := &NetworkList{}
+	if err := c.List(ctx, networkList); err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	networkNeedCheck := make(map[string]bool) // FIXME: After we figure out why the list uses labelselector fail, we can replace all lists with only filter the objects we need.
+	for _, i := range networkList.Items {
+		if i.Spec.Federation != federationName {
+			continue
+		}
+		networkNeedCheck[i.Name] = true
+		for _, m := range i.Spec.Members {
+			if m.Initiator && m.Name == deleteMember {
+				return fmt.Errorf("can't remove federation member %s, it's the initiator of netowrk %s", deleteMember, i.GetName())
+			}
+		}
+	}
+
+	for _, ch := range chList.Items {
+		if shouldCheck := networkNeedCheck[ch.Spec.Network]; !shouldCheck {
+			continue
+		}
+		for _, chMember := range ch.Spec.Members {
+			if deleteMember == chMember.Name {
+				return fmt.Errorf("can't remove federation member %s, it's the member of channel %s", deleteMember, ch.GetName())
+			}
+		}
+	}
 	return nil
 }

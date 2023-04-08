@@ -287,6 +287,11 @@ function waitFed() {
 			if [[ $n -eq 3 ]]; then
 				break
 			fi
+		elif [[ $check == "MembersUpdateTo2" ]]; then
+			n=$(kubectl get fed --token=${token} $fedName -o json | jq -r '.spec.members | length')
+			if [[ $n -eq 2 ]]; then
+				break
+			fi
 		fi
 		CURRENT_TIME=$(date +%s)
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
@@ -807,7 +812,7 @@ function waitOperatorLog() {
 }
 waitOperatorLog 'update channel config to update member in txID'
 
-info "4.7.3 create peer node peer=org3peer1"
+info "4.12.6 create peer node peer=org3peer1"
 Org3CaCert=$(kubectl get cm --token=${Admin3Token} -norg3 org3-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.tls.cert')
 Org3CaURI=$(kubectl get cm --token=${Admin3Token} -norg3 org3-connection-profile -ojson | jq -r '.binaryData."profile.json"' | base64 -d | jq -r '.endpoints.api')
 parseURI ${Org3CaURI}
@@ -823,9 +828,30 @@ kubectl create -f config/samples/peers/ibp.com_v1beta1_peer_org3peer1.yaml --dry
 	kubectl create --token=${Admin3Token} -f -
 waitPeerReady org3peer1 org3 "" ${Admin3Token}
 
-info "4.12.6 add peer node to channel peer=org3peer1 channel=channel-sample"
+info "4.12.7 add peer node to channel peer=org3peer1 channel=channel-sample"
 kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org3.yaml --token=${Admin3Token}
 waitPeerJoined channel-sample 2 PeerJoined ${Admin3Token}
+
+info "4.13 delete federation member for fed=federation-sample"
+
+info "4.13.1 create proposal pro=delete-member-federation-sample"
+kubectl create -f config/samples/ibp.com_v1beta1_proposal_delete_member.yaml --token=${Admin1Token}
+
+info "4.13.2 user=org2admin vote for pro=add-member-federation-sample"
+waitVoteExist org2 delete-member-federation-sample ${Admin2Token}
+kubectl patch vote -n org2 vote-org2-delete-member-federation-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
+
+info "4.13.3 user=org3admin vote for pro=delete-member-federation-sample"
+waitVoteExist org3 delete-member-federation-sample ${Admin3Token}
+kubectl patch vote -n org3 vote-org3-delete-member-federation-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin3Token}
+
+info "4.13.4 pro=delete-member-federation-sample become Succeeded"
+waitProposalSucceeded delete-member-federation-sample ${Admin1Token}
+
+info "4.13.5 fed=federation-sample member update, federation member update finish!"
+waitFed federation-sample "MembersUpdateTo2" ${Admin1Token}
 
 info "5. Checking restarting operator will not have any side effects on the spec of the resource."
 kubectl get all --all-namespaces -o json | jq -c '.items | sort_by(.metadata.name, .metadata.namespace)[] | select(.metadata.namespace != "tekton-pipelines" and (.metadata.name | startswith("controller-manager-") | not) and .metadata.namespace != "baas-system") | .spec' >old.json

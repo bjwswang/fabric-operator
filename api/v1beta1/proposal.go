@@ -39,7 +39,7 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 	}
 	orgs := make([]string, 0)
 	switch p.GetPurpose() {
-	case CreateFederationProposal, DissolveFederationProposal:
+	case CreateFederationProposal, DissolveFederationProposal, DeleteMemberProposal:
 		for _, o := range federation.Spec.Members {
 			orgs = append(orgs, o.Name)
 		}
@@ -48,13 +48,6 @@ func (p *Proposal) GetCandidateOrganizations(ctx context.Context, client k8sclie
 			orgs = append(orgs, o.Name)
 		}
 		orgs = append(orgs, p.Spec.AddMember.Members...)
-	case DeleteMemberProposal:
-		for _, o := range federation.Spec.Members {
-			if o.Name == p.Spec.DeleteMember.Member {
-				continue
-			}
-			orgs = append(orgs, o.Name)
-		}
 	case DissolveNetworkProposal:
 		if exist := util.ContainsValue(p.Spec.DissolveNetwork.Name, federation.Status.Networks); !exist {
 			return orgs, nil

@@ -215,11 +215,13 @@ func validateChaincodePhase(ctx context.Context, c client.Client, chaincode stri
 	if err := c.Get(context.TODO(), types.NamespacedName{Name: chaincode}, cc); err != nil {
 		return err
 	}
-	if cc.Status.Phase != ChaincodePhaseRunning {
-		return fmt.Errorf("you can only upgrade when the phase of the chaincode is %s, current phase is %s", ChaincodePhaseRunning, cc.Status.Phase)
-	}
 
-	return nil
+	conditions := cc.Status.Conditions
+	if cc.Status.Phase == ChaincodePhaseRunning ||
+		(cc.Status.Phase == ChaincodePhaseApproved && len(conditions) > 0 && conditions[len(conditions)-1].NextStage == ChaincodeCondRunning) {
+		return nil
+	}
+	return fmt.Errorf("you can only upgrade when the phase of the chaincode is %s, Or the chaincode was successfully committed, but the service did not start properly at the end. current phase is %s", ChaincodePhaseRunning, cc.Status.Phase)
 }
 
 func validateDeleteFedMember(ctx context.Context, c client.Client, deleteMember, federationName string) error {

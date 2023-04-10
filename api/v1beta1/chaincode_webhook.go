@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"time"
 
@@ -106,6 +107,14 @@ func (r *Chaincode) ValidateUpdate(ctx context.Context, client client.Client, ol
 	if err := checkChaincodeBuildImage(ctx, client, r.Spec.ExternalBuilder); err != nil {
 		ccLogger.Error(err, "")
 		return err
+	}
+
+	// If the information relating to the mirror of the chaincode has changed,
+	// it can only be updated if the previous version of the chaincode is in a pending phase.
+	if r.Spec.Version != oldcc.Spec.Version || r.Spec.ExternalBuilder != oldcc.Spec.ExternalBuilder || !reflect.DeepEqual(r.Spec.Images, oldcc.Spec.Images) {
+		if oldcc.Status.Phase != ChaincodePhasePending {
+			return fmt.Errorf("please upgrade via proposal")
+		}
 	}
 	return oldcc.checkChAndEp(client)
 }

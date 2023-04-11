@@ -628,7 +628,7 @@ EOF
 ak=$(kubectl -nbaas-system get secret fabric-minio -ojson | jq -r '.data.rootUser' | base64 -d)
 sk=$(kubectl -nbaas-system get secret fabric-minio -ojson | jq -r '.data.rootPassword' | base64 -d)
 
-cat ${InstallDirPath}/tekton/pipelines/sample/pre_sample_minio.yaml | sed "s/admin/${ak}/g" |
+cat ${InstallDirPath}/fabric-operator/tekton/pipelines/sample/pre_sample_minio.yaml | sed "s/admin/${ak}/g" |
 	sed "s/passw0rd/${sk}/g" | kubectl --token=${Admin1Token} apply -f -
 
 function waitPipelineRun() {

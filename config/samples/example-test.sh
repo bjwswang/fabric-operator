@@ -150,6 +150,22 @@ info "2.1 install u4a component, u4a services and fabric-operator"
 . ./scripts/e2e.sh --all
 cd ${RootPath}
 
+kubectl() {
+	local args=("$@")
+	local has_token=false
+	_kubectl=$(which kubectl)
+	for arg in "${args[@]}"; do
+		if [[ $arg == "--token"* ]]; then
+			has_token=true
+			break
+		fi
+	done
+	if [[ $has_token == true ]]; then
+		args=(--server="https://${kubeProxyNodeIP}:443" --insecure-skip-tls-verify=true "${args[@]}")
+	fi
+	${_kubectl} "${args[@]}"
+}
+
 info "2.2 install latest crd in dev"
 kubectl kustomize config/crd | kubectl apply -f -
 
@@ -197,13 +213,25 @@ function getToken() {
 	Token=$(echo $TokenResp | jq -r .data.token.id_token)
 }
 
-info "3.2 get all test user's token"
+info "3.2 get all test user's token, and verify that token authentication is valid"
 getToken $Domain "org1admin" $DefaultPassWord
 Admin1Token=$Token
 getToken $Domain "org2admin" $DefaultPassWord
 Admin2Token=$Token
 getToken $Domain "org3admin" $DefaultPassWord
 Admin3Token=$Token
+# Verify that the default kubectl command using the token parameter is invalid.
+code=0
+kubectl get po -n kube-system --token ${Admin1Token} &>/dev/null && code=0 || code=1
+if [[ $code -eq 1 ]]; then
+	error "default kubectl has started to verify oidc, which is incorrect."
+fi
+# Verify that use of oidc parameters, oidc works.
+code=0
+kubectl get po -n kube-system --token ${Admin1Token} &>/dev/null && code=0 || code=1
+if [[ $code -eq 0 ]]; then
+	error "oidc token valid failed"
+fi
 
 info "3.3 get default ingress class and storage class"
 IngressClassName=$(kubectl get ingressclass --no-headers | awk '{print $1}')
@@ -374,7 +402,7 @@ function waitNetwork() {
 	START_TIME=$(date +%s)
 	while true; do
 		if [[ $want == "NoExist" ]]; then
-			name=$(kubectl get network --token=${token} $networkName --no-headers=true --ignore-not-found=true | awk '{print $1}')
+			name=$(kubectl get network $networkName --no-headers=true --ignore-not-found=true | awk '{print $1}')
 			if [[ $name == "" ]]; then
 				break
 			fi
@@ -418,6 +446,13 @@ kubectl create -f config/samples/ibp.com_v1beta1_network_size_3.yaml --dry-run=c
 	jq '.spec.orderSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.orderSpec.storage.orderer.class = "'$StorageClassName'"' |
 	kubectl create --token=${Admin1Token} -f -
 waitNetwork network-sample3 "Ready" "" ${Admin1Token}
+
+info "4.4.2.1 valid org3 has no permission to get this network"
+code=0
+kubectl get network network-sample3 --token ${Admin3Token} &>/dev/null && code=0 || code=1
+if [[ $code -eq 0 ]]; then
+	error "org3 can get network network-sampl3, There is a problem with access control."
+fi
 
 info "4.4.3 delete network need create a federation dissolve network proposal for fed=federation-sample network=network-sample"
 
@@ -587,7 +622,7 @@ kubectl apply -f config/samples/ibp.com_v1beta1_channel_join_org2.yaml --token=$
 waitPeerJoined channel-sample 1 PeerJoined ${Admin2Token}
 
 info "4.7.6 create a proposal to archive channel-sample"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_archive_channel.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_proposal_archive_channel.yaml
 
 info "4.7.7 user=org2admin vote for pro=archive-channel-sample"
 waitVoteExist org2 archive-channel-sample ${Admin2Token}
@@ -601,7 +636,7 @@ info "4.7.9 channel=channel-sample become Archived"
 waitChannelReady channel-sample "ChannelArchived" ${Admin1Token}
 
 info "4.7.10 create a proposal to unarchive channel-sample"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_unarchive_channel.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_proposal_unarchive_channel.yaml
 
 info "4.7.11 user=org2admin vote for pro=unarchive-channel-sample"
 waitVoteExist org2 unarchive-channel-sample ${Admin2Token}
@@ -616,7 +651,7 @@ waitChannelReady channel-sample "ChannelCreated" ${Admin1Token}
 
 info "4.8 upload contract to minio"
 
-cat <<EOF | kubectl --token=${Admin1Token} apply -f -
+cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Secret
 metadata:
@@ -629,7 +664,7 @@ ak=$(kubectl -nbaas-system get secret fabric-minio -ojson | jq -r '.data.rootUse
 sk=$(kubectl -nbaas-system get secret fabric-minio -ojson | jq -r '.data.rootPassword' | base64 -d)
 
 cat ${InstallDirPath}/fabric-operator/tekton/pipelines/sample/pre_sample_minio.yaml | sed "s/admin/${ak}/g" |
-	sed "s/passw0rd/${sk}/g" | kubectl --token=${Admin1Token} apply -f -
+	sed "s/passw0rd/${sk}/g" | kubectl create -f -
 
 function waitPipelineRun() {
 	pipelinerunName=$1
@@ -659,7 +694,7 @@ function waitPipelineRun() {
 waitPipelineRun pre-sample-minio ${Admin1Token} "Succeeded"
 
 info "4.9 chaincodebuild"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincodebuild_minio.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_chaincodebuild_minio.yaml
 
 function waitchaincodebuildImage() {
 	chaincodebuildName=$1
@@ -694,18 +729,18 @@ waitchaincodebuildImage chaincodebuild-sample-minio $Admin1Token 2
 info "chaincode chaincodebuild-sample-minio done!"
 
 info "4.9.1 chaincodebuild for upgrade chaincode"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincodebuild_minio_upgrade_chaincode.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_chaincodebuild_minio_upgrade_chaincode.yaml
 
 waitchaincodebuildImage chaincodebuild-sample-minio-upgrade-chaincode $Admin1Token 2
 info "chaincode chaincodebuild-sample-minio-upgrade-chaincode done!"
 
 info "4.10 install chaincode"
 info "4.10.1 create endorsepolicy e-policy"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincode_endorse_policy.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_chaincode_endorse_policy.yaml
 info "4.10.2 create chaincode chaincode-sample"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_chaincode.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_chaincode.yaml
 info "4.10.3 create proposal create-chaincode"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_create_chaincode.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_proposal_create_chaincode.yaml
 info "4.10.4 patch vote vote-org2-create-chaincode"
 
 waitVoteExist org2 create-chaincode ${Admin2Token}
@@ -741,7 +776,7 @@ waitChaincodeRunning chaincode-sample $Admin1Token "ChaincodeRunning"
 
 info "4.10.6 upgrade chaincode to erc20"
 info "4.10.7 create proposal upgrade-chaincode"
-kubectl --token=${Admin1Token} apply -f config/samples/ibp.com_v1beta1_proposal_upgrade_chaincode.yaml
+kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_proposal_upgrade_chaincode.yaml
 
 info "4.10.8 wait vote vote-org2-upgrade-chaincode"
 waitVoteExist org2 upgrade-chaincode ${Admin2Token}

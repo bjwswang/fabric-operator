@@ -220,6 +220,9 @@ getToken $Domain "org2admin" $DefaultPassWord
 Admin2Token=$Token
 getToken $Domain "org3admin" $DefaultPassWord
 Admin3Token=$Token
+getToken $Domain "org4admin" $DefaultPassWord
+Admin4Token=$Token
+
 # Verify that the default kubectl command using the token parameter is invalid.
 code=0
 kubectl get po -n kube-system --token ${Admin1Token} &>/dev/null && code=0 || code=1
@@ -244,6 +247,7 @@ info "4.1 create organizations: org1 org2 org3"
 sed -i -e "s/<org1AdminToken>/${Admin1Token}/g" config/samples/orgs/org1.yaml
 sed -i -e "s/<org2AdminToken>/${Admin2Token}/g" config/samples/orgs/org2.yaml
 sed -i -e "s/<org3AdminToken>/${Admin3Token}/g" config/samples/orgs/org3.yaml
+sed -i -e "s/<org4AdminToken>/${Admin4Token}/g" config/samples/orgs/org4.yaml
 
 info "4.1.1 create org=org1, wait for the relevant components to start up."
 kubectl create -f config/samples/orgs/org1.yaml --dry-run=client -o json |
@@ -292,6 +296,12 @@ kubectl create -f config/samples/orgs/org3.yaml --dry-run=client -o json |
 	kubectl create --token=${Admin3Token} -f -
 waitOrgReady org3 "" ${Admin3Token}
 
+info "4.1.4 create org=org4, wait for the relevant components to start up."
+kubectl create -f config/samples/orgs/org4.yaml --dry-run=client -o json |
+	jq '.spec.caSpec.ingress.class = "'$IngressClassName'"' | jq '.spec.caSpec.storage.ca.class = "'$StorageClassName'"' |
+	kubectl create --token=${Admin4Token} -f -
+waitOrgReady org4 "" ${Admin4Token}
+
 info "4.2 create federation resources: federation-sample"
 kubectl create -f config/samples/ibp.com_v1beta1_federation.yaml --token=${Admin1Token}
 function waitFed() {
@@ -320,6 +330,11 @@ function waitFed() {
 			if [[ $n -eq 2 ]]; then
 				break
 			fi
+		elif [[ $check == "MembersUpdateTo4" ]]; then
+			n=$(kubectl get fed --token=${token} $fedName -o json | jq -r '.spec.members | length')
+			if [[ $n -eq 4 ]]; then
+				break
+			fi		
 		fi
 		CURRENT_TIME=$(date +%s)
 		ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
@@ -425,6 +440,11 @@ function waitNetwork() {
 		elif [[ $want == "MembersUpdateTo3" ]]; then
 			n=$(kubectl get network ${networkName} --token=${token} --ignore-not-found=true -o json | jq -r '.spec.members | length')
 			if [[ $n -eq 3 ]]; then
+				break
+			fi
+		elif [[ $want == "MembersUpdateTo4" ]]; then
+			n=$(kubectl get network ${networkName} --token=${token} --ignore-not-found=true -o json | jq -r '.spec.members | length')
+			if [[ $n -eq 4 ]]; then
 				break
 			fi
 		fi
@@ -802,16 +822,21 @@ waitVoteExist org3 add-member-federation-sample ${Admin3Token}
 kubectl patch vote -n org3 vote-org3-add-member-federation-sample --type='json' \
 	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin3Token}
 
-info "4.11.4 pro=add-member-federation-sample become Succeeded"
+info "4.11.4 user=org4admin vote for pro=add-member-federation-sample"
+waitVoteExist org4 add-member-federation-sample ${Admin4Token}
+kubectl patch vote -n org4 vote-org4-add-member-federation-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin4Token}
+
+info "4.11.5 pro=add-member-federation-sample become Succeeded"
 waitProposalSucceeded add-member-federation-sample ${Admin1Token}
 
-info "4.11.5 fed=federation-sample member update, federation member update finish!"
-waitFed federation-sample "MembersUpdateTo3" ${Admin1Token}
+info "4.11.6 fed=federation-sample member update, federation member update finish!"
+waitFed federation-sample "MembersUpdateTo4" ${Admin1Token}
 
 info "4.12 update channel member, add org3 to channel=channel-sample"
 
 info "4.12.1 wait network sync member from federation"
-waitNetwork network-sample3 "MembersUpdateTo3" "" ${Admin1Token}
+waitNetwork network-sample3 "MembersUpdateTo4" "" ${Admin1Token}
 
 info "4.12.2 need create proposal=update-channel-member"
 kubectl --token=${Admin1Token} create -f config/samples/ibp.com_v1beta1_proposal_update_channel_member.yaml
@@ -872,7 +897,7 @@ info "4.13 delete federation member for fed=federation-sample"
 info "4.13.1 create proposal pro=delete-member-federation-sample"
 kubectl create -f config/samples/ibp.com_v1beta1_proposal_delete_member.yaml --token=${Admin1Token}
 
-info "4.13.2 user=org2admin vote for pro=add-member-federation-sample"
+info "4.13.2 user=org2admin vote for pro=delete-member-federation-sample"
 waitVoteExist org2 delete-member-federation-sample ${Admin2Token}
 kubectl patch vote -n org2 vote-org2-delete-member-federation-sample --type='json' \
 	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin2Token}
@@ -882,11 +907,16 @@ waitVoteExist org3 delete-member-federation-sample ${Admin3Token}
 kubectl patch vote -n org3 vote-org3-delete-member-federation-sample --type='json' \
 	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin3Token}
 
-info "4.13.4 pro=delete-member-federation-sample become Succeeded"
+info "4.13.4 user=org4admin vote for pro=delete-member-federation-sample"
+waitVoteExist org4 delete-member-federation-sample ${Admin4Token}
+kubectl patch vote -n org4 vote-org4-delete-member-federation-sample --type='json' \
+	-p='[{"op": "replace", "path": "/spec/decision", "value": true}]' --token=${Admin4Token}
+
+info "4.13.5 pro=delete-member-federation-sample become Succeeded"
 waitProposalSucceeded delete-member-federation-sample ${Admin1Token}
 
-info "4.13.5 fed=federation-sample member update, federation member update finish!"
-waitFed federation-sample "MembersUpdateTo2" ${Admin1Token}
+info "4.13.6 fed=federation-sample member update, federation member update finish!"
+waitFed federation-sample "MembersUpdateTo3" ${Admin1Token}
 
 info "5. Checking restarting operator will not have any side effects on the spec of the resource."
 kubectl get all --all-namespaces -o json | jq -c '.items | sort_by(.metadata.name, .metadata.namespace)[] | select(.metadata.namespace != "tekton-pipelines" and (.metadata.name | startswith("controller-manager-") | not) and .metadata.namespace != "baas-system") | .spec' >old.json

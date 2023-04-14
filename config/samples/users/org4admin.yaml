@@ -1,0 +1,13 @@
+apiVersion: iam.tenxcloud.com/v1alpha1
+kind: User
+metadata:
+  labels:
+    t7d.io.username: org4admin
+  name: org4admin
+spec:
+  description: org4admin 用户信息的描述
+  email: org4admin@tenxcloud.com
+  name: org4admin
+  password: $2a$10$eXHv4JD1hEfMA/vV6Whjae84bVI0CMeZpa43z97PurPQMmD8OAfe2 # passw0rd
+  phone: "18890901212"
+  role: admin

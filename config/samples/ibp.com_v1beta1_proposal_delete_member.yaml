@@ -8,4 +8,4 @@ spec:
   policy: All
   initiatorOrganization: org1
   deleteMember:
-    member: org2
+    member: org4

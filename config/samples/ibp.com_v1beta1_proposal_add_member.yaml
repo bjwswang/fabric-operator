@@ -10,3 +10,4 @@ spec:
   addMember:
     members:
     - org3
+    - org4

@@ -91,7 +91,7 @@ func (r *Proposal) ValidateCreate(ctx context.Context, client client.Client, use
 		return err
 	}
 
-	return validateProposalSource(ctx, client, r.Spec.ProposalSource, r.GetName())
+	return validateProposalSource(ctx, client, r.Spec.ProposalSource, r.Spec.Federation)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -120,7 +120,7 @@ func (r *Proposal) ValidateUpdate(ctx context.Context, client client.Client, old
 		return err
 	}
 
-	if err := validateProposalSource(ctx, client, r.Spec.ProposalSource, r.GetName()); err != nil {
+	if err := validateProposalSource(ctx, client, r.Spec.ProposalSource, r.Spec.Federation); err != nil {
 		return err
 	}
 

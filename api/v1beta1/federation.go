@@ -2,6 +2,12 @@ package v1beta1
 
 import "os"
 
+const (
+	KIND                               = "Federation"
+	FEDERATION_INITIATOR_LABEL         = "bestchains.federation.initiator"
+	FEDERATION_CREATION_PROPOSAL_ENDAT = "bestchains.federation.creation.proposal.endAt"
+)
+
 func init() {
 	SchemeBuilder.Register(&Federation{}, &FederationList{})
 }

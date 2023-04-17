@@ -62,6 +62,11 @@ func (r *Proposal) Default(ctx context.Context, client client.Client, user authe
 	if r.Spec.EndAt.IsZero() {
 		r.Spec.EndAt = metav1.NewTime(time.Now().Add(time.Hour * 24))
 	}
+	if fed, err := AddEndAtAnnotation(client, *r); err == nil {
+		if e := client.Update(context.TODO(), fed); e != nil {
+			proposallog.Error(e, fmt.Sprintf("failed to update federation %s's annotations", fed.GetName()))
+		}
+	}
 }
 
 //+kubebuilder:webhook:path=/validate-ibp-com-v1beta1-proposal,mutating=false,failurePolicy=fail,sideEffects=None,groups=ibp.com,resources=proposals,verbs=create;update;delete,versions=v1beta1,name=proposal.validate.webhook,admissionReviewVersions=v1
@@ -258,4 +263,22 @@ func validateDeleteFedMember(ctx context.Context, c client.Client, deleteMember,
 		}
 	}
 	return nil
+}
+
+func AddEndAtAnnotation(r client.Reader, p Proposal) (*Federation, error) {
+	fed := &Federation{}
+	if err := r.Get(context.TODO(), types.NamespacedName{Name: p.Spec.Federation}, fed); err != nil {
+		proposallog.Error(err, fmt.Sprintf("failed to get federation %s with porposal %s", p.Spec.Federation, p.GetName()))
+		return nil, err
+	}
+	if fed.Annotations == nil {
+		fed.Annotations = make(map[string]string)
+	}
+	if !p.Spec.EndAt.IsZero() && p.GetPurpose() == CreateFederationProposal {
+		endAt := fmt.Sprintf("%d", p.Spec.EndAt.Unix())
+		if v, ok := fed.Annotations[FEDERATION_CREATION_PROPOSAL_ENDAT]; !ok || v != endAt {
+			fed.Annotations[FEDERATION_CREATION_PROPOSAL_ENDAT] = endAt
+		}
+	}
+	return fed, nil
 }

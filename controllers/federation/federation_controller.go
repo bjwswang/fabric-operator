@@ -54,11 +54,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	KIND                       = "Federation"
-	FEDERATION_INITIATOR_LABEL = "bestchains.federation.initiator"
-)
-
 var log = logf.Log.WithName("controller_federation")
 
 // Add creates a new Federation Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -126,6 +121,7 @@ func add(mgr manager.Manager, r *ReconcileFederation) error {
 
 	// Watch for changes to Proposal
 	proposalFuncs := predicate.Funcs{
+		CreateFunc: r.ProposalCreateFunc,
 		UpdateFunc: r.ProposalUpdateFunc,
 	}
 	err = c.Watch(&source.Kind{Type: &current.Proposal{}}, handler.EnqueueRequestsFromMapFunc(proposal2federationMap), proposalFuncs)
@@ -223,10 +219,10 @@ func (r *ReconcileFederation) Reconcile(ctx context.Context, request reconcile.R
 		instance.Labels = make(map[string]string)
 	}
 
-	if _, ok := instance.Labels[FEDERATION_INITIATOR_LABEL]; !ok {
+	if _, ok := instance.Labels[current.FEDERATION_INITIATOR_LABEL]; !ok {
 		for _, member := range instance.Spec.Members {
 			if member.Initiator {
-				instance.Labels[FEDERATION_INITIATOR_LABEL] = member.Name
+				instance.Labels[current.FEDERATION_INITIATOR_LABEL] = member.Name
 				break
 			}
 		}

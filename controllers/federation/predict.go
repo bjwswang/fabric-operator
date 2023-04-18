@@ -157,6 +157,22 @@ func (r *ReconcileFederation) UpdateFunc(e event.UpdateEvent) bool {
 	return true
 }
 
+func (r *ReconcileFederation) ProposalCreateFunc(e event.CreateEvent) bool {
+
+	p := (e.Object).(*current.Proposal)
+	fed, err := current.AddEndAtAnnotation(r.client, *p)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("failed to get federation %s", p.Spec.Federation))
+		return false
+	}
+	if err := r.client.Update(context.TODO(), fed); err != nil {
+		log.Error(err, "failed to update federation %s's annotations %s=%s", fed.GetName(),
+			current.FEDERATION_CREATION_PROPOSAL_ENDAT, fed.Annotations[current.FEDERATION_CREATION_PROPOSAL_ENDAT])
+	}
+
+	return false
+}
+
 func (r *ReconcileFederation) ProposalUpdateFunc(e event.UpdateEvent) bool {
 	oldProposal := e.ObjectOld.(*current.Proposal)
 	newProposal := e.ObjectNew.(*current.Proposal)
